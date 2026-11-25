@@ -5,9 +5,17 @@ namespace SpriteLab.App;
 internal static class Program
 {
     [STAThread]
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        // SL0: verify the framework can be resolved before introducing UI.
-        Console.WriteLine($"SpriteLab 0.0.2 — Avalonia {typeof(Application).Assembly.GetName().Version}");
+        if (args.Contains("--smoke-test", StringComparer.Ordinal))
+        {
+            Console.WriteLine($"SpriteLab {typeof(Program).Assembly.GetName().Version} — Avalonia {typeof(Application).Assembly.GetName().Version}");
+            return 0;
+        }
+
+        return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
+
+    public static AppBuilder BuildAvaloniaApp() =>
+        AppBuilder.Configure<App>().UsePlatformDetect().LogToTrace();
 }

@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SpriteLab.App.Views.MainWindow"
+        Title="SpriteLab" Width="1280" Height="800"
+        MinWidth="900" MinHeight="600"
+        Background="#171B22">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Menu Grid.Row="0" Background="#242A34">
+      <MenuItem Header="_Archivo">
+        <MenuItem Header="Importar PNG..." IsEnabled="False" />
+        <MenuItem Header="Abrir proyecto..." IsEnabled="False" />
+        <MenuItem Header="Guardar proyecto" IsEnabled="False" />
+        <Separator />
+        <MenuItem Header="Salir" Click="OnExit" />
+      </MenuItem>
+      <MenuItem Header="_Edición">
+        <MenuItem Header="Deshacer" IsEnabled="False" />
+        <MenuItem Header="Rehacer" IsEnabled="False" />
+      </MenuItem>
+      <MenuItem Header="_Ver">
+        <MenuItem Header="Cuadrícula" IsEnabled="False" />
+        <MenuItem Header="Anclaje" IsEnabled="False" />
+      </MenuItem>
+      <MenuItem Header="_Animación">
+        <MenuItem Header="Reproducir" IsEnabled="False" />
+      </MenuItem>
+      <MenuItem Header="_Herramientas">
+        <MenuItem Header="Validar" IsEnabled="False" />
+        <MenuItem Header="Sprite Pipeline" IsEnabled="False" />
+      </MenuItem>
+      <MenuItem Header="Ay_uda">
+        <MenuItem Header="Acerca de SpriteLab" Click="OnAbout" />
+      </MenuItem>
+    </Menu>
+    <Border Grid.Row="1" Background="#202630" Padding="14,10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <TextBlock Text="SPRITELAB" FontSize="17" FontWeight="Bold" VerticalAlignment="Center" />
+          <TextBlock Text="Espacio de trabajo" Classes="muted" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="Sin proyecto abierto" Classes="muted" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+    <Grid Grid.Row="2" ColumnDefinitions="230,5,*,5,260" RowDefinitions="*,5,180,5,100">
+      <Border Grid.Column="0" Grid.RowSpan="5" Background="#202630" Padding="12">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock Text="EXPLORADOR" Classes="panelHeading" Margin="0,0,0,12" />
+          <StackPanel Grid.Row="1" Spacing="10">
+            <Button Content="Importar PNG..." IsEnabled="False" HorizontalAlignment="Stretch" />
+            <TextBlock Text="Todavía no hay recursos. La importación estará disponible en una próxima versión." Classes="muted" />
+          </StackPanel>
+        </Grid>
+      </Border>
+      <GridSplitter Grid.Column="1" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
+      <Border Grid.Column="2" Grid.Row="0" Background="#11151C" Padding="12">
+        <Grid RowDefinitions="Auto,*">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="VISOR" Classes="panelHeading" />
+            <TextBlock Grid.Column="1" Text="Sin imagen" Classes="muted" />
+          </Grid>
+          <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="360">
+            <Border Width="68" Height="68" BorderBrush="#526173" BorderThickness="1" CornerRadius="6">
+              <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
+                <Border Background="#303946" />
+                <Border Grid.Column="1" Background="#222A35" />
+                <Border Grid.Row="1" Background="#222A35" />
+                <Border Grid.Row="1" Grid.Column="1" Background="#303946" />
+              </Grid>
+            </Border>
+            <TextBlock Text="No hay ningún sprite seleccionado" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Text="El visor mostrará la hoja y sus fotogramas cuando esté disponible la importación." Classes="muted" TextAlignment="Center" />
+          </StackPanel>
+        </Grid>
+      </Border>
+      <GridSplitter Grid.Column="3" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
+      <Border Grid.Column="4" Grid.RowSpan="5" Background="#202630" Padding="12">
+        <StackPanel Spacing="12">
+          <TextBlock Text="PROPIEDADES" Classes="panelHeading" />
+          <TextBlock Text="Imagen" FontWeight="SemiBold" />
+          <TextBlock Text="Resolución: —" Classes="muted" />
+          <TextBlock Text="Celda: —" Classes="muted" />
+          <Separator />
+          <TextBlock Text="Fotograma" FontWeight="SemiBold" />
+          <TextBlock Text="Dirección: —" Classes="muted" />
+          <TextBlock Text="Duración: —" Classes="muted" />
+          <TextBlock Text="Anclaje: —" Classes="muted" />
+          <TextBlock Text="Desplazamiento: —" Classes="muted" />
+        </StackPanel>
+      </Border>
+      <GridSplitter Grid.Column="2" Grid.Row="1" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
+      <Border Grid.Column="2" Grid.Row="2" Background="#202630" Padding="12">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <TextBlock Text="LÍNEA DE TIEMPO" Classes="panelHeading" />
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,8">
+            <Button Content="Anterior" IsEnabled="False" />
+            <Button Content="Reproducir" IsEnabled="False" />
+            <Button Content="Siguiente" IsEnabled="False" />
+            <CheckBox Content="Bucle" IsEnabled="False" />
+          </StackPanel>
+          <Border Grid.Row="2" Background="#171B22" Padding="10" CornerRadius="4">
+            <TextBlock Text="Sin fotogramas" Classes="muted" VerticalAlignment="Center" HorizontalAlignment="Center" />
+          </Border>
+        </Grid>
+      </Border>
+      <GridSplitter Grid.Column="2" Grid.Row="3" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
+      <Border Grid.Column="2" Grid.Row="4" Background="#202630" Padding="12">
+        <StackPanel Spacing="8">
+          <TextBlock Text="DIAGNÓSTICOS" Classes="panelHeading" />
+          <TextBlock Text="Validación no ejecutada." Classes="muted" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <Border Grid.Row="3" Background="#242A34" Padding="12,7">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Listo · Sin proyecto" Classes="muted" />
+        <TextBlock Grid.Column="1" x:Name="VersionText" Classes="muted" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

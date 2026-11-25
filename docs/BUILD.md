@@ -8,8 +8,13 @@ dotnet build SpriteLab.slnx -c Release --no-restore
 dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore
 ```
 
-Expected: a console message with the SpriteLab and Avalonia versions. No window until 0.0.3. No Python or game assets required.
+Expected: a dark desktop window with resizable explorer, viewer, inspector, timeline and diagnostics panels. File and animation commands are disabled placeholders; Exit and About are enabled. No Python or game assets required.
 
-The solution uses SLNX instead of legacy SLN, as proposed in the repository structure; this is a minor format change to ADR-SL-001. Avalonia 11.3.8 is a provisional pinned baseline pending successful CI, not a claim that it is the latest or verified secure version. SDK patch roll-forward is constrained to the selected feature band. SkiaSharp and xUnit will be introduced when needed. No tests yet; the workflow executes a smoke check, not a unit test suite.
+For CI and non-interactive checks:
+```powershell
+dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore -- --smoke-test
+```
 
-CI: Windows restore, Release build and smoke check. Record the actual result before closing SL0.
+This checks entry point and Avalonia assembly loading, not actual window initialization. Manual Windows check: open window, resize panels, inspect at 100/150% DPI, open/close About, exit. Record observed results before closing SL0.
+
+The solution uses SLNX instead of legacy SLN. Avalonia 11.3.8 is retained from 0.0.2, whose CI was reported green by the owner. SDK patch roll-forward is constrained to the selected feature band. SkiaSharp and xUnit will be introduced when needed. No unit tests yet.
