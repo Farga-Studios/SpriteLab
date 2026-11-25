@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SpriteLab.Core/SpriteLab.Core.csproj" />
+  </ItemGroup>
+</Project>

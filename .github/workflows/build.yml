@@ -1,0 +1,25 @@
+name: Build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: SDK
+        run: dotnet --info
+      - name: Restore
+        run: dotnet restore SpriteLab.slnx
+      - name: Build
+        run: dotnet build SpriteLab.slnx -c Release --no-restore
+      - name: Smoke test
+        run: dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore

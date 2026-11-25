@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SpriteLab.Core/SpriteLab.Core.csproj" />
+    <Project Path="src/SpriteLab.Infrastructure/SpriteLab.Infrastructure.csproj" />
+    <Project Path="src/SpriteLab.App/SpriteLab.App.csproj" />
+  </Folder>
+</Solution>
