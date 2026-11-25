@@ -19,7 +19,7 @@
         <MenuItem Header="Rehacer" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="_Ver">
-        <MenuItem Header="Cuadrícula" IsEnabled="False" />
+        <MenuItem x:Name="GridMenu" Header="Mostrar/ocultar cuadrícula" IsEnabled="False" Click="OnToggleGrid" />
         <MenuItem Header="Anclaje" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="_Animación">
@@ -77,6 +77,7 @@
               <TextBlock x:Name="ZoomText" Text="100 %" VerticalAlignment="Center" />
               <Button Content="+" Click="OnZoomIn" />
               <Button Content="1:1" Click="OnZoomReset" />
+              <Button Content="Cuadrícula" Click="OnToggleGrid" />
             </StackPanel>
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
               <views:SheetPreview x:Name="Preview" HorizontalAlignment="Left" VerticalAlignment="Top" />
@@ -90,12 +91,19 @@
           <TextBlock Text="PROPIEDADES" Classes="panelHeading" />
           <TextBlock Text="Imagen" FontWeight="SemiBold" />
           <TextBlock x:Name="ResolutionText" Text="Resolución: —" Classes="muted" />
-          <TextBlock Text="Celda: —" Classes="muted" />
+          <TextBlock Text="Tamaño de celda (px)" Classes="muted" />
+          <Grid ColumnDefinitions="*,*">
+            <TextBox x:Name="CellWidth" Watermark="Ancho" Text="48" Margin="0,0,4,0" />
+            <TextBox Grid.Column="1" x:Name="CellHeight" Watermark="Alto" Text="48" Margin="4,0,0,0" />
+          </Grid>
+          <Button x:Name="ApplyGridButton" Content="Aplicar cuadrícula" Click="OnApplyGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
+          <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />
           <Separator />
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
-          <TextBlock Text="Dirección: —" Classes="muted" />
-          <TextBlock Text="Duración: —" Classes="muted" />
-          <TextBlock Text="Anclaje: —" Classes="muted" />
+          <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
+          <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
+          <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
+          <TextBlock x:Name="AnchorInfo" Text="Anclaje: —" Classes="muted" />
           <TextBlock Text="Desplazamiento: —" Classes="muted" />
         </StackPanel>
       </Border>
@@ -104,13 +112,13 @@
         <Grid RowDefinitions="Auto,Auto,*">
           <TextBlock Text="LÍNEA DE TIEMPO" Classes="panelHeading" />
           <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,8">
-            <Button Content="Anterior" IsEnabled="False" />
+            <Button x:Name="PreviousButton" Content="Anterior" IsEnabled="False" Click="OnPrevious" />
             <Button Content="Reproducir" IsEnabled="False" />
-            <Button Content="Siguiente" IsEnabled="False" />
+            <Button x:Name="NextButton" Content="Siguiente" IsEnabled="False" Click="OnNext" />
             <CheckBox Content="Bucle" IsEnabled="False" />
           </StackPanel>
           <Border Grid.Row="2" Background="#171B22" Padding="10" CornerRadius="4">
-            <TextBlock Text="Sin fotogramas" Classes="muted" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" VerticalAlignment="Center" HorizontalAlignment="Center" />
           </Border>
         </Grid>
       </Border>

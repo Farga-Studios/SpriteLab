@@ -1,10 +1,16 @@
 # Changelog
 
+## 0.0.7 — 2026-11-25
+- Add configurable rectangular grid, optional grid overlay and mouse cell selection.
+- Show cell coordinates and navigate previous/next cells; no animation playback or metadata editing yet.
+- Add compact Core grid hit testing and seven regression cases.
+- Require exact grid divisibility; preserve prior grid on invalid input. CI and manual verification pending.
+
 ## 0.0.6 — 2026-11-25
 - Add read-only PNG import with bounded input and header validation.
 - Add temporary single-sheet preview, checkerboard and integer zoom 100–800%.
 - Show filename, resolution and import errors; preserve previous preview on failed decode.
-- No project persistence or grid selection yet. Build and manual verification pending.
+- No project persistence or grid selection yet. Owner reported green CI; manual verification pending.
 
 ## 0.0.5 — 2026-11-25
 - Add xUnit regression coverage for Core geometry, grid extraction, anchors, references and immutable session snapshots.

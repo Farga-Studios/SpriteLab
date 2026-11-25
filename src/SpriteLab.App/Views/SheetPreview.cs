@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Input;
+using SpriteLab.Core;
 
 namespace SpriteLab.App.Views;
 
@@ -9,12 +11,52 @@ public sealed class SheetPreview : Control
 {
     private Bitmap? _bitmap;
     private int _zoom = 1;
+    private CellGrid? _grid;
+    private int? _selected;
+    private bool _showGrid = true;
+    private static readonly Pen GridPen = new(new SolidColorBrush(Color.Parse("#90A0B0")), 1);
+    private static readonly Pen SelectionPen = new(new SolidColorBrush(Color.Parse("#FFC65C")), 2);
+    public event Action<int>? CellSelected;
+
+    public void SetGrid(CellGrid? grid)
+    {
+        _grid = grid;
+        _selected = null;
+        InvalidateVisual();
+    }
+
+    public void SetSelection(int? index)
+    {
+        _selected = index;
+        InvalidateVisual();
+    }
+
+    public void SetGridVisible(bool visible)
+    {
+        _showGrid = visible;
+        InvalidateVisual();
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (_grid is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        var point = e.GetPosition(this);
+        var index = _grid.HitTest(new PixelPoint((int)Math.Floor(point.X / _zoom),
+            (int)Math.Floor(point.Y / _zoom)));
+        if (index is int selected)
+        {
+            CellSelected?.Invoke(selected);
+            e.Handled = true;
+        }
+    }
     private static readonly IBrush LightTile = new SolidColorBrush(Color.Parse("#46505D"));
     private static readonly IBrush DarkTile = new SolidColorBrush(Color.Parse("#343C48"));
 
     public void SetImage(Bitmap? bitmap)
     {
         _bitmap = bitmap;
+        SetGrid(null);
         SetZoom(1);
     }
 
@@ -46,5 +88,26 @@ public sealed class SheetPreview : Control
         context.DrawRectangle(checker, null, target);
         using (context.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None }))
             context.DrawImage(_bitmap, new Rect(_bitmap.Size), target);
+
+        if (_grid is null) return;
+        if (_showGrid)
+        {
+            // Do not draw sub-four-DIP grid lines at low zoom.
+            var dx = (double)_grid.Cell.Width * _zoom;
+            var dy = (double)_grid.Cell.Height * _zoom;
+            if (dx >= 4)
+                for (int col = 1; col < _grid.Columns; col++)
+                    context.DrawLine(GridPen, new Point(col * dx, 0), new Point(col * dx, Height));
+            if (dy >= 4)
+                for (int row = 1; row < _grid.Rows; row++)
+                    context.DrawLine(GridPen, new Point(0, row * dy), new Point(Width, row * dy));
+        }
+        if (_selected is int selected)
+        {
+            var cell = _grid.GetCell(selected);
+            var bounds = new Rect(cell.X * _zoom, cell.Y * _zoom,
+                cell.Width * _zoom, cell.Height * _zoom);
+            context.DrawRectangle(null, SelectionPen, bounds);
+        }
     }
 }
