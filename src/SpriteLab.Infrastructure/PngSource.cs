@@ -24,6 +24,14 @@ public static class PngSource
         return bytes;
     }
 
+    public static SpriteLab.Core.PixelSize GetSize(byte[] bytes)
+    {
+        ValidateHeader(bytes);
+        return new SpriteLab.Core.PixelSize(
+            (int)BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16, 4)),
+            (int)BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20, 4)));
+    }
+
     private static void ValidateHeader(byte[] bytes)
     {
         ReadOnlySpan<byte> signature = [137, 80, 78, 71, 13, 10, 26, 10];

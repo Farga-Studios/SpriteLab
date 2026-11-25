@@ -3,7 +3,7 @@
 Independent desktop tool for previewing, validating and editing 2D spritesheets and animations.
 
 ## Status
-Early development — SL1 (0.0.7). PNG preview, integer zoom, configurable rectangular grid and cell selection. Persistent projects and editing are pending. Build and manual UI verification pending for this version.
+Early development — SL1 (0.0.8). PNG viewer and initial local project storage backend. Project UI integration, recovery and editing are pending. Build and manual UI verification pending for this version.
 
 [Build instructions](docs/BUILD.md) · [Core model](docs/MODEL.md) · [Architecture](docs/adr) · [Roadmap](docs/ROADMAP.md) · [Changelog](CHANGELOG.md)
 

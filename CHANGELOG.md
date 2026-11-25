@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.8 — 2026-11-25
+- Add initial local project storage backend: schema-versioned JSON, multiple source entries, immutable PNG copies and SHA-256 checks.
+- Add cooperative writer lock, revision conflict detection, temporary manifest and backup replacement.
+- Project UI, full domain serialization and recovery workflow remain pending. CI verification pending.
+
 ## 0.0.7 — 2026-11-25
 - Fix CS0104 in sheet hit testing by explicitly using the Core PixelPoint type; replace a single-item count assertion with Assert.Single (xUnit2013). Rebuild pending.
 - Add configurable rectangular grid, optional grid overlay and mouse cell selection.
