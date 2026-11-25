@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.0.7 — 2026-11-25
+- Fix CS0104 in sheet hit testing by explicitly using the Core PixelPoint type; replace a single-item count assertion with Assert.Single (xUnit2013). Rebuild pending.
 - Add configurable rectangular grid, optional grid overlay and mouse cell selection.
 - Show cell coordinates and navigate previous/next cells; no animation playback or metadata editing yet.
 - Add compact Core grid hit testing and seven regression cases.

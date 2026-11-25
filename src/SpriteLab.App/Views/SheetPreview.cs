@@ -42,7 +42,7 @@ public sealed class SheetPreview : Control
         base.OnPointerPressed(e);
         if (_grid is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
         var point = e.GetPosition(this);
-        var index = _grid.HitTest(new PixelPoint((int)Math.Floor(point.X / _zoom),
+        var index = _grid.HitTest(new SpriteLab.Core.PixelPoint((int)Math.Floor(point.X / _zoom),
             (int)Math.Floor(point.Y / _zoom)));
         if (index is int selected)
         {

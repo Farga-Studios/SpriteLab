@@ -60,7 +60,7 @@ public sealed class ModelTests
         var project = new SpriteProject(Guid.NewGuid(), "Demo", new[] { Asset(a, b) },
             new[] { clip }, new[] { new FrameMarker(Guid.NewGuid(), b.Id, "event") });
         Assert.Equal(3, project.Clips[0].Tracks[0].FrameIds.Count);
-        Assert.Equal(1, project.Clips[0].Tracks[1].FrameIds.Count);
+        Assert.Single(project.Clips[0].Tracks[1].FrameIds);
         Assert.Equal(250, project.Assets[0].Frames[1].DurationMs);
         Assert.Equal(b.Id, project.Markers[0].FrameId);
     }
