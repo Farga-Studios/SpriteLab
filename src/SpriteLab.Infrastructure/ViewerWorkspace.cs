@@ -44,7 +44,7 @@ public static class ViewerWorkspace
                 sheet.CellWidth, sheet.CellHeight);
             entries.Add(entry);
         }
-        var manifest = new ProjectManifest(2, project.Id, project.Name, entries.ToArray(), project.Clips?.ToArray() ?? []);
+        var manifest = new ProjectManifest(3, project.Id, project.Name, entries.ToArray(), project.Clips?.ToArray() ?? []);
         return await ProjectStore.SaveWorkspaceAsync(folder, manifest,
             project.Sheets.ToDictionary(s => s.Id, s => s.Png), expectedHash, token);
     }

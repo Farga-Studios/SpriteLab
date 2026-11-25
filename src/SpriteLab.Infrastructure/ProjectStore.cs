@@ -47,7 +47,7 @@ public static class ProjectStore
 
     private static void Validate(ProjectManifest manifest)
     {
-        if (manifest.SchemaVersion is not (1 or 2) || manifest.ProjectId == Guid.Empty ||
+        if (manifest.SchemaVersion is not (1 or 2 or 3) || manifest.ProjectId == Guid.Empty ||
             string.IsNullOrWhiteSpace(manifest.Name) || manifest.Assets is null ||
             manifest.Assets.Length > 256)
             throw new InvalidDataException("Unsupported or invalid project manifest.");
@@ -67,6 +67,8 @@ public static class ProjectStore
         }
         if (manifest.SchemaVersion == 1 && manifest.Clips is { Length: > 0 })
             throw new InvalidDataException("Clips require schema 2.");
+        if (manifest.SchemaVersion < 3 && (manifest.Clips ?? []).Any(c => c?.Tracks is not null))
+            throw new InvalidDataException("Direction tracks require schema 3.");
         ViewerClip.ValidateAll(manifest.Clips ?? [], manifest.Assets);
     }
 

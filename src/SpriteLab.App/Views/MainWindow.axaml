@@ -47,7 +47,7 @@
       <Border Grid.Column="0" Grid.RowSpan="5" Background="#202630" Padding="12">
         <Grid RowDefinitions="Auto,*">
           <TextBlock Text="EXPLORADOR" Classes="panelHeading" Margin="0,0,0,12" />
-          <StackPanel Grid.Row="1" Spacing="10">
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel Spacing="10">
             <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
             <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
             <ListBox x:Name="ResourceList" MaxHeight="220" SelectionChanged="OnResourceSelected" />
@@ -59,7 +59,11 @@
             <ListBox x:Name="ClipList" MaxHeight="180" SelectionChanged="OnClipSelected" />
             <Button Content="Crear clip de la fila..." Click="OnCreateClip" />
             <Button Content="Quitar clip" Click="OnRemoveClip" />
-          </StackPanel>
+            <TextBlock Text="DIRECCIONES" Classes="panelHeading" />
+            <ComboBox x:Name="TrackList" HorizontalAlignment="Stretch" SelectionChanged="OnTrackSelected" />
+            <Button Content="Asignar fila a dirección..." Click="OnAssignTrack" />
+            <Button Content="Quitar dirección" Click="OnRemoveTrack" />
+          </StackPanel></ScrollViewer>
         </Grid>
       </Border>
       <GridSplitter Grid.Column="1" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />

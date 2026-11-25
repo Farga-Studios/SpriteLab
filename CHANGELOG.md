@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 — 2026-11-25
+- Add multiple named direction tracks to sheet-bound clips, assign or replace a track from the selected row, select and remove tracks.
+- Read schemas 1 and 2; write schema 3. Existing clips without tracks retain their sequence as the default none track until explicitly assigned.
+- Preserve clip IDs and PNGs; keep transitional cell-index representation. Playback and full Core frame-ID mapping remain pending. CI and manual validation pending.
+
 ## 0.1.2 — 2026-11-25
 - Create named clips from selected grid rows, select and remove clips.
 - Save clips in schema 2; read existing schema 1 projects. Older versions cannot open schema 2 files.

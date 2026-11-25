@@ -4,9 +4,17 @@ namespace SpriteLab.Infrastructure;
 
 // Transitional persisted clip: stable sheet ID plus ordered indices into its fixed grid.
 // Grid changes and removal are blocked while referenced. Full Frame-ID mapping follows in SL2.
-public sealed record ViewerClip(Guid Id, string Name, Guid SheetId, int[] Cells)
+public sealed record ViewerTrack(string Direction, int[] Cells)
+{
+    public override string ToString() => Direction;
+}
+
+public sealed record ViewerClip(Guid Id, string Name, Guid SheetId, int[] Cells, ViewerTrack[]? Tracks = null)
 {
     public override string ToString() => Name;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<ViewerTrack> EffectiveTracks => Tracks ?? [new ViewerTrack("none", Cells)];
 
     public static void ValidateAll(IReadOnlyList<ViewerClip> clips, IReadOnlyList<SheetEntry> sheets)
     {
@@ -24,6 +32,18 @@ public sealed record ViewerClip(Guid Id, string Name, Guid SheetId, int[] Cells)
             var grid = new CellGrid(new PixelSize(sheet.Width, sheet.Height), new PixelSize(w, h));
             if (clip.Cells.Any(i => i < 0 || i >= grid.Count))
                 throw new InvalidDataException("Clip references a missing cell.");
+            if (clip.Tracks is null) continue;
+            if (clip.Tracks.Length is < 1 or > 64 || clip.Tracks[0] is null ||
+                clip.Tracks[0].Cells is null || !clip.Cells.SequenceEqual(clip.Tracks[0].Cells))
+                throw new InvalidDataException("Invalid primary track.");
+            var directions = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var track in clip.Tracks)
+            {
+                if (track is null || string.IsNullOrWhiteSpace(track.Direction) || track.Direction.Length > 80 ||
+                    !directions.Add(track.Direction) || track.Cells is null || track.Cells.Length is < 1 or > 4096 ||
+                    track.Cells.Any(i => i < 0 || i >= grid.Count))
+                    throw new InvalidDataException("Invalid direction track.");
+            }
         }
     }
 }

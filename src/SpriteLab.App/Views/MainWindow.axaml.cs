@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly List<ViewerSheet> _sheets = new();
     private readonly List<ViewerClip> _clips = new();
     private bool _refreshingClips;
+    private bool _refreshingTracks;
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
     private string? _folder;
@@ -88,6 +89,7 @@ public partial class MainWindow : Window
             ZoomText.Text = "100 %";
             EmptyViewer.IsVisible = false;
             ImageViewer.IsVisible = true;
+            RefreshClips();
             _sheets.Add(new ViewerSheet(Guid.NewGuid(), files[0].Name, imported!, null, null));
             _active = _sheets.Count - 1;
             RefreshResources();
@@ -235,6 +237,7 @@ public partial class MainWindow : Window
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
             SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
+        TrackList.IsEnabled = !busy;
         RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
 
@@ -375,7 +378,7 @@ public partial class MainWindow : Window
     private void RefreshClips()
     {
         _refreshingClips = true;
-        try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = -1; }
+        try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = -1; RefreshTracks(null); }
         finally { _refreshingClips = false; }
     }
 
@@ -443,11 +446,106 @@ public partial class MainWindow : Window
                 candidate = null;
                 RefreshResources();
             }
-            SelectCell(clip.Cells[0]);
-            StatusText.Text = $"{clip.Name} · {clip.Cells.Length} fotogramas";
+            RefreshTracks(clip);
+            var track = clip.EffectiveTracks[0];
+            SelectCell(track.Cells[0]);
+            StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = ex.Message; }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private void RefreshTracks(ViewerClip? clip, int index = 0)
+    {
+        _refreshingTracks = true;
+        try
+        {
+            TrackList.ItemsSource = clip?.EffectiveTracks.ToArray() ?? [];
+            TrackList.SelectedIndex = clip is null ? -1 : index;
+        }
+        finally { _refreshingTracks = false; }
+    }
+
+    private void ReplaceClip(ViewerClip clip, ViewerTrack[] tracks, int index)
+    {
+        var position = _clips.FindIndex(c => c.Id == clip.Id);
+        if (position < 0) return;
+        var updated = clip with { Cells = tracks[0].Cells, Tracks = tracks };
+        _clips[position] = updated;
+        _refreshingClips = true;
+        try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = position; }
+        finally { _refreshingClips = false; }
+        RefreshTracks(updated, index);
+        SelectCell(tracks[index].Cells[0]);
+        MarkDirty();
+    }
+
+    private async void OnAssignTrack(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || ClipList.SelectedItem is not ViewerClip clip ||
+            _active < 0 || _sheets[_active].Id != clip.SheetId ||
+            _grid is null || _selected is not int selected)
+        {
+            StatusText.Text = "Selecciona un clip y una celda de su hoja.";
+            return;
+        }
+        if (_grid.Columns > 4096) { StatusText.Text = "Demasiados fotogramas."; return; }
+        var columns = _grid.Columns;
+        var row = selected / columns;
+        SetBusy(true);
+        try
+        {
+            var input = new TextBox { Text = "front", MaxLength = 80 };
+            var dialog = new Window { Title = "Asignar dirección", Width = 460, Height = 230,
+                CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var ok = new Button { Content = "Asignar" };
+            var cancel = new Button { Content = "Cancelar" };
+            ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
+            cancel.Click += (_, _) => dialog.Close(null);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+                Children = { new TextBlock { Text = $"Fila {row + 1} · {columns} fotogramas" },
+                    new TextBlock { Text = "Etiqueta libre (front, left, right, back...). Una etiqueta existente sustituye su pista.", TextWrapping = TextWrapping.Wrap },
+                    input, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                        Children = { cancel, ok } } } };
+            var name = await dialog.ShowDialog<string?>(this);
+            if (string.IsNullOrWhiteSpace(name)) return;
+            var tracks = clip.EffectiveTracks.ToList();
+            var track = new ViewerTrack(name, Enumerable.Range(row * columns, columns).ToArray());
+            var index = tracks.FindIndex(t => t.Direction == name);
+            if (index < 0 && clip.Tracks is null) { tracks[0] = track; index = 0; }
+            else if (index < 0)
+            {
+                if (tracks.Count >= 64) { StatusText.Text = "Límite de direcciones alcanzado."; return; }
+                index = tracks.Count;
+                tracks.Add(track);
+            }
+            else tracks[index] = track;
+            ReplaceClip(clip, tracks.ToArray(), index);
+            StatusText.Text = $"{clip.Name} · Dirección {name} asignada";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private void OnRemoveTrack(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || ClipList.SelectedItem is not ViewerClip clip ||
+            _active < 0 || _sheets[_active].Id != clip.SheetId) return;
+        var tracks = clip.EffectiveTracks.ToList();
+        var index = TrackList.SelectedIndex;
+        if (index < 0 || index >= tracks.Count) return;
+        if (tracks.Count == 1) { StatusText.Text = "El clip debe conservar una dirección."; return; }
+        tracks.RemoveAt(index);
+        ReplaceClip(clip, tracks.ToArray(), Math.Min(index, tracks.Count - 1));
+        StatusText.Text = "Dirección quitada · PNG intacto";
+    }
+
+    private void OnTrackSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshingTracks || _refreshingClips || _importing ||
+            ClipList.SelectedItem is not ViewerClip clip || TrackList.SelectedItem is not ViewerTrack track ||
+            _active < 0 || _sheets[_active].Id != clip.SheetId) return;
+        SelectCell(track.Cells[0]);
+        StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
     }
 
     private static Bitmap Decode(byte[] bytes)
@@ -469,6 +567,7 @@ public partial class MainWindow : Window
             if (_lifetime.IsCancellationRequested) return;
             ShowSheet(index, candidate);
             candidate = null;
+            RefreshClips();
             StatusText.Text = "Recurso seleccionado";
         }
         catch (Exception ex)
