@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4 — 2026-11-26
+- Add fixed 8 FPS playback of the selected direction, pause, stop, loop and occurrence navigation.
+- Synchronize the frame inspector and sheet highlight with playback; pause before workspace operations.
+- Add Core cursor regression tests. No project schema change; variable timing and dedicated clip timeline pending.
+- CI and manual verification pending.
+
 ## 0.1.3 — 2026-11-25
 - Add multiple named direction tracks to sheet-bound clips, assign or replace a track from the selected row, select and remove tracks.
 - Read schemas 1 and 2; write schema 3. Existing clips without tracks retain their sequence as the default none track until explicitly assigned.

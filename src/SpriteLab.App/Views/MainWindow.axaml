@@ -24,7 +24,7 @@
       </MenuItem>
       <MenuItem Header="_Animación">
         <MenuItem Header="Crear clip de la fila..." Click="OnCreateClip" />
-        <MenuItem Header="Reproducir" IsEnabled="False" />
+        <MenuItem x:Name="PlayMenu" Header="Reproducir" IsEnabled="False" Click="OnPlay" />
       </MenuItem>
       <MenuItem Header="_Herramientas">
         <MenuItem Header="Validar" IsEnabled="False" />
@@ -129,9 +129,10 @@
           <TextBlock Text="LÍNEA DE TIEMPO" Classes="panelHeading" />
           <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,8">
             <Button x:Name="PreviousButton" Content="Anterior" IsEnabled="False" Click="OnPrevious" />
-            <Button Content="Reproducir" IsEnabled="False" />
+            <Button x:Name="PlayButton" Content="Reproducir" IsEnabled="False" Click="OnPlay" />
+            <Button x:Name="StopButton" Content="Parar" IsEnabled="False" Click="OnStop" />
             <Button x:Name="NextButton" Content="Siguiente" IsEnabled="False" Click="OnNext" />
-            <CheckBox Content="Bucle" IsEnabled="False" />
+            <CheckBox x:Name="LoopCheck" Content="Bucle" IsEnabled="False" IsChecked="True" />
           </StackPanel>
           <Border Grid.Row="2" Background="#171B22" Padding="10" CornerRadius="4">
             <Grid RowDefinitions="Auto,*">

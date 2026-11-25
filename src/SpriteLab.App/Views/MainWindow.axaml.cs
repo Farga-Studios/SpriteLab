@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -17,6 +18,8 @@ public partial class MainWindow : Window
     private readonly List<ViewerClip> _clips = new();
     private bool _refreshingClips;
     private bool _refreshingTracks;
+    private PlaybackCursor? _playback;
+    private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(125) };
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
     private string? _folder;
@@ -35,12 +38,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Preview.CellSelected += SelectCell;
-        CellStrip.CellSelected += SelectCell;
+        Preview.CellSelected += OnManualCell;
+        CellStrip.CellSelected += OnManualCell;
+        _playTimer.Tick += (_, _) => PlaybackTick();
+        UpdatePlaybackControls();
         Preview.PointerWheelChanged += OnPreviewWheel;
         VersionText.Text = $"SpriteLab {GetVersion()} · SL2";
         Closing += OnClosing;
-        Closed += (_, _) => { _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
+        Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
 
     private static string GetVersion() =>
@@ -119,6 +124,7 @@ public partial class MainWindow : Window
 
     private void ResetGrid()
     {
+        ClearPlayback();
         _grid = null;
         _selected = null;
         Preview.SetGrid(null);
@@ -135,6 +141,8 @@ public partial class MainWindow : Window
 
     private void OnApplyGrid(object? sender, RoutedEventArgs e)
     {
+        if (_importing) return;
+        PausePlayback();
         if (_bitmap is null || _importing) return;
         if (!int.TryParse(CellWidth.Text, out var width) ||
             !int.TryParse(CellHeight.Text, out var height) || width <= 0 || height <= 0)
@@ -161,6 +169,7 @@ public partial class MainWindow : Window
             }
             Preview.SetGrid(candidate);
             CellStrip.SetSheet(_bitmap, candidate);
+            RefreshClips();
             GridInfo.Text = $"{candidate.Columns} columnas × {candidate.Rows} filas · {candidate.Count} celdas";
             SelectCell(0);
             StatusText.Text = "Cuadrícula aplicada · Sin modificar el PNG";
@@ -190,12 +199,14 @@ public partial class MainWindow : Window
 
     private void OnPrevious(object? sender, RoutedEventArgs e)
     {
-        if (_selected is int index) SelectCell(index - 1);
+        if (_playback is not null) { PausePlayback(); _playback.Step(-1); ShowPlaybackCell(); }
+        else if (_selected is int index) SelectCell(index - 1);
     }
 
     private void OnNext(object? sender, RoutedEventArgs e)
     {
-        if (_selected is int index) SelectCell(index + 1);
+        if (_playback is not null) { PausePlayback(); _playback.Step(1); ShowPlaybackCell(); }
+        else if (_selected is int index) SelectCell(index + 1);
     }
 
     private void OnToggleGrid(object? sender, RoutedEventArgs e)
@@ -233,11 +244,13 @@ public partial class MainWindow : Window
 
     private void SetBusy(bool busy)
     {
+        if (busy) PausePlayback();
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
             SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
         TrackList.IsEnabled = !busy;
+        UpdatePlaybackControls();
         RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
 
@@ -448,7 +461,7 @@ public partial class MainWindow : Window
             }
             RefreshTracks(clip);
             var track = clip.EffectiveTracks[0];
-            SelectCell(track.Cells[0]);
+            SetPlayback(track);
             StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = ex.Message; }
@@ -457,6 +470,7 @@ public partial class MainWindow : Window
 
     private void RefreshTracks(ViewerClip? clip, int index = 0)
     {
+        ClearPlayback();
         _refreshingTracks = true;
         try
         {
@@ -476,7 +490,7 @@ public partial class MainWindow : Window
         try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = position; }
         finally { _refreshingClips = false; }
         RefreshTracks(updated, index);
-        SelectCell(tracks[index].Cells[0]);
+        SetPlayback(tracks[index]);
         MarkDirty();
     }
 
@@ -544,8 +558,82 @@ public partial class MainWindow : Window
         if (_refreshingTracks || _refreshingClips || _importing ||
             ClipList.SelectedItem is not ViewerClip clip || TrackList.SelectedItem is not ViewerTrack track ||
             _active < 0 || _sheets[_active].Id != clip.SheetId) return;
-        SelectCell(track.Cells[0]);
+        SetPlayback(track);
         StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
+    }
+
+    private void OnManualCell(int index)
+    {
+        if (_importing) return;
+        ClearPlayback();
+        SelectCell(index);
+    }
+
+    private void SetPlayback(ViewerTrack track)
+    {
+        ClearPlayback();
+        _playback = new PlaybackCursor(track.Cells);
+        ShowPlaybackCell();
+    }
+
+    private void ClearPlayback()
+    {
+        _playTimer.Stop();
+        _playback = null;
+        UpdatePlaybackControls();
+    }
+
+    private void PausePlayback()
+    {
+        _playTimer.Stop();
+        _playback?.Pause();
+        UpdatePlaybackControls();
+    }
+
+    private void UpdatePlaybackControls()
+    {
+        var available = !_importing && _playback is not null;
+        PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
+        PlayButton.Content = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
+        PlayMenu.Header = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
+        if (_playback is { } cursor)
+        {
+            PreviousButton.IsEnabled = available && cursor.Position > 0;
+            NextButton.IsEnabled = available && cursor.Position < cursor.Count - 1;
+        }
+    }
+
+    private void ShowPlaybackCell()
+    {
+        if (_playback is not { } cursor) return;
+        SelectCell(cursor.Cell);
+        TimelineInfo.Text = $"Fotograma {cursor.Position + 1} / {cursor.Count} · Celda {cursor.Cell + 1}";
+        UpdatePlaybackControls();
+    }
+
+    private void OnPlay(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _playback is not { } cursor) return;
+        if (cursor.IsPlaying) { PausePlayback(); return; }
+        if (cursor.Position == cursor.Count - 1) cursor.Stop();
+        cursor.Play();
+        ShowPlaybackCell();
+        _playTimer.Start();
+    }
+
+    private void OnStop(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _playback is null) return;
+        _playTimer.Stop();
+        _playback.Stop();
+        ShowPlaybackCell();
+    }
+
+    private void PlaybackTick()
+    {
+        if (_importing || _playback is not { } cursor) { PausePlayback(); return; }
+        if (cursor.Tick(LoopCheck.IsChecked == true)) ShowPlaybackCell();
+        else PausePlayback();
     }
 
     private static Bitmap Decode(byte[] bytes)
