@@ -14,6 +14,8 @@ public partial class MainWindow : Window
 {
     private Bitmap? _bitmap;
     private readonly List<ViewerSheet> _sheets = new();
+    private readonly List<ViewerClip> _clips = new();
+    private bool _refreshingClips;
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
     private string? _folder;
@@ -35,7 +37,7 @@ public partial class MainWindow : Window
         Preview.CellSelected += SelectCell;
         CellStrip.CellSelected += SelectCell;
         Preview.PointerWheelChanged += OnPreviewWheel;
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL1";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL2";
         Closing += OnClosing;
         Closed += (_, _) => { _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -140,6 +142,12 @@ public partial class MainWindow : Window
         }
         try
         {
+            if (_active >= 0 && _clips.Any(c => c.SheetId == _sheets[_active].Id) &&
+                (_sheets[_active].CellWidth != width || _sheets[_active].CellHeight != height))
+            {
+                StatusText.Text = "Quita los clips asociados antes de cambiar la cuadrícula.";
+                return;
+            }
             var candidate = new CellGrid(
                 new PixelSize(_bitmap.PixelSize.Width, _bitmap.PixelSize.Height),
                 new PixelSize(width, height));
@@ -225,7 +233,7 @@ public partial class MainWindow : Window
     {
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
-            SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = !busy;
+            SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
         RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
@@ -311,6 +319,11 @@ public partial class MainWindow : Window
     private async void OnRemoveResource(object? sender, RoutedEventArgs e)
     {
         if (_importing || _active < 0) return;
+        if (_clips.Any(c => c.SheetId == _sheets[_active].Id))
+        {
+            StatusText.Text = "Quita primero los clips asociados al recurso.";
+            return;
+        }
         SetBusy(true);
         Bitmap? candidate = null;
         try
@@ -356,6 +369,84 @@ public partial class MainWindow : Window
             StatusText.Text = "Recurso quitado · Archivos fuente intactos";
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo quitar: {ex.Message}"; }
+        finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private void RefreshClips()
+    {
+        _refreshingClips = true;
+        try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = -1; }
+        finally { _refreshingClips = false; }
+    }
+
+    private async void OnCreateClip(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0 || _grid is null || _selected is not int selected)
+        {
+            StatusText.Text = "Selecciona una celda de una cuadrícula.";
+            return;
+        }
+        if (_clips.Count >= 256 || _grid.Columns > 4096)
+        {
+            StatusText.Text = "Límite de clips o fotogramas alcanzado.";
+            return;
+        }
+        SetBusy(true);
+        try
+        {
+            var row = selected / _grid.Columns;
+            var input = new TextBox { Text = $"Clip {_clips.Count + 1}", MaxLength = 200 };
+            var dialog = new Window { Title = "Crear clip", Width = 440, Height = 190,
+                CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var ok = new Button { Content = "Crear" };
+            var cancel = new Button { Content = "Cancelar" };
+            ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
+            cancel.Click += (_, _) => dialog.Close(null);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+                Children = { new TextBlock { Text = $"Fila {row + 1}: {_grid.Columns} fotogramas" }, input,
+                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                        Children = { cancel, ok } } } };
+            var name = await dialog.ShowDialog<string?>(this);
+            if (string.IsNullOrWhiteSpace(name)) return;
+            _clips.Add(new ViewerClip(Guid.NewGuid(), name, _sheets[_active].Id,
+                Enumerable.Range(row * _grid.Columns, _grid.Columns).ToArray()));
+            RefreshClips();
+            MarkDirty();
+            StatusText.Text = "Clip creado · Guarda el proyecto para conservarlo";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private void OnRemoveClip(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || ClipList.SelectedItem is not ViewerClip clip) return;
+        _clips.Remove(clip);
+        RefreshClips();
+        MarkDirty();
+        StatusText.Text = "Clip quitado · PNG intacto";
+    }
+
+    private async void OnClipSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshingClips || _importing || ClipList.SelectedItem is not ViewerClip clip) return;
+        var index = _sheets.FindIndex(s => s.Id == clip.SheetId);
+        if (index < 0) return;
+        SetBusy(true);
+        Bitmap? candidate = null;
+        try
+        {
+            if (index != _active)
+            {
+                candidate = await Task.Run(() => Decode(_sheets[index].Png), _lifetime.Token);
+                if (_lifetime.IsCancellationRequested) return;
+                ShowSheet(index, candidate);
+                candidate = null;
+                RefreshResources();
+            }
+            SelectCell(clip.Cells[0]);
+            StatusText.Text = $"{clip.Name} · {clip.Cells.Length} fotogramas";
+        }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = ex.Message; }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
@@ -414,7 +505,7 @@ public partial class MainWindow : Window
             var folder = _folder ?? await PickFolder("Selecciona una carpeta para guardar el proyecto");
             if (folder is null || _lifetime.IsCancellationRequested) return false;
             var name = _folder is null ? new DirectoryInfo(folder).Name : _projectName;
-            var project = new ViewerProject(_projectId, name, _sheets.ToArray());
+            var project = new ViewerProject(_projectId, name, _sheets.ToArray(), _clips.ToArray());
             var hash = await Task.Run(() => ViewerWorkspace.SaveAsync(folder, project, _manifestHash, _lifetime.Token));
             if (_lifetime.IsCancellationRequested) return false;
             _folder = folder;
@@ -458,6 +549,9 @@ public partial class MainWindow : Window
             if (_lifetime.IsCancellationRequested) return;
             _sheets.Clear();
             _sheets.AddRange(loaded.Project.Sheets);
+            _clips.Clear();
+            _clips.AddRange(loaded.Project.Clips ?? []);
+            RefreshClips();
             _projectId = loaded.Project.Id;
             _projectName = loaded.Project.Name;
             _folder = folder;

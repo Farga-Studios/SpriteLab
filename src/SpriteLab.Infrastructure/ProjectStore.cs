@@ -8,7 +8,7 @@ namespace SpriteLab.Infrastructure;
 public sealed record SheetEntry(Guid Id, string Name, string Sha256,
     int Width, int Height, int? CellWidth, int? CellHeight);
 
-public sealed record ProjectManifest(int SchemaVersion, Guid ProjectId, string Name, SheetEntry[] Assets);
+public sealed record ProjectManifest(int SchemaVersion, Guid ProjectId, string Name, SheetEntry[] Assets, ViewerClip[]? Clips = null);
 
 public sealed record LoadedProject(ProjectManifest Manifest, string Revision);
 
@@ -47,7 +47,7 @@ public static class ProjectStore
 
     private static void Validate(ProjectManifest manifest)
     {
-        if (manifest.SchemaVersion != 1 || manifest.ProjectId == Guid.Empty ||
+        if (manifest.SchemaVersion is not (1 or 2) || manifest.ProjectId == Guid.Empty ||
             string.IsNullOrWhiteSpace(manifest.Name) || manifest.Assets is null ||
             manifest.Assets.Length > 256)
             throw new InvalidDataException("Unsupported or invalid project manifest.");
@@ -65,6 +65,9 @@ public static class ProjectStore
             if (sheet.CellWidth is int w && sheet.CellHeight is int h)
                 _ = new CellGrid(new PixelSize(sheet.Width, sheet.Height), new PixelSize(w, h));
         }
+        if (manifest.SchemaVersion == 1 && manifest.Clips is { Length: > 0 })
+            throw new InvalidDataException("Clips require schema 2.");
+        ViewerClip.ValidateAll(manifest.Clips ?? [], manifest.Assets);
     }
 
     public static async Task<LoadedProject> LoadAsync(string root, CancellationToken ct = default)

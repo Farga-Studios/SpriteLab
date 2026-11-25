@@ -4,7 +4,7 @@ namespace SpriteLab.Infrastructure;
 
 // Temporary viewer state; the persistent format remains owned by ProjectStore.
 public sealed record ViewerSheet(Guid Id, string Name, byte[] Png, int? CellWidth, int? CellHeight);
-public sealed record ViewerProject(Guid Id, string Name, IReadOnlyList<ViewerSheet> Sheets);
+public sealed record ViewerProject(Guid Id, string Name, IReadOnlyList<ViewerSheet> Sheets, IReadOnlyList<ViewerClip>? Clips = null);
 public sealed record LoadedViewerProject(ViewerProject Project, string ManifestHash);
 
 public static class ViewerWorkspace
@@ -27,7 +27,7 @@ public static class ViewerWorkspace
             sheets.Add(new ViewerSheet(entry.Id, entry.Name, png, entry.CellWidth, entry.CellHeight));
         }
         return new LoadedViewerProject(new ViewerProject(loaded.Manifest.ProjectId,
-            loaded.Manifest.Name, sheets.AsReadOnly()), loaded.Revision);
+            loaded.Manifest.Name, sheets.AsReadOnly(), loaded.Manifest.Clips ?? []), loaded.Revision);
     }
 
     public static async Task<string> SaveAsync(string folder, ViewerProject project,
@@ -44,7 +44,7 @@ public static class ViewerWorkspace
                 sheet.CellWidth, sheet.CellHeight);
             entries.Add(entry);
         }
-        var manifest = new ProjectManifest(1, project.Id, project.Name, entries.ToArray());
+        var manifest = new ProjectManifest(2, project.Id, project.Name, entries.ToArray(), project.Clips?.ToArray() ?? []);
         return await ProjectStore.SaveWorkspaceAsync(folder, manifest,
             project.Sheets.ToDictionary(s => s.Id, s => s.Png), expectedHash, token);
     }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-11-25
+- Create named clips from selected grid rows, select and remove clips.
+- Save clips in schema 2; read existing schema 1 projects. Older versions cannot open schema 2 files.
+- Block resource removal and grid changes while referenced by clips.
+- Transitional sheet/cell references, not full Core Frame-ID tracks; playback and directions pending. CI and GUI verification pending; previous icon build not independently confirmed.
+
 ## 0.1.1 — 2026-11-25
 - Add owner-selected blue pixel S icon with golden selection cell to the Windows executable and Avalonia window.
 - Embed a compact 64px rendition derived from the supplied artwork; full-resolution branding assets are distributed separately.

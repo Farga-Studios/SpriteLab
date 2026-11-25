@@ -23,6 +23,7 @@
         <MenuItem Header="Anclaje" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="_Animación">
+        <MenuItem Header="Crear clip de la fila..." Click="OnCreateClip" />
         <MenuItem Header="Reproducir" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="_Herramientas">
@@ -49,11 +50,15 @@
           <StackPanel Grid.Row="1" Spacing="10">
             <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
             <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
-            <ListBox x:Name="ResourceList" MaxHeight="480" SelectionChanged="OnResourceSelected" />
+            <ListBox x:Name="ResourceList" MaxHeight="220" SelectionChanged="OnResourceSelected" />
             <StackPanel Orientation="Horizontal" Spacing="6">
               <Button x:Name="RenameResourceButton" Content="Renombrar" Click="OnRenameResource" IsEnabled="False" />
               <Button x:Name="RemoveResourceButton" Content="Quitar" Click="OnRemoveResource" IsEnabled="False" />
             </StackPanel>
+            <TextBlock Text="CLIPS" Classes="panelHeading" />
+            <ListBox x:Name="ClipList" MaxHeight="180" SelectionChanged="OnClipSelected" />
+            <Button Content="Crear clip de la fila..." Click="OnCreateClip" />
+            <Button Content="Quitar clip" Click="OnRemoveClip" />
           </StackPanel>
         </Grid>
       </Border>
