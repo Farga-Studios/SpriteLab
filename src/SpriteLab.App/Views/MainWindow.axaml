@@ -50,6 +50,10 @@
             <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
             <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
             <ListBox x:Name="ResourceList" MaxHeight="480" SelectionChanged="OnResourceSelected" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button x:Name="RenameResourceButton" Content="Renombrar" Click="OnRenameResource" IsEnabled="False" />
+              <Button x:Name="RemoveResourceButton" Content="Quitar" Click="OnRemoveResource" IsEnabled="False" />
+            </StackPanel>
           </StackPanel>
         </Grid>
       </Border>
@@ -121,7 +125,10 @@
             <CheckBox Content="Bucle" IsEnabled="False" />
           </StackPanel>
           <Border Grid.Row="2" Background="#171B22" Padding="10" CornerRadius="4">
-            <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            <Grid RowDefinitions="Auto,*">
+              <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" />
+              <views:CellStrip x:Name="CellStrip" Grid.Row="1" MinHeight="54" />
+            </Grid>
           </Border>
         </Grid>
       </Border>

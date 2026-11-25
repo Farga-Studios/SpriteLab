@@ -33,10 +33,11 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Preview.CellSelected += SelectCell;
+        CellStrip.CellSelected += SelectCell;
         Preview.PointerWheelChanged += OnPreviewWheel;
         VersionText.Text = $"SpriteLab {GetVersion()} · SL1";
         Closing += OnClosing;
-        Closed += (_, _) => { _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); _bitmap?.Dispose(); _bitmap = null; };
+        Closed += (_, _) => { _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
 
     private static string GetVersion() =>
@@ -78,7 +79,9 @@ public partial class MainWindow : Window
             Preview.SetImage(candidate);
             _bitmap = candidate;
             candidate = null;
-            previous?.Dispose();
+            FramePreview.SetFrame(null, default);
+        CellStrip.SetSheet(null, null);
+        previous?.Dispose();
             _zoom = 1;
             ZoomText.Text = "100 %";
             EmptyViewer.IsVisible = false;
@@ -122,6 +125,7 @@ public partial class MainWindow : Window
         AnchorInfo.Text = "Anclaje: —";
         TimelineInfo.Text = "Sin fotogramas";
         FramePreview.SetFrame(null, default);
+        CellStrip.SetSheet(null, null);
         PreviousButton.IsEnabled = NextButton.IsEnabled = false;
     }
 
@@ -146,6 +150,7 @@ public partial class MainWindow : Window
                 MarkDirty();
             }
             Preview.SetGrid(candidate);
+            CellStrip.SetSheet(_bitmap, candidate);
             GridInfo.Text = $"{candidate.Columns} columnas × {candidate.Rows} filas · {candidate.Count} celdas";
             SelectCell(0);
             StatusText.Text = "Cuadrícula aplicada · Sin modificar el PNG";
@@ -163,6 +168,7 @@ public partial class MainWindow : Window
         Preview.SetSelection(index);
         var cell = _grid.GetCell(index);
         FramePreview.SetFrame(_bitmap, cell);
+        CellStrip.SetSelection(index);
         FrameInfo.Text = $"Celda {index + 1} · fila {index / _grid.Columns + 1}, columna {index % _grid.Columns + 1}";
         RectInfo.Text = $"Rectángulo: ({cell.X}, {cell.Y}) · {cell.Width} × {cell.Height}";
         DurationInfo.Text = "Duración: sin asignar";
@@ -221,6 +227,7 @@ public partial class MainWindow : Window
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
             SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
+        RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
 
     private void MarkDirty()
@@ -236,6 +243,8 @@ public partial class MainWindow : Window
         {
             ResourceList.ItemsSource = _sheets.Select(s => s.Name).ToArray();
             ResourceList.SelectedIndex = _active;
+            ResourceText.Text = $"{_sheets.Count} recursos";
+            RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !_importing && _active >= 0;
         }
         finally { _refreshing = false; }
     }
@@ -245,6 +254,8 @@ public partial class MainWindow : Window
         var previous = _bitmap;
         Preview.SetImage(bitmap);
         _bitmap = bitmap;
+        FramePreview.SetFrame(null, default);
+        CellStrip.SetSheet(null, null);
         previous?.Dispose();
         _active = index;
         _zoom = 1;
@@ -263,10 +274,89 @@ public partial class MainWindow : Window
             CellHeight.Text = h.ToString();
             _grid = new CellGrid(new PixelSize(bitmap.PixelSize.Width, bitmap.PixelSize.Height), new PixelSize(w, h));
             Preview.SetGrid(_grid);
+            CellStrip.SetSheet(_bitmap, _grid);
             GridInfo.Text = $"{_grid.Columns} columnas × {_grid.Rows} filas · {_grid.Count} celdas";
             SelectCell(0);
         }
         else { CellWidth.Text = CellHeight.Text = "48"; }
+    }
+
+    private async void OnRenameResource(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0) return;
+        SetBusy(true);
+        try
+        {
+            var input = new TextBox { Text = _sheets[_active].Name, MaxLength = 200 };
+            var dialog = new Window { Title = "Renombrar recurso", Width = 420, Height = 170,
+                CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var ok = new Button { Content = "Aceptar" };
+            var cancel = new Button { Content = "Cancelar" };
+            ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
+            cancel.Click += (_, _) => dialog.Close(null);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+                Children = { new TextBlock { Text = "Nombre visible del recurso" }, input,
+                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                        Children = { cancel, ok } } } };
+            var name = await dialog.ShowDialog<string?>(this);
+            if (string.IsNullOrWhiteSpace(name) || name == _sheets[_active].Name) return;
+            _sheets[_active] = _sheets[_active] with { Name = name };
+            RefreshResources();
+            MarkDirty();
+            StatusText.Text = "Recurso renombrado · Archivo fuente intacto";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private async void OnRemoveResource(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0) return;
+        SetBusy(true);
+        Bitmap? candidate = null;
+        try
+        {
+            var dialog = new Window { Title = "Quitar recurso", Width = 440, Height = 180,
+                CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var remove = new Button { Content = "Quitar" };
+            var cancel = new Button { Content = "Cancelar" };
+            remove.Click += (_, _) => dialog.Close(true);
+            cancel.Click += (_, _) => dialog.Close(false);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+                Children = { new TextBlock { Text = "¿Quitar el recurso del proyecto? El PNG original y las copias guardadas no se borrarán.",
+                    TextWrapping = TextWrapping.Wrap },
+                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                        Children = { cancel, remove } } } };
+            if (!await dialog.ShowDialog<bool>(this)) return;
+            var removed = _active;
+            var replacement = removed + 1 < _sheets.Count ? removed + 1 : removed - 1;
+            if (replacement >= 0)
+                candidate = await Task.Run(() => Decode(_sheets[replacement].Png), _lifetime.Token);
+            if (_lifetime.IsCancellationRequested) return;
+            _sheets.RemoveAt(removed);
+            if (candidate is not null)
+            {
+                ShowSheet(Math.Min(removed, _sheets.Count - 1), candidate);
+                candidate = null;
+            }
+            else
+            {
+                Preview.SetImage(null);
+                ResetGrid();
+                _bitmap?.Dispose();
+                _bitmap = null;
+                _active = -1;
+                EmptyViewer.IsVisible = true;
+                ImageViewer.IsVisible = false;
+                GridMenu.IsEnabled = false;
+                ResolutionText.Text = "Resolución: —";
+                ViewerInfo.Text = "Sin imagen";
+            }
+            RefreshResources();
+            MarkDirty();
+            StatusText.Text = "Recurso quitado · Archivos fuente intactos";
+        }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo quitar: {ex.Message}"; }
+        finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
     private static Bitmap Decode(byte[] bytes)
@@ -378,6 +468,8 @@ public partial class MainWindow : Window
             else
             {
                 Preview.SetImage(null);
+                FramePreview.SetFrame(null, default);
+                CellStrip.SetSheet(null, null);
                 _bitmap?.Dispose();
                 _bitmap = null;
                 _active = -1;

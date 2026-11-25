@@ -27,3 +27,27 @@ jobs:
         run: dotnet test SpriteLab.slnx -c Release --no-build --no-restore
       - name: Smoke test (non-interactive)
         run: dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore -- --smoke-test
+      - name: Publish portable Windows x64 candidate
+        if: github.event_name != 'pull_request'
+        run: dotnet publish src/SpriteLab.App/SpriteLab.App.csproj -c Release -r win-x64 --self-contained true -o portable
+      - name: Smoke test published executable
+        if: github.event_name != 'pull_request'
+        run: |
+          & ./portable/SpriteLab.App.exe --smoke-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package candidate and checksum
+        if: github.event_name != 'pull_request'
+        run: |
+          Copy-Item docs/PORTABLE.md portable/LEEME.md
+          Compress-Archive -Path portable/* -DestinationPath SpriteLab-0.1.0-win-x64.zip
+          (Get-FileHash SpriteLab-0.1.0-win-x64.zip -Algorithm SHA256).Hash + '  SpriteLab-0.1.0-win-x64.zip' | Set-Content SpriteLab-0.1.0-win-x64.sha256
+      - name: Upload private build artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpriteLab-0.1.0-win-x64
+          path: |
+            SpriteLab-0.1.0-win-x64.zip
+            SpriteLab-0.1.0-win-x64.sha256
+          retention-days: 14
+          if-no-files-found: error
