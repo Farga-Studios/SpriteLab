@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — 2026-11-25
+- Add owner-selected blue pixel S icon with golden selection cell to the Windows executable and Avalonia window.
+- Embed a compact 64px rendition derived from the supplied artwork; full-resolution branding assets are distributed separately.
+- Update portable artifact naming. Owner reported green CI for 0.1.0; new build verification pending.
+
 ## 0.1.0 — 2026-11-25 (candidate)
 - Add clickable cell thumbnails following the active selection, and rename/remove resource actions without deleting source files.
 - Add self-contained Windows x64 portable build, executable smoke check, ZIP and checksum in private CI.

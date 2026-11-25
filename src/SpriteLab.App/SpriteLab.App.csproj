@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <ApplicationIcon>Assets/SpriteLab.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <AvaloniaResource Include="Assets/SpriteLab.png" />
     <ProjectReference Include="../SpriteLab.Core/SpriteLab.Core.csproj" />
     <ProjectReference Include="../SpriteLab.Infrastructure/SpriteLab.Infrastructure.csproj" />
     <PackageReference Include="Avalonia" Version="11.3.18" />
