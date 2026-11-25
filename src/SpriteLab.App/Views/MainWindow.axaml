@@ -9,8 +9,8 @@
     <Menu Grid.Row="0" Background="#242A34">
       <MenuItem Header="_Archivo">
         <MenuItem x:Name="ImportMenu" Header="Importar PNG..." Click="OnImport" />
-        <MenuItem Header="Abrir proyecto..." IsEnabled="False" />
-        <MenuItem Header="Guardar proyecto" IsEnabled="False" />
+        <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." Click="OnOpenProject" />
+        <MenuItem x:Name="SaveProjectMenu" Header="Guardar proyecto..." Click="OnSaveProject" />
         <Separator />
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
@@ -39,7 +39,7 @@
           <TextBlock Text="SPRITELAB" FontSize="17" FontWeight="Bold" VerticalAlignment="Center" />
           <TextBlock Text="Espacio de trabajo" Classes="muted" VerticalAlignment="Center" />
         </StackPanel>
-        <TextBlock Grid.Column="1" Text="Sin proyecto abierto" Classes="muted" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" x:Name="ProjectText" Text="Proyecto sin guardar" Classes="muted" VerticalAlignment="Center" />
       </Grid>
     </Border>
     <Grid Grid.Row="2" ColumnDefinitions="230,5,*,5,260" RowDefinitions="*,5,180,5,100">
@@ -49,6 +49,7 @@
           <StackPanel Grid.Row="1" Spacing="10">
             <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
             <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
+            <ListBox x:Name="Resources" MaxHeight="480" SelectionChanged="OnResourceSelected" />
           </StackPanel>
         </Grid>
       </Border>

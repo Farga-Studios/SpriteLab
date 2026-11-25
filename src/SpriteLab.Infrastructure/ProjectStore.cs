@@ -123,8 +123,16 @@ public static class ProjectStore
         return new SheetEntry(id, name, Hash(bytes), size.Width, size.Height, null, null);
     }
 
-    public static async Task<string> SaveAsync(string root, ProjectManifest manifest,
-        string? expectedRevision, CancellationToken ct = default)
+    public static Task<string> SaveAsync(string root, ProjectManifest manifest,
+        string? expectedRevision, CancellationToken ct = default) =>
+        SaveInternalAsync(root, manifest, null, expectedRevision, ct);
+
+    internal static Task<string> SaveWorkspaceAsync(string root, ProjectManifest manifest,
+        IReadOnlyDictionary<Guid, byte[]> sources, string? expectedRevision, CancellationToken ct) =>
+        SaveInternalAsync(root, manifest, sources, expectedRevision, ct);
+
+    private static async Task<string> SaveInternalAsync(string root, ProjectManifest manifest,
+        IReadOnlyDictionary<Guid, byte[]>? sources, string? expectedRevision, CancellationToken ct)
     {
         Validate(manifest);
         var path = SafePath(Path.Combine(root, ManifestName));
@@ -143,9 +151,35 @@ public static class ProjectStore
             throw new IOException("Project manifest disappeared.");
 
         foreach (var sheet in manifest.Assets)
+        {
+            var sourcePath = SourcePath(root, sheet.Id);
+            if (!File.Exists(sourcePath) && sources is not null)
+            {
+                if (!sources.TryGetValue(sheet.Id, out var png) ||
+                    !string.Equals(Hash(png), sheet.Sha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Missing or changed source.");
+                using var input = new MemoryStream(png, writable: false);
+                _ = await PngSource.ReadAsync(input, ct);
+                Directory.CreateDirectory(Path.GetDirectoryName(sourcePath)!);
+                var sourceTemp = SafePath(sourcePath + "." + Guid.NewGuid().ToString("N") + ".tmp");
+                try
+                {
+                    await using (var output = new FileStream(sourceTemp, FileMode.CreateNew,
+                        FileAccess.Write, FileShare.None))
+                    {
+                        await output.WriteAsync(png, ct);
+                        output.Flush(flushToDisk: true);
+                    }
+                    ct.ThrowIfCancellationRequested();
+                    File.Move(sourceTemp, sourcePath, overwrite: false);
+                }
+                finally { if (File.Exists(sourceTemp)) File.Delete(sourceTemp); }
+            }
             _ = await ReadSourceAsync(root, sheet, ct);
+        }
 
         var bytes = JsonSerializer.SerializeToUtf8Bytes(manifest, Json);
+        if (bytes.Length > 2 * 1024 * 1024) throw new InvalidDataException("Manifest exceeds 2 MiB.");
         var temp = SafePath(path + "." + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
