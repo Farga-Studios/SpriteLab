@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.8.1 — 2026-11-25
+- Allow later .NET 10 SDK feature bands, including 10.0.404, without selecting .NET 11.
+- Update all three Avalonia packages to 11.3.18 to resolve the patched Tmds.DBus.Protocol dependency (GHSA-xrw6-gwf8-vvr9).
+- Enable direct and transitive NuGet auditing in CI and fail restore on high or critical vulnerability warnings. CI verification pending.
+
 ## 0.0.8 — 2026-11-25
 - Add initial local project storage backend: schema-versioned JSON, multiple source entries, immutable PNG copies and SHA-256 checks.
 - Add cooperative writer lock, revision conflict detection, temporary manifest and backup replacement.

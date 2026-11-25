@@ -17,8 +17,10 @@ jobs:
           global-json-file: global.json
       - name: SDK
         run: dotnet --info
-      - name: Restore
-        run: dotnet restore SpriteLab.slnx
+      - name: Restore and audit direct and transitive packages
+        run: dotnet restore SpriteLab.slnx -p:NuGetAudit=true -p:NuGetAuditMode=all -p:WarningsAsErrors=NU1903%3BNU1904
+      - name: List vulnerable dependencies
+        run: dotnet list SpriteLab.slnx package --vulnerable --include-transitive --no-restore
       - name: Build
         run: dotnet build SpriteLab.slnx -c Release --no-restore
       - name: Unit tests
