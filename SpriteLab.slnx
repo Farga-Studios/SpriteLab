@@ -6,5 +6,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SpriteLab.Core.Tests/SpriteLab.Core.Tests.csproj" />
+    <Project Path="tests/SpriteLab.Infrastructure.Tests/SpriteLab.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

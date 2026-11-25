@@ -9,8 +9,8 @@
     <Menu Grid.Row="0" Background="#242A34">
       <MenuItem Header="_Archivo">
         <MenuItem x:Name="ImportMenu" Header="Importar PNG..." Click="OnImport" />
-        <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." Click="OnOpenProject" />
-        <MenuItem x:Name="SaveProjectMenu" Header="Guardar proyecto..." Click="OnSaveProject" />
+        <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." HotKey="Ctrl+O" Click="OnOpenProject" />
+        <MenuItem x:Name="SaveProjectMenu" Header="Guardar proyecto..." HotKey="Ctrl+S" Click="OnSaveProject" />
         <Separator />
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
@@ -78,10 +78,11 @@
               <TextBlock x:Name="ZoomText" Text="100 %" VerticalAlignment="Center" />
               <Button Content="+" Click="OnZoomIn" />
               <Button Content="1:1" Click="OnZoomReset" />
+              <Button Content="Ajustar (entero)" Click="OnFit" />
               <Button Content="Cuadrícula" Click="OnToggleGrid" />
             </StackPanel>
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-              <views:SheetPreview x:Name="Preview" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <ScrollViewer x:Name="SheetScroll" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+              <views:SheetPreview x:Name="Preview" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </ScrollViewer>
           </Grid>
         </Grid>
@@ -101,6 +102,7 @@
           <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />
           <Separator />
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
+          <views:FramePreview x:Name="FramePreview" Width="112" Height="112" HorizontalAlignment="Center" />
           <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
           <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />

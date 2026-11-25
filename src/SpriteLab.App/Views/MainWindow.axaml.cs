@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using SpriteLab.Infrastructure;
@@ -31,13 +33,15 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Preview.CellSelected += SelectCell;
+        Preview.PointerWheelChanged += OnPreviewWheel;
         VersionText.Text = $"SpriteLab {GetVersion()} · SL1";
         Closing += OnClosing;
-        Closed += (_, _) => { _lifetime.Cancel(); Preview.SetImage(null); _bitmap?.Dispose(); _bitmap = null; };
+        Closed += (_, _) => { _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); _bitmap?.Dispose(); _bitmap = null; };
     }
 
     private static string GetVersion() =>
-        typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+        typeof(MainWindow).Assembly.GetName().Version is { } version
+            ? version.ToString(version.Revision > 0 ? 4 : 3) : "0.0.0";
 
     private async void OnImport(object? sender, RoutedEventArgs e)
     {
@@ -83,7 +87,7 @@ public partial class MainWindow : Window
             _active = _sheets.Count - 1;
             RefreshResources();
             MarkDirty();
-            ResourceText.Text = files[0].Name;
+            ResourceText.Text = $"{_sheets.Count} recursos";
             ResolutionText.Text = $"Resolución: {_bitmap.PixelSize.Width} × {_bitmap.PixelSize.Height}";
             ViewerInfo.Text = $"{_bitmap.PixelSize.Width} × {_bitmap.PixelSize.Height} px";
             ResetGrid();
@@ -117,6 +121,7 @@ public partial class MainWindow : Window
         DurationInfo.Text = "Duración: —";
         AnchorInfo.Text = "Anclaje: —";
         TimelineInfo.Text = "Sin fotogramas";
+        FramePreview.SetFrame(null, default);
         PreviousButton.IsEnabled = NextButton.IsEnabled = false;
     }
 
@@ -157,6 +162,7 @@ public partial class MainWindow : Window
         _selected = index;
         Preview.SetSelection(index);
         var cell = _grid.GetCell(index);
+        FramePreview.SetFrame(_bitmap, cell);
         FrameInfo.Text = $"Celda {index + 1} · fila {index / _grid.Columns + 1}, columna {index % _grid.Columns + 1}";
         RectInfo.Text = $"Rectángulo: ({cell.X}, {cell.Y}) · {cell.Width} × {cell.Height}";
         DurationInfo.Text = "Duración: sin asignar";
@@ -188,6 +194,21 @@ public partial class MainWindow : Window
         _zoom = Math.Clamp(value, 1, 8);
         Preview.SetZoom(_zoom);
         ZoomText.Text = $"{_zoom * 100} %";
+    }
+
+    private void OnPreviewWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || _bitmap is null) return;
+        ChangeZoom(_zoom + Math.Sign(e.Delta.Y));
+        e.Handled = true;
+    }
+
+    private void OnFit(object? sender, RoutedEventArgs e)
+    {
+        if (_bitmap is null) return;
+        var ratio = Math.Min(SheetScroll.Viewport.Width / _bitmap.PixelSize.Width,
+            SheetScroll.Viewport.Height / _bitmap.PixelSize.Height);
+        if (ratio > 0) ChangeZoom((int)Math.Clamp(Math.Floor(ratio), 1, 8));
     }
 
     private void OnZoomIn(object? sender, RoutedEventArgs e) => ChangeZoom(_zoom + 1);
@@ -232,7 +253,7 @@ public partial class MainWindow : Window
         EmptyViewer.IsVisible = false;
         ImageViewer.IsVisible = true;
         var sheet = _sheets[index];
-        ResourceText.Text = sheet.Name;
+        ResourceText.Text = $"{_sheets.Count} recursos";
         ResolutionText.Text = $"Resolución: {bitmap.PixelSize.Width} × {bitmap.PixelSize.Height}";
         ViewerInfo.Text = $"{bitmap.PixelSize.Width} × {bitmap.PixelSize.Height} px";
         ApplyGridButton.IsEnabled = GridMenu.IsEnabled = true;
@@ -292,23 +313,29 @@ public partial class MainWindow : Window
     {
         if (_importing) return;
         SetBusy(true);
+        try { await SaveProjectAsync(); }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private async Task<bool> SaveProjectAsync()
+    {
         try
         {
             var folder = _folder ?? await PickFolder("Selecciona una carpeta para guardar el proyecto");
-            if (folder is null || _lifetime.IsCancellationRequested) return;
+            if (folder is null || _lifetime.IsCancellationRequested) return false;
             var name = _folder is null ? new DirectoryInfo(folder).Name : _projectName;
             var project = new ViewerProject(_projectId, name, _sheets.ToArray());
             var hash = await Task.Run(() => ViewerWorkspace.SaveAsync(folder, project, _manifestHash, _lifetime.Token));
-            if (_lifetime.IsCancellationRequested) return;
+            if (_lifetime.IsCancellationRequested) return false;
             _folder = folder;
             _projectName = name;
             _manifestHash = hash;
             _dirty = false;
             ProjectText.Text = name;
             StatusText.Text = "Proyecto guardado";
+            return true;
         }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo guardar: {ex.Message}"; }
-        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo guardar: {ex.Message}"; return false; }
     }
 
     private async void OnOpenProject(object? sender, RoutedEventArgs e)
@@ -371,16 +398,25 @@ public partial class MainWindow : Window
 
     private async Task<bool> ConfirmDiscard()
     {
-        var dialog = new Window { Title = "Cambios sin guardar", Width = 420, Height = 180,
+        var dialog = new Window { Title = "Cambios sin guardar", Width = 480, Height = 210,
+            Background = new SolidColorBrush(Color.Parse("#202630")),
             CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var discard = new Button { Content = "Descartar cambios" };
+        var save = new Button { Content = "Guardar" };
+        var discard = new Button { Content = "No guardar" };
         var cancel = new Button { Content = "Cancelar" };
-        discard.Click += (_, _) => dialog.Close(true);
-        cancel.Click += (_, _) => dialog.Close(false);
-        dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 12,
-            Children = { new TextBlock { Text = "Hay cambios sin guardar. ¿Quieres descartarlos?",
-                TextWrapping = Avalonia.Media.TextWrapping.Wrap }, discard, cancel } };
-        return await dialog.ShowDialog<bool>(this);
+        save.Click += (_, _) => dialog.Close(1);
+        discard.Click += (_, _) => dialog.Close(2);
+        cancel.Click += (_, _) => dialog.Close(0);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8,
+            Children = { cancel, discard, save } };
+        dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16,
+            Children = { new TextBlock { Text = "¿Quieres guardar los cambios del proyecto?",
+                FontSize = 16, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = "Si continúas sin guardar, perderás los cambios pendientes.",
+                    TextWrapping = TextWrapping.Wrap }, buttons } };
+        var result = await dialog.ShowDialog<int>(this);
+        return result == 2 || (result == 1 && await SaveProjectAsync());
     }
 
     private async void OnClosing(object? sender, WindowClosingEventArgs e)
