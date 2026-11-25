@@ -2,15 +2,15 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using SpriteLab.Core;
+using CorePixelRect = SpriteLab.Core.PixelRect;
 
 namespace SpriteLab.App.Views;
 
 public sealed class FramePreview : Control
 {
     private Bitmap? _bitmap;
-    private PixelRect _cell;
-    public void SetFrame(Bitmap? bitmap, PixelRect cell)
+    private CorePixelRect _cell;
+    public void SetFrame(Bitmap? bitmap, CorePixelRect cell)
     {
         _bitmap = bitmap;
         _cell = cell;

@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.0.9 — 2026-11-25
+- Fix ambiguous Core/Avalonia PixelRect in frame preview and rename the resource list to avoid hiding StyledElement.Resources. CI rerun pending.
 - Center the sheet, add integer fit and Ctrl+wheel zoom, and show selected frame preview.
 - Replace duplicate resource label with count, add save/open shortcuts and three-choice unsaved dialog.
 - Preserve four-component assembly versions where applicable.

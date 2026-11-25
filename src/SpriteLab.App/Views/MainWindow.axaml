@@ -49,7 +49,7 @@
           <StackPanel Grid.Row="1" Spacing="10">
             <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
             <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
-            <ListBox x:Name="Resources" MaxHeight="480" SelectionChanged="OnResourceSelected" />
+            <ListBox x:Name="ResourceList" MaxHeight="480" SelectionChanged="OnResourceSelected" />
           </StackPanel>
         </Grid>
       </Border>

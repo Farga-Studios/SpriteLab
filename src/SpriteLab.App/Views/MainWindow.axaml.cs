@@ -219,7 +219,7 @@ public partial class MainWindow : Window
     {
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
-            SaveProjectMenu.IsEnabled = Resources.IsEnabled = !busy;
+            SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
     }
 
@@ -234,8 +234,8 @@ public partial class MainWindow : Window
         _refreshing = true;
         try
         {
-            Resources.ItemsSource = _sheets.Select(s => s.Name).ToArray();
-            Resources.SelectedIndex = _active;
+            ResourceList.ItemsSource = _sheets.Select(s => s.Name).ToArray();
+            ResourceList.SelectedIndex = _active;
         }
         finally { _refreshing = false; }
     }
@@ -278,7 +278,7 @@ public partial class MainWindow : Window
     private async void OnResourceSelected(object? sender, SelectionChangedEventArgs e)
     {
         if (_refreshing || _importing) return;
-        var index = Resources.SelectedIndex;
+        var index = ResourceList.SelectedIndex;
         if (index < 0 || index >= _sheets.Count || index == _active) return;
         SetBusy(true);
         Bitmap? candidate = null;
