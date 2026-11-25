@@ -1,9 +1,15 @@
 # Changelog
 
+## 0.0.6 — 2026-11-25
+- Add read-only PNG import with bounded input and header validation.
+- Add temporary single-sheet preview, checkerboard and integer zoom 100–800%.
+- Show filename, resolution and import errors; preserve previous preview on failed decode.
+- No project persistence or grid selection yet. Build and manual verification pending.
+
 ## 0.0.5 — 2026-11-25
 - Add xUnit regression coverage for Core geometry, grid extraction, anchors, references and immutable session snapshots.
 - Run unit tests in Windows CI before the non-interactive smoke check.
-- No application features or runtime dependencies changed. Test execution pending CI.
+- No application features or runtime dependencies changed. Owner reported green CI.
 
 ## 0.0.4 — 2026-11-25
 - Add immutable project, asset, frame, clip, track and marker model.

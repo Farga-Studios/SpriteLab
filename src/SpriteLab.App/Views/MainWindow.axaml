@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:SpriteLab.App.Views"
         x:Class="SpriteLab.App.Views.MainWindow"
         Title="SpriteLab" Width="1280" Height="800"
         MinWidth="900" MinHeight="600"
@@ -7,7 +8,7 @@
   <Grid RowDefinitions="Auto,Auto,*,Auto">
     <Menu Grid.Row="0" Background="#242A34">
       <MenuItem Header="_Archivo">
-        <MenuItem Header="Importar PNG..." IsEnabled="False" />
+        <MenuItem x:Name="ImportMenu" Header="Importar PNG..." Click="OnImport" />
         <MenuItem Header="Abrir proyecto..." IsEnabled="False" />
         <MenuItem Header="Guardar proyecto" IsEnabled="False" />
         <Separator />
@@ -46,8 +47,8 @@
         <Grid RowDefinitions="Auto,*">
           <TextBlock Text="EXPLORADOR" Classes="panelHeading" Margin="0,0,0,12" />
           <StackPanel Grid.Row="1" Spacing="10">
-            <Button Content="Importar PNG..." IsEnabled="False" HorizontalAlignment="Stretch" />
-            <TextBlock Text="Todavía no hay recursos. La importación estará disponible en una próxima versión." Classes="muted" />
+            <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
+            <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
           </StackPanel>
         </Grid>
       </Border>
@@ -56,9 +57,9 @@
         <Grid RowDefinitions="Auto,*">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="VISOR" Classes="panelHeading" />
-            <TextBlock Grid.Column="1" Text="Sin imagen" Classes="muted" />
+            <TextBlock Grid.Column="1" x:Name="ViewerInfo" Text="Sin imagen" Classes="muted" />
           </Grid>
-          <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="360">
+          <StackPanel x:Name="EmptyViewer" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="360">
             <Border Width="68" Height="68" BorderBrush="#526173" BorderThickness="1" CornerRadius="6">
               <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
                 <Border Background="#303946" />
@@ -68,8 +69,19 @@
               </Grid>
             </Border>
             <TextBlock Text="No hay ningún sprite seleccionado" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
-            <TextBlock Text="El visor mostrará la hoja y sus fotogramas cuando esté disponible la importación." Classes="muted" TextAlignment="Center" />
+            <TextBlock Text="Importa un PNG para visualizar la hoja de sprites." Classes="muted" TextAlignment="Center" />
           </StackPanel>
+          <Grid x:Name="ImageViewer" Grid.Row="1" RowDefinitions="Auto,*" IsVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,8">
+              <Button Content="−" Click="OnZoomOut" />
+              <TextBlock x:Name="ZoomText" Text="100 %" VerticalAlignment="Center" />
+              <Button Content="+" Click="OnZoomIn" />
+              <Button Content="1:1" Click="OnZoomReset" />
+            </StackPanel>
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+              <views:SheetPreview x:Name="Preview" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            </ScrollViewer>
+          </Grid>
         </Grid>
       </Border>
       <GridSplitter Grid.Column="3" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
@@ -77,7 +89,7 @@
         <StackPanel Spacing="12">
           <TextBlock Text="PROPIEDADES" Classes="panelHeading" />
           <TextBlock Text="Imagen" FontWeight="SemiBold" />
-          <TextBlock Text="Resolución: —" Classes="muted" />
+          <TextBlock x:Name="ResolutionText" Text="Resolución: —" Classes="muted" />
           <TextBlock Text="Celda: —" Classes="muted" />
           <Separator />
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
@@ -112,7 +124,7 @@
     </Grid>
     <Border Grid.Row="3" Background="#242A34" Padding="12,7">
       <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="Listo · Sin proyecto" Classes="muted" />
+        <TextBlock x:Name="StatusText" Text="Listo · Sin proyecto" Classes="muted" />
         <TextBlock Grid.Column="1" x:Name="VersionText" Classes="muted" />
       </Grid>
     </Border>
