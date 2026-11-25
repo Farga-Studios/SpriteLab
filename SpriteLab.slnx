@@ -4,4 +4,7 @@
     <Project Path="src/SpriteLab.Infrastructure/SpriteLab.Infrastructure.csproj" />
     <Project Path="src/SpriteLab.App/SpriteLab.App.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SpriteLab.Core.Tests/SpriteLab.Core.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -21,5 +21,7 @@ jobs:
         run: dotnet restore SpriteLab.slnx
       - name: Build
         run: dotnet build SpriteLab.slnx -c Release --no-restore
+      - name: Unit tests
+        run: dotnet test SpriteLab.slnx -c Release --no-build --no-restore
       - name: Smoke test (non-interactive)
         run: dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore -- --smoke-test
