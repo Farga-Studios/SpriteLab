@@ -128,6 +128,7 @@
             <TextBox x:Name="CellWidth" Watermark="Ancho" Text="48" Margin="0,0,4,0" />
             <TextBox Grid.Column="1" x:Name="CellHeight" Watermark="Alto" Text="48" Margin="4,0,0,0" />
           </Grid>
+          <Button x:Name="SuggestGridButton" Content="Sugerir cuadrícula…" Click="OnSuggestGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
           <Button x:Name="ApplyGridButton" Content="Aplicar cuadrícula" Click="OnApplyGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
           <Button x:Name="RestoreGridButton" Content="Restablecer dimensiones" Click="OnRestoreGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
           <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />

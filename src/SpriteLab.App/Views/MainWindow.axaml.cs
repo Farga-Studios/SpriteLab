@@ -143,6 +143,50 @@ public partial class MainWindow : Window
         UpdatePlaybackControls();
     }
 
+    private async void OnSuggestGrid(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _bitmap is null) return;
+        SetBusy(true);
+        GridSuggestion? chosen = null;
+        try
+        {
+            var bitmap = _bitmap;
+            var image = new PixelSize(bitmap.PixelSize.Width, bitmap.PixelSize.Height);
+            var pixels = ValidationPixels.Read(bitmap);
+            var suggestions = await Task.Run(() => GridSuggestions.Analyze(image, pixels, _lifetime.Token), _lifetime.Token);
+            if (_lifetime.IsCancellationRequested) return;
+            if (suggestions.Count == 0) { StatusText.Text = "No hay suficientes píxeles visibles para sugerir una cuadrícula."; return; }
+            var list = new ListBox { ItemsSource = suggestions, SelectedIndex = 0, MaxHeight = 180 };
+            var preview = new SheetPreview();
+            preview.SetImage(bitmap);
+            var scroll = new ScrollViewer { Content = preview, Height = 240 };
+            var dialog = new Window { Title = "Sugerir cuadrícula", Width = 600, Height = 620,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            void UpdatePreview()
+            {
+                if (list.SelectedItem is GridSuggestion s)
+                    preview.SetGrid(new CellGrid(image, new PixelSize(s.Width, s.Height)));
+            }
+            list.SelectionChanged += (_, _) => UpdatePreview();
+            var apply = new Button { Content = "Aplicar sugerencia" };
+            var cancel = new Button { Content = "Cancelar" };
+            apply.Click += (_, _) => dialog.Close(list.SelectedItem as GridSuggestion);
+            cancel.Click += (_, _) => dialog.Close(null);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(16), Spacing = 8,
+                Children = { new TextBlock { Text = "Sugerencias aproximadas. Comprueba la cuadrícula antes de aplicar.", TextWrapping = TextWrapping.Wrap },
+                    list, scroll, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { cancel, apply } } } };
+            UpdatePreview();
+            chosen = await dialog.ShowDialog<GridSuggestion?>(this);
+            preview.SetImage(null);
+        }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo sugerir cuadrícula: {ex.Message}"; }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+        if (chosen is null || _lifetime.IsCancellationRequested) return;
+        CellWidth.Text = chosen.Width.ToString();
+        CellHeight.Text = chosen.Height.ToString();
+        OnApplyGrid(null, new RoutedEventArgs());
+    }
+
     private void OnApplyGrid(object? sender, RoutedEventArgs e)
     {
         if (_importing) return;
@@ -264,7 +308,7 @@ public partial class MainWindow : Window
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
             SaveProjectMenu.IsEnabled = SaveAsMenu.IsEnabled = RenameProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
-        ApplyGridButton.IsEnabled = RestoreGridButton.IsEnabled = !busy && _bitmap is not null;
+        ApplyGridButton.IsEnabled = RestoreGridButton.IsEnabled = SuggestGridButton.IsEnabled = !busy && _bitmap is not null;
         DeselectClipButton.IsEnabled = !busy && ClipList.SelectedIndex >= 0;
         TrackList.IsEnabled = !busy;
         ValidateMenu.IsEnabled = ValidateButton.IsEnabled = !busy && _grid is not null;

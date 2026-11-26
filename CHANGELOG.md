@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0.1 — Assisted grid and acceptance fixtures
+- Rank exact grid divisors using alpha projections, preview candidates, apply only with confirmation and existing clip protection.
+- 0.3.0 CI green, 6/29 manual checks passed; new CI and remaining checks pending.
+
 ## 0.3.0 — SL3 acceptance candidate
 - Compact diagnostic toolbar and increase default panel height; clear incomplete results on validation failure.
 - Reject validation grids above 65,536 cells before pixel extraction to bound per-cell analysis memory; viewer remains unchanged.

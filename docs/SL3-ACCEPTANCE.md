@@ -24,3 +24,6 @@ Estado: candidata. CI 0.2.7.1 verde según usuario, no sustituye al CI de 0.3.0.
 - [ ] Guardar, cerrar, reabrir; confirmar imágenes originales intactas.
 
 CI: build, tests, audit, smoke, portable. Registrar fallos y observaciones. No iniciar SL4 hasta aceptación explícita.
+
+## Evidencia 0.3.0 (26/11/2026)
+CI verde confirmado por usuario. 6/29 correctas (validación de sprites completa), 0 fallos, 23 pendientes. Solicita sugerencias de cuadrícula y recursos de prueba preparados con instrucciones. SL3 permanece abierta. Retest 0.3.0.1.
