@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.5 — SL2 workspace organization
+- Split inspector into sheet, preview and frame tabs; automatically reveal sheet configuration on import and preview on clip selection.
+- Move track selection, direction operations and timing fields into animation timeline; wrap controls and allow vertical scrolling.
+- Increase default timeline height. Keep bounded splitters and reset layout. CI and visual retest pending.
+
 ## 0.2.1.4 — SL2 manual feedback fixes
 - Keep active animation when selecting a cell in its sequence; explicitly deselect clip when inspecting another cell. Add deselect button.
 - Unify new sheet import with sheet switching; restore invalid grid inputs and provide explicit reset.

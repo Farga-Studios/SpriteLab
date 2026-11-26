@@ -99,7 +99,8 @@ public partial class MainWindow : Window
             RefreshResources();
             RefreshClips();
             MarkDirty();
-            StatusText.Text = "PNG cargado · Configura la cuadrícula en Propiedades";
+            InspectorTabs.SelectedIndex = 0;
+            StatusText.Text = "PNG cargado · Configura la cuadrícula en Hoja";
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex)
@@ -307,7 +308,7 @@ public partial class MainWindow : Window
             GridInfo.Text = $"{_grid.Columns} columnas × {_grid.Rows} filas · {_grid.Count} celdas";
             SelectCell(0);
         }
-        else { CellWidth.Text = CellHeight.Text = "48"; }
+        else { CellWidth.Text = CellHeight.Text = "48"; InspectorTabs.SelectedIndex = 0; }
     }
 
     private async void OnRenameResource(object? sender, RoutedEventArgs e)
@@ -637,7 +638,7 @@ public partial class MainWindow : Window
         WorkspaceGrid.ColumnDefinitions[2].Width = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
         WorkspaceGrid.ColumnDefinitions[4].Width = new Avalonia.Controls.GridLength(300);
         WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
-        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(210);
+        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(280);
         WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(100);
         StatusText.Text = "Distribución restablecida";
     }
@@ -647,6 +648,8 @@ public partial class MainWindow : Window
         ClearPlayback();
         _playback = new PlaybackCursor(track.Cells);
         _playbackTrack = track;
+        InspectorTabs.SelectedIndex = 1;
+        AnimationHeading.Text = $"ANIMACIÓN · {(ClipList.SelectedItem as ViewerClip)?.Name ?? track.Direction}";
         _previewClock = new PlaybackClock(_playback, Enumerable.Range(0, track.Cells.Length).Select(track.DurationAt));
         CellStrip.SetSequence(track.Cells);
         FpsInput.Text = (track.Fps ?? PreviewTiming.DefaultFps).ToString();
@@ -660,6 +663,7 @@ public partial class MainWindow : Window
         _previewClock = null;
         _playback = null;
         _playbackTrack = null;
+        AnimationHeading.Text = "ANIMACIÓN · Sin clip";
         CellStrip.SetSequence(null);
         if (_selected is int cell) CellStrip.SetSelection(cell);
         UpdatePlaybackControls();

@@ -1,4 +1,4 @@
-# SpriteLab 0.2.1.4 — candidata Windows x64
+# SpriteLab 0.2.1.5 — candidata Windows x64
 
 Extrae todos los archivos del ZIP en una carpeta nueva y ejecuta SpriteLab.App.exe. No necesita el SDK de .NET ni Python. No copies sólo el ejecutable: necesita sus archivos adjuntos. Mantén los proyectos de sprites fuera de la carpeta de la aplicación.
 

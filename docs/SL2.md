@@ -19,3 +19,5 @@
 0.2.1.3 acceptance candidate: historical manifest migration tests for schemas 1–4, preservation of source and backup, unknown-schema overwrite rejection, testable Core timing accumulator and last-frame pause fix. CI pending; manual checklist in SL2-ACCEPTANCE.md. Scope decision: immutable original-cell projection is sufficient for SL2 playback; arbitrary source edits, persistent unreferenced frames, anchors, offsets and undo/redo belong to SL4. No declaration of acceptance until Windows checks are recorded.
 
 0.2.1.4: manual feedback fixes for sheet/clip selection, new sheet import, rejected grid inputs, rename selection and splitter constraints. Exact grid divisibility remains intentional. CI and manual retest required; UI redesign, visual sequence editing, onion tint and Save As remain pending.
+
+0.2.1.5: inspector tabs and grouped animation controls, scrollable wrapping timeline. Explorer retains flat resource/clip lists for now; tree and context menus deferred. Visual sequence drag editing and onion tint pending. CI and manual verification pending.

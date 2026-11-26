@@ -3,7 +3,7 @@
         xmlns:views="using:SpriteLab.App.Views"
         x:Class="SpriteLab.App.Views.MainWindow"
         Title="SpriteLab" Icon="avares://SpriteLab.App/Assets/SpriteLab.png" Width="1280" Height="800"
-        MinWidth="1040" MinHeight="720"
+        MinWidth="1040" MinHeight="760"
         Background="#171B22">
   <Grid RowDefinitions="Auto,Auto,*,Auto">
     <Menu Grid.Row="0" Background="#242A34">
@@ -55,13 +55,13 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="*" MinHeight="200" />
         <RowDefinition Height="5" />
-        <RowDefinition Height="210" MinHeight="170" MaxHeight="350" />
+        <RowDefinition Height="280" MinHeight="220" MaxHeight="380" />
         <RowDefinition Height="5" />
         <RowDefinition Height="100" MinHeight="90" MaxHeight="250" />
       </Grid.RowDefinitions>
       <Border ClipToBounds="True" Grid.Column="0" Grid.RowSpan="5" Background="#202630" Padding="12">
         <Grid RowDefinitions="Auto,*">
-          <TextBlock Text="EXPLORADOR" Classes="panelHeading" Margin="0,0,0,12" />
+          <TextBlock Text="RECURSOS Y CLIPS" Classes="panelHeading" Margin="0,0,0,12" />
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel Spacing="10">
             <Button x:Name="ImportButton" Content="Importar PNG..." Click="OnImport" HorizontalAlignment="Stretch" />
             <TextBlock x:Name="ResourceText" Text="Todavía no hay recursos." Classes="muted" />
@@ -70,16 +70,11 @@
               <Button x:Name="RenameResourceButton" Content="Renombrar" Click="OnRenameResource" IsEnabled="False" />
               <Button x:Name="RemoveResourceButton" Content="Quitar" Click="OnRemoveResource" IsEnabled="False" />
             </StackPanel>
-            <TextBlock Text="CLIPS" Classes="panelHeading" />
+            <TextBlock Text="ANIMACIONES" Classes="panelHeading" />
             <ListBox x:Name="ClipList" MaxHeight="180" SelectionChanged="OnClipSelected" />
             <Button Content="Crear clip de la fila..." Click="OnCreateClip" />
             <Button Content="Quitar clip" Click="OnRemoveClip" />
             <Button x:Name="DeselectClipButton" Content="Deseleccionar clip" Click="OnDeselectClip" IsEnabled="False" />
-            <TextBlock Text="DIRECCIONES" Classes="panelHeading" />
-            <ComboBox x:Name="TrackList" HorizontalAlignment="Stretch" SelectionChanged="OnTrackSelected" />
-            <Button Content="Asignar fila a dirección..." Click="OnAssignTrack" />
-            <Button Content="Quitar dirección" Click="OnRemoveTrack" />
-            <Button x:Name="EditSequenceButton" Content="Editar secuencia..." Click="OnEditSequence" IsEnabled="False" />
           </StackPanel></ScrollViewer>
         </Grid>
       </Border>
@@ -119,8 +114,8 @@
       </Border>
       <GridSplitter Grid.Column="3" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
       <Border ClipToBounds="True" Grid.Column="4" Grid.RowSpan="5" Background="#202630" Padding="12">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Spacing="12">
-          <TextBlock Text="PROPIEDADES" Classes="panelHeading" />
+        <TabControl x:Name="InspectorTabs" SelectedIndex="0">
+          <TabItem Header="Hoja"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">
           <TextBlock Text="Imagen" FontWeight="SemiBold" />
           <TextBlock x:Name="ResolutionText" Text="Resolución: —" Classes="muted" />
           <TextBlock Text="Tamaño de celda (px)" Classes="muted" />
@@ -131,9 +126,10 @@
           <Button x:Name="ApplyGridButton" Content="Aplicar cuadrícula" Click="OnApplyGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
           <Button x:Name="RestoreGridButton" Content="Restablecer dimensiones" Click="OnRestoreGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
           <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />
-          <Separator />
+          </StackPanel></ScrollViewer></TabItem>
+          <TabItem Header="Vista"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
-          <views:FramePreview x:Name="FramePreview" Width="200" Height="200" ClipToBounds="True" HorizontalAlignment="Center" />
+          <views:FramePreview x:Name="FramePreview" MaxWidth="200" Height="200" ClipToBounds="True" HorizontalAlignment="Stretch" />
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Button Content="−" Click="OnFrameZoomOut" />
             <TextBlock x:Name="FramePreviewZoom" VerticalAlignment="Center" Text="Ajustar" />
@@ -148,38 +144,49 @@
           </WrapPanel>
           <TextBlock Text="Opacidad de la superposición" Classes="muted" />
           <Slider x:Name="OnionOpacity" Minimum="10" Maximum="80" Value="35" IsEnabled="False" />
+          </StackPanel></ScrollViewer></TabItem>
+          <TabItem Header="Frame"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">
           <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
           <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
-          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
-            <TextBlock Text="FPS de pista" Classes="muted" />
-            <TextBlock Grid.Column="1" Text="Duración (ms)" Classes="muted" />
-            <TextBox Grid.Row="1" x:Name="FpsInput" Text="8" IsEnabled="False" Margin="0,4,4,0" />
-            <TextBox Grid.Row="1" Grid.Column="1" x:Name="DurationInput" Watermark="Auto" IsEnabled="False" Margin="4,4,0,0" />
-          </Grid>
-          <Button x:Name="ApplyTimingButton" Content="Aplicar tiempo" Click="OnApplyTiming" IsEnabled="False" HorizontalAlignment="Stretch" />
           <TextBlock x:Name="AnchorInfo" Text="Anclaje: —" Classes="muted" />
           <TextBlock Text="Desplazamiento: —" Classes="muted" />
-        </StackPanel></ScrollViewer>
+          </StackPanel></ScrollViewer></TabItem>
+        </TabControl>
       </Border>
       <GridSplitter Grid.Column="2" Grid.Row="1" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
       <Border ClipToBounds="True" Grid.Column="2" Grid.Row="2" Background="#202630" Padding="12">
-        <Grid RowDefinitions="Auto,Auto,*">
-          <TextBlock Text="LÍNEA DE TIEMPO" Classes="panelHeading" />
-          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,8">
-            <Button x:Name="PreviousButton" Content="Anterior" IsEnabled="False" Click="OnPrevious" />
-            <Button x:Name="PlayButton" Content="Reproducir" IsEnabled="False" Click="OnPlay" />
-            <Button x:Name="StopButton" Content="Parar" IsEnabled="False" Click="OnStop" />
-            <Button x:Name="NextButton" Content="Siguiente" IsEnabled="False" Click="OnNext" />
-            <CheckBox x:Name="LoopCheck" Content="Bucle" IsEnabled="False" IsChecked="True" />
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="5">
+            <TextBlock x:Name="AnimationHeading" Text="ANIMACIÓN · Sin clip" Classes="panelHeading" TextTrimming="CharacterEllipsis" />
+            <WrapPanel Orientation="Horizontal">
+              <ComboBox x:Name="TrackList" Width="120" Margin="0,0,6,4" SelectionChanged="OnTrackSelected" />
+              <Button Content="Asignar fila..." Click="OnAssignTrack" Margin="0,0,6,4" />
+              <Button Content="Quitar dirección" Click="OnRemoveTrack" Margin="0,0,6,4" />
+              <Button x:Name="EditSequenceButton" Content="Editar secuencia..." Click="OnEditSequence" IsEnabled="False" Margin="0,0,6,4" />
+            </WrapPanel>
+            <WrapPanel Orientation="Horizontal">
+              <Button x:Name="PreviousButton" Content="Anterior" IsEnabled="False" Click="OnPrevious" Margin="0,0,4,4" />
+              <Button x:Name="PlayButton" Content="Reproducir" IsEnabled="False" Click="OnPlay" Margin="0,0,4,4" />
+              <Button x:Name="StopButton" Content="Parar" IsEnabled="False" Click="OnStop" Margin="0,0,4,4" />
+              <Button x:Name="NextButton" Content="Siguiente" IsEnabled="False" Click="OnNext" Margin="0,0,4,4" />
+              <CheckBox x:Name="LoopCheck" Content="Bucle" IsEnabled="False" IsChecked="True" Margin="0,0,4,4" />
+            </WrapPanel>
+            <WrapPanel Orientation="Horizontal">
+              <TextBlock Text="FPS" VerticalAlignment="Center" Margin="0,0,4,4" />
+              <TextBox x:Name="FpsInput" Width="55" Text="8" IsEnabled="False" Margin="0,0,8,4" />
+              <TextBlock Text="Duración (ms)" VerticalAlignment="Center" Margin="0,0,4,4" />
+              <TextBox x:Name="DurationInput" Width="74" Watermark="Auto" IsEnabled="False" Margin="0,0,8,4" />
+              <Button x:Name="ApplyTimingButton" Content="Aplicar tiempo" Click="OnApplyTiming" IsEnabled="False" Margin="0,0,4,4" />
+            </WrapPanel>
+            <Border Background="#171B22" Padding="6" CornerRadius="4">
+              <StackPanel Spacing="4">
+                <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" />
+                <views:CellStrip x:Name="CellStrip" Height="56" />
+              </StackPanel>
+            </Border>
           </StackPanel>
-          <Border Grid.Row="2" Background="#171B22" Padding="10" CornerRadius="4">
-            <Grid RowDefinitions="Auto,*">
-              <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" />
-              <views:CellStrip x:Name="CellStrip" Grid.Row="1" MinHeight="54" />
-            </Grid>
-          </Border>
-        </Grid>
+        </ScrollViewer>
       </Border>
       <GridSplitter Grid.Column="2" Grid.Row="3" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
       <Border ClipToBounds="True" Grid.Column="2" Grid.Row="4" Background="#202630" Padding="12">
