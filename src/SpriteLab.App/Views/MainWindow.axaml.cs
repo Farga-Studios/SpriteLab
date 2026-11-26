@@ -15,6 +15,7 @@ public partial class MainWindow : Window
 {
     private Bitmap? _bitmap;
     private SheetValidationResult? _validationResult;
+    private ValidationReport? _validationReport;
     private SheetFinding[] _allFindings = [];
     private string _diagnosticSummary = "Validación no ejecutada.";
     private readonly List<ViewerSheet> _sheets = new();
@@ -268,6 +269,7 @@ public partial class MainWindow : Window
         TrackList.IsEnabled = !busy;
         ValidateMenu.IsEnabled = ValidateButton.IsEnabled = !busy && _grid is not null;
         FindingList.IsEnabled = DiagnosticFilterBox.IsEnabled = DiagnosticOverlay.IsEnabled = !busy;
+        ExportReportButton.IsEnabled = !busy && _validationReport is not null;
         UpdatePlaybackControls();
         RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
@@ -971,6 +973,8 @@ public partial class MainWindow : Window
     private void ClearDiagnostics()
     {
         _validationResult = null;
+        _validationReport = null;
+        ExportReportButton.IsEnabled = false;
         VisibleBoundsInfo.Text = "Área visible: valida la hoja";
         _allFindings = [];
         _diagnosticSummary = "Validación no ejecutada.";
@@ -1023,6 +1027,9 @@ public partial class MainWindow : Window
             _validationResult = analysis.Sheet;
             UpdateVisibleBounds();
             _allFindings = analysis.Findings.ToArray();
+            _validationReport = ValidationReport.Create(GetVersion(), DateTimeOffset.UtcNow, _projectName,
+                _sheets[_active].Name, grid, analysis.Sheet, analysis.Alignment.TotalFindings,
+                analysis.Clips.TotalFindings, analysis.Omitted, _allFindings);
             var result = analysis.Sheet;
             _diagnosticSummary = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación · {analysis.Clips.TotalFindings} de animaciones" +
                 (analysis.Omitted > 0 ? $" · {analysis.Omitted} avisos no listados" : "");
@@ -1031,6 +1038,45 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             if (!_lifetime.IsCancellationRequested) DiagnosticText.Text = $"Validación incompleta: {ex.Message}";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private async void OnExportReport(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _validationReport is not { } report) return;
+        SetBusy(true);
+        try
+        {
+            var json = new FilePickerFileType("Informe JSON") { Patterns = ["*.json"] };
+            var txt = new FilePickerFileType("Informe de texto") { Patterns = ["*.txt"] };
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Exportar informe de validación",
+                SuggestedFileName = "validacion",
+                DefaultExtension = "json",
+                FileTypeChoices = [json, txt],
+                ShowOverwritePrompt = true
+            });
+            if (file is null || _lifetime.IsCancellationRequested) return;
+            var extension = System.IO.Path.GetExtension(file.Name);
+            string content;
+            if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase)) content = report.ToJson();
+            else if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)) content = report.ToPlainText();
+            else { StatusText.Text = "Selecciona una extensión .json o .txt."; return; }
+            // Never allow a report to overwrite the project's persistence manifest.
+            if (string.Equals(file.Name, ProjectStore.ManifestName, StringComparison.OrdinalIgnoreCase))
+            { StatusText.Text = "No se puede sobrescribir el manifiesto del proyecto."; return; }
+            await using var stream = await file.OpenWriteAsync();
+            stream.SetLength(0);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+            await stream.WriteAsync(bytes, _lifetime.Token);
+            await stream.FlushAsync(_lifetime.Token);
+            StatusText.Text = $"Informe exportado · {file.Name}";
+        }
+        catch (Exception ex)
+        {
+            if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo exportar el informe: {ex.Message}";
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }

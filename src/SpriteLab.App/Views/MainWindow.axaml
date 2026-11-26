@@ -225,6 +225,7 @@
               <ComboBoxItem Content="Animaciones" />
             </ComboBox>
             <CheckBox x:Name="DiagnosticOverlay" Content="Marcas sobre la hoja" IsChecked="True" />
+            <Button x:Name="ExportReportButton" Content="Exportar informe…" Click="OnExportReport" IsEnabled="False" HorizontalAlignment="Stretch" />
             <TextBlock Text="Vacío gris · Borde naranja · Duplicado violeta · Alineación azul · Animación rosa" FontSize="10" TextWrapping="Wrap" Classes="muted" />
           </StackPanel>
           <ListBox Grid.Row="3" x:Name="FindingList" SelectionChanged="OnFindingSelected" />

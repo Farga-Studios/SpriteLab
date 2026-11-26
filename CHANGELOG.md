@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7 — Validation reports
+- Export an unfiltered active-sheet diagnostic snapshot as JSON or UTF-8 text, including metadata, global totals, one-based cell references and explicit omitted count.
+- Export invalidated with diagnostics, no project edits; protect the project manifest from report overwrite. Three Core tests. CI and GUI acceptance pending.
+
 ## 0.2.6 — Visual diagnostic filters
 - Filter diagnostics by category and display optional color-coded cell markers on the sheet, with combined categories and a legend.
 - Preserve navigation and full summary; markers cover retained findings only, and truncation notice remains visible. Three Core tests; CI and GUI checks pending.
