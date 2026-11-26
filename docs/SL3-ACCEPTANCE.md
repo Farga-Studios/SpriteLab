@@ -30,3 +30,6 @@ CI verde confirmado por usuario. 6/29 correctas (validación de sprites completa
 
 ## Aceptación funcional 0.3.0.1
 Usuario comunica todas las pruebas correctas. Solicita revisión visual del asistente, botones con iconos/tooltips y desplazamiento temporal. SL3 funcionalmente aceptada; 0.3.0.2 revisión de usabilidad antes de SL4. CI nuevo y retest específico pendientes.
+
+## 0.3.0.2 / 0.3.0.3
+0.3.0.2: 16/16 pruebas manuales correctas según usuario; CI no confirmado. Observaciones: fondo del asistente negro e iconografía mejorable. 0.3.0.3: paleta compartida, paneles y geometría vectorial refinada. Retest: abrir asistente con 09_deteccion_automatica.png; comprobar colores, selección, zoom, aplicar/cancelar; revisar iconos de reproducción, edición, zoom y estados deshabilitados. CI pendiente. No modifica la lógica de edición ni el formato del proyecto.

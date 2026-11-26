@@ -217,8 +217,9 @@ public partial class MainWindow : Window
             var scroll = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
                 VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
             var dialog = new Window { Title = "Asistente de cuadrícula", Width = 940, Height = 620,
-                MinWidth = 700, MinHeight = 440, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var detail = new TextBlock { TextWrapping = TextWrapping.Wrap };
+                MinWidth = 700, MinHeight = 440, Background = UiPalette.Window, Foreground = UiPalette.Text,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var detail = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = UiPalette.Accent };
             var zoomLabel = new TextBlock { Text = "100 %", VerticalAlignment = VerticalAlignment.Center };
             var zoom = 1;
             void SetZoom(int value)
@@ -248,11 +249,18 @@ public partial class MainWindow : Window
             Grid.SetRow(scroll, 1);
             viewer.Children.Add(toolbar); viewer.Children.Add(scroll);
             var choices = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 8 };
-            var label = new TextBlock { Text = "CUADRÍCULAS SUGERIDAS", FontWeight = FontWeight.SemiBold };
+            var label = new TextBlock { Text = "CUADRÍCULAS SUGERIDAS", FontWeight = FontWeight.SemiBold, Foreground = UiPalette.Muted };
             Grid.SetRow(list, 1); Grid.SetRow(detail, 2);
             choices.Children.Add(label); choices.Children.Add(list); choices.Children.Add(detail);
             var body = new Grid { ColumnDefinitions = new ColumnDefinitions("*,280"), ColumnSpacing = 16 };
-            Grid.SetColumn(choices, 1); body.Children.Add(viewer); body.Children.Add(choices);
+            var viewerPanel = new Border { Background = UiPalette.Viewer, BorderBrush = UiPalette.Border,
+                BorderThickness = new Avalonia.Thickness(1), CornerRadius = new Avalonia.CornerRadius(6),
+                Padding = new Avalonia.Thickness(12), Child = viewer };
+            var choicesPanel = new Border { Background = UiPalette.Panel, BorderBrush = UiPalette.Border,
+                BorderThickness = new Avalonia.Thickness(1), CornerRadius = new Avalonia.CornerRadius(6),
+                Padding = new Avalonia.Thickness(12), Child = choices };
+            list.Background = UiPalette.Panel;
+            Grid.SetColumn(choicesPanel, 1); body.Children.Add(viewerPanel); body.Children.Add(choicesPanel);
             var apply = new Button { Content = "Aplicar cuadrícula" };
             var cancel = new Button { Content = "Cancelar" };
             apply.Click += (_, _) => dialog.Close(list.SelectedItem as GridSuggestion);
@@ -260,7 +268,7 @@ public partial class MainWindow : Window
             var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                 HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, apply } };
             var hint = new TextBlock { Text = $"Imagen: {image.Width} × {image.Height} px · Selecciona una propuesta y comprueba la vista previa.",
-                TextWrapping = TextWrapping.Wrap };
+                TextWrapping = TextWrapping.Wrap, Foreground = UiPalette.Muted };
             var root = new Grid { Margin = new Avalonia.Thickness(16), RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 12 };
             Grid.SetRow(body, 1); Grid.SetRow(footer, 2);
             root.Children.Add(hint); root.Children.Add(body); root.Children.Add(footer);

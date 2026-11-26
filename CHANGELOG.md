@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0.3 — Visual consistency
+- Shared tool-window palette matching the main workspace, with bordered grid assistant panels and readable detail text.
+- Refined original vector icons with consistent 24-unit coordinates, rounded strokes and fixed visual proportions; retain tooltips and accessibility names.
+- 0.3.0.2 manual acceptance: 16/16 passed, CI not confirmed. New CI and visual retest pending.
+
 ## 0.3.0.2 — Toolbar and playback usability
 - Shared vector toolbar icons and tooltips, including accessibility names and dynamic play/pause.
 - Millisecond timeline seeking with variable durations, repeated occurrences and playback synchronization.
