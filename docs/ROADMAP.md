@@ -40,3 +40,5 @@ Editor no destructivo con desplazamiento por arrastre y X/Y, guías horizontales
 SL3 0.2.6: visual diagnostic filters and sheet markers. Next validation reports. CI and manual validation pending.
 
 SL3 0.2.7: export validation reports, JSON v1 and text; next stabilization and acceptance 0.3.0. CI and manual validation pending.
+
+SL3 0.3.0 acceptance candidate: CI 0.2.7.1 green confirmed by user; new CI and manual acceptance pending. No SL4 implementation yet.

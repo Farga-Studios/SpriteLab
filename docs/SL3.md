@@ -28,3 +28,6 @@ Exportar informe JSON (contrato versión 1) o texto UTF-8 desde el panel de diag
 
 ## 0.2.7.1 — Corrección de compilación
 CI #36 (0.2.6) falló en MainWindow.axaml.cs línea 989 por comillas escapadas dentro de una expresión interpolada (CS1056 y errores sintácticos derivados). Extraer el recuento a una variable local. Aplicar sobre 0.2.7 sin revertir informes. CI nuevo pendiente; no avanzar a 0.3.0 hasta verificar.
+
+## 0.3.0 — Candidata de aceptación
+CI de 0.2.7.1 verde comunicado por el usuario el 26/11/2026. Compactar controles y ampliar panel, invalidar resultados incompletos tras error y limitar análisis a 65.536 celdas por hoja (límite de análisis, no del visor). No afirmar rendimiento medido: falta prueba en Windows. Pruebas de regresión integradas y checklist SL3-ACCEPTANCE.md. SL4 no se inicia hasta aceptación.

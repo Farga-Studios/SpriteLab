@@ -21,6 +21,13 @@ public sealed record SheetValidationResult(int TotalCells, int EmptyCells, int E
 public static class SheetValidation
 {
     public const int FindingLimit = 1000;
+    public const int MaxAnalyzedCells = 65536;
+
+    public static void CheckGridLimit(CellGrid grid)
+    {
+        if (grid.Count > MaxAnalyzedCells)
+            throw new ArgumentException($"La validación admite hasta {MaxAnalyzedCells} celdas por hoja. La cuadrícula actual tiene {grid.Count}.");
+    }
 
     // Compatibility entry point. The detailed scan counts every cell even if the UI list is capped.
     public static IReadOnlyList<SheetFinding> Scan(CellGrid grid, byte[] rgba, CancellationToken token = default) =>
@@ -32,6 +39,7 @@ public static class SheetValidation
         if (rgba.LongLength != (long)grid.Image.Width * grid.Image.Height * 4)
             throw new ArgumentException("Invalid pixel buffer.", nameof(rgba));
         token.ThrowIfCancellationRequested();
+        CheckGridLimit(grid);
         var findings = new List<SheetFinding>();
         var empty = 0;
         var edge = 0;

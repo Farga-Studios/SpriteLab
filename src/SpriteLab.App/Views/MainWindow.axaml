@@ -62,7 +62,7 @@
         <RowDefinition Height="5" />
         <RowDefinition Height="320" MinHeight="220" MaxHeight="440" />
         <RowDefinition Height="5" />
-        <RowDefinition Height="150" MinHeight="90" MaxHeight="250" />
+        <RowDefinition Height="210" MinHeight="120" MaxHeight="360" />
       </Grid.RowDefinitions>
       <Border ClipToBounds="True" Grid.Column="0" Grid.RowSpan="5" Background="#202630" Padding="12">
         <Grid RowDefinitions="Auto,*">
@@ -216,7 +216,8 @@
           </Grid>
           <TextBlock Grid.Row="1" x:Name="DiagnosticText" Text="Validación no ejecutada." Classes="muted" TextWrapping="Wrap" />
           <StackPanel Grid.Row="2" Spacing="4" Margin="0,4">
-            <ComboBox x:Name="DiagnosticFilterBox" SelectedIndex="0" HorizontalAlignment="Stretch">
+            <WrapPanel Orientation="Horizontal">
+            <ComboBox x:Name="DiagnosticFilterBox" SelectedIndex="0" MinWidth="155" Margin="0,0,8,4">
               <ComboBoxItem Content="Todos los avisos" />
               <ComboBoxItem Content="Celdas vacías" />
               <ComboBoxItem Content="Bordes" />
@@ -224,8 +225,9 @@
               <ComboBoxItem Content="Tamaño y alineación" />
               <ComboBoxItem Content="Animaciones" />
             </ComboBox>
-            <CheckBox x:Name="DiagnosticOverlay" Content="Marcas sobre la hoja" IsChecked="True" />
-            <Button x:Name="ExportReportButton" Content="Exportar informe…" Click="OnExportReport" IsEnabled="False" HorizontalAlignment="Stretch" />
+            <CheckBox x:Name="DiagnosticOverlay" Content="Marcas sobre la hoja" IsChecked="True" Margin="0,0,8,4" VerticalAlignment="Center" />
+            <Button x:Name="ExportReportButton" Content="Exportar informe…" Click="OnExportReport" IsEnabled="False" Margin="0,0,0,4" />
+            </WrapPanel>
             <TextBlock Text="Vacío gris · Borde naranja · Duplicado violeta · Alineación azul · Animación rosa" FontSize="10" TextWrapping="Wrap" Classes="muted" />
           </StackPanel>
           <ListBox Grid.Row="3" x:Name="FindingList" SelectionChanged="OnFindingSelected" />

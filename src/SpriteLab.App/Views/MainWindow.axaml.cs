@@ -727,7 +727,7 @@ public partial class MainWindow : Window
         WorkspaceGrid.ColumnDefinitions[4].Width = new Avalonia.Controls.GridLength(300);
         WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
         WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(320);
-        WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(150);
+        WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(210);
         StatusText.Text = "Distribución restablecida";
     }
 
@@ -996,13 +996,14 @@ public partial class MainWindow : Window
 
     private async void OnValidate(object? sender, RoutedEventArgs e)
     {
-        if (_importing || _bitmap is null || _grid is null) return;
+        if (_importing || _bitmap is null || _grid is null || _active < 0) return;
         var grid = _grid;
         SetBusy(true);
         ClearDiagnostics();
         DiagnosticText.Text = "Analizando hoja y animaciones...";
         try
         {
+            SheetValidation.CheckGridLimit(grid);
             var sheetId = _sheets[_active].Id;
             var clips = _clips.Where(c => c.SheetId == sheetId)
                 .Select(c => new ValidationClip(c.Name, c.EffectiveTracks.Select(t =>
@@ -1038,7 +1039,11 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            if (!_lifetime.IsCancellationRequested) DiagnosticText.Text = $"Validación incompleta: {ex.Message}";
+            if (!_lifetime.IsCancellationRequested)
+            {
+                ClearDiagnostics();
+                DiagnosticText.Text = $"Validación incompleta: {ex.Message}";
+            }
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }

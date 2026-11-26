@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 — SL3 acceptance candidate
+- Compact diagnostic toolbar and increase default panel height; clear incomplete results on validation failure.
+- Reject validation grids above 65,536 cells before pixel extraction to bound per-cell analysis memory; viewer remains unchanged.
+- Add cross-detector/report regression and grid-limit tests. 0.2.7.1 CI green confirmed by user; 0.3.0 CI and manual acceptance pending.
+
 ## 0.2.7.1 — Diagnostic filter compilation fix
 - Remove invalid escaped quotes from interpolation introduced in 0.2.6; calculate filtered count separately. Retain report export from 0.2.7. CI pending.
 
