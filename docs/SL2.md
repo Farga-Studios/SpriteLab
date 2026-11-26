@@ -9,3 +9,5 @@
 0.1.5: per-track FPS (1–60; default 8), optional per-occurrence duration (1–60000 ms); blank uses FPS default. Apply while paused; repeated cells can have different duration. Schema 4 writes, 1–3 reads. Reassigning a row resets its timing. UI timer is not a precise gameplay clock. Full Core Frame-ID mapping remains pending. CI and GUI verification pending.
 
 0.1.6: onion skin overlays previous/next occurrences over current cell at 10–80% opacity (default 35%), with same cell-local origin. Loop checkbox controls wrapping; one-frame tracks have no neighbors. Overlays hidden during playback, view-only. No tint, alignment correction or schema change. Full Core Frame-ID model and dedicated clip timeline still pending. CI and manual checks pending.
+
+0.2.0 candidate: occurrence-based thumbnails and clicking, monotonic clock with accumulated variable durations. Pause restarts current frame duration on resume. Schema unchanged. Full Core ID migration, keyboard and DPI acceptance remain outstanding. Do not declare SL2 approved until CI and manual evidence per ADR 007.

@@ -20,7 +20,10 @@ public partial class MainWindow : Window
     private bool _refreshingTracks;
     private PlaybackCursor? _playback;
     private ViewerTrack? _playbackTrack;
-    private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(125) };
+    private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(10) };
+    private readonly System.Diagnostics.Stopwatch _clock = new();
+    private double _elapsedMs;
+    private double _cycleMs;
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
     private string? _folder;
@@ -41,6 +44,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         Preview.CellSelected += OnManualCell;
         CellStrip.CellSelected += OnManualCell;
+        CellStrip.OccurrenceSelected += OnOccurrenceSelected;
         _playTimer.Tick += (_, _) => PlaybackTick();
         UpdatePlaybackControls();
         OnionPrevious.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
@@ -204,12 +208,14 @@ public partial class MainWindow : Window
 
     private void OnPrevious(object? sender, RoutedEventArgs e)
     {
+        if (_importing) return;
         if (_playback is not null) { PausePlayback(); _playback.Step(-1); ShowPlaybackCell(); }
         else if (_selected is int index) SelectCell(index - 1);
     }
 
     private void OnNext(object? sender, RoutedEventArgs e)
     {
+        if (_importing) return;
         if (_playback is not null) { PausePlayback(); _playback.Step(1); ShowPlaybackCell(); }
         else if (_selected is int index) SelectCell(index + 1);
     }
@@ -567,6 +573,14 @@ public partial class MainWindow : Window
         StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
     }
 
+    private void OnOccurrenceSelected(int position)
+    {
+        if (_importing || _playback is not { } cursor) return;
+        PausePlayback();
+        cursor.Step(position - cursor.Position);
+        ShowPlaybackCell();
+    }
+
     private void OnManualCell(int index)
     {
         if (_importing) return;
@@ -579,6 +593,9 @@ public partial class MainWindow : Window
         ClearPlayback();
         _playback = new PlaybackCursor(track.Cells);
         _playbackTrack = track;
+        _elapsedMs = 0;
+        _cycleMs = Enumerable.Range(0, track.Cells.Length).Sum(track.DurationAt);
+        CellStrip.SetSequence(track.Cells);
         FpsInput.Text = (track.Fps ?? PreviewTiming.DefaultFps).ToString();
         ShowPlaybackCell();
     }
@@ -586,8 +603,12 @@ public partial class MainWindow : Window
     private void ClearPlayback()
     {
         _playTimer.Stop();
+        _clock.Reset();
+        _elapsedMs = 0;
         _playback = null;
         _playbackTrack = null;
+        CellStrip.SetSequence(null);
+        if (_selected is int cell) CellStrip.SetSelection(cell);
         UpdatePlaybackControls();
         UpdateOnion();
     }
@@ -595,6 +616,8 @@ public partial class MainWindow : Window
     private void PausePlayback()
     {
         _playTimer.Stop();
+        _clock.Reset();
+        _elapsedMs = 0;
         _playback?.Pause();
         UpdatePlaybackControls();
         UpdateOnion();
@@ -619,13 +642,14 @@ public partial class MainWindow : Window
     {
         if (_playback is not { } cursor) return;
         SelectCell(cursor.Cell);
+        CellStrip.SetSelection(cursor.Position);
         TimelineInfo.Text = $"Fotograma {cursor.Position + 1} / {cursor.Count} · Celda {cursor.Cell + 1}";
         if (_playbackTrack is { } track)
         {
             var duration = track.DurationAt(cursor.Position);
             DurationInfo.Text = $"Duración: {duration:0.##} ms";
             DurationInput.Text = track.DurationsMs?[cursor.Position]?.ToString() ?? "";
-            _playTimer.Interval = TimeSpan.FromMilliseconds(duration);
+
         }
         UpdatePlaybackControls();
         UpdateOnion();
@@ -652,6 +676,8 @@ public partial class MainWindow : Window
         if (cursor.Position == cursor.Count - 1) cursor.Stop();
         cursor.Play();
         ShowPlaybackCell();
+        _elapsedMs = 0;
+        _clock.Restart();
         _playTimer.Start();
     }
 
@@ -659,6 +685,8 @@ public partial class MainWindow : Window
     {
         if (_importing || _playback is null) return;
         _playTimer.Stop();
+        _clock.Reset();
+        _elapsedMs = 0;
         _playback.Stop();
         ShowPlaybackCell();
     }
@@ -692,14 +720,19 @@ public partial class MainWindow : Window
 
     private void PlaybackTick()
     {
-        if (_importing || _playback is not { } cursor) { PausePlayback(); return; }
-        _playTimer.Stop();
-        if (cursor.Tick(LoopCheck.IsChecked == true))
+        if (_importing || _playback is not { } cursor || _playbackTrack is not { } track) { PausePlayback(); return; }
+        _elapsedMs += _clock.Elapsed.TotalMilliseconds;
+        _clock.Restart();
+        var loop = LoopCheck.IsChecked == true;
+        if (loop && _cycleMs > 0 && _elapsedMs >= _cycleMs) _elapsedMs %= _cycleMs;
+        var changed = false;
+        while (_elapsedMs >= track.DurationAt(cursor.Position))
         {
-            ShowPlaybackCell();
-            _playTimer.Start();
+            _elapsedMs -= track.DurationAt(cursor.Position);
+            if (!cursor.Tick(loop)) { PausePlayback(); break; }
+            changed = true;
         }
-        else PausePlayback();
+        if (changed) ShowPlaybackCell();
     }
 
     private static Bitmap Decode(byte[] bytes)
@@ -894,7 +927,7 @@ public partial class MainWindow : Window
             {
                 new TextBlock { Text = $"SpriteLab {GetVersion()}", FontSize = 22 },
                 new TextBlock { Text = "Herramienta independiente para sprites 2D.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
-                new TextBlock { Text = "SL1 · Visualizador PNG inicial. Cuadrícula, selección y proyectos locales iniciales.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = "SL2 · Clips, direcciones, reproducción y comparación de poses.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 close
             }
         };

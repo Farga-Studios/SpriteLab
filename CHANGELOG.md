@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 — 2026-11-26 (SL2 candidate)
+- Timeline displays actual ordered clip occurrences, including repeated cells, and supports direct occurrence selection.
+- Monotonic accumulated preview clock with cycle skipping and variable durations; UI tick resolution remains approximate.
+- Guard navigation during busy operations. Schema 4 unchanged.
+- SL2 acceptance not yet confirmed: CI, manual flow and full domain Frame-ID migration remain outstanding.
+
 ## 0.1.6 — 2026-11-26
 - Add previous/next pose overlays with adjustable opacity in the frame inspector, available when playback is paused or stopped.
 - Respect direction sequence and loop setting at boundaries; keep overlays out of live playback and persistent metadata.

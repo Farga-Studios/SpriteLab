@@ -15,4 +15,4 @@
 Cada fase debe cumplir ADR 007; no fechas ni estimaciones cerradas sin medir. El primer flujo útil es SL1–SL2; evitar ampliar alcance hasta probarlo. El piloto artístico de Sprite Pipeline es independiente y no bloquea SL0–SL4. SL5 depende de contrato del pipeline validado. Integración con motor, shaders, escenarios reales, IA generativa, pintura avanzada, editor de partículas y soporte oficial multiplataforma quedan fuera del MVP; valorar después mediante ADR nuevo, sin modificar el núcleo por adelantado.
 
 ## Próxima acción
-Aprobar o ajustar ADR y crear solución vacía en una carpeta independiente. No tocar juego, GraphicsLab ni dashboard.
+SL2 candidate 0.2.0: verify CI, manual workflow and outstanding architecture items. SL3 work may begin in parallel without marking SL2 accepted. No tocar juego, GraphicsLab ni dashboard.
