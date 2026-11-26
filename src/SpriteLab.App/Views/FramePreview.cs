@@ -56,6 +56,18 @@ public sealed class FramePreview : Control
     private int _zoom;
     private Vector _pan;
     private Point? _drag;
+    private Point? _spriteDrag;
+    private int _offsetX, _offsetY, _startX, _startY;
+    private double _renderScale = 1;
+    private SpriteLab.Core.FrameOffset? _previousOffset, _nextOffset;
+    private SpriteLab.Core.EditorGuides _guides = new(false, false, false);
+    public bool CanMoveSprite { get; set; }
+    public event Action<int, int>? OffsetCommitted;
+    public event Action<int, int>? OffsetPreviewChanged;
+
+    public void SetOffset(int x, int y) { _offsetX = x; _offsetY = y; InvalidateVisual(); }
+    public void SetGuides(SpriteLab.Core.EditorGuides guides) { _guides = guides; InvalidateVisual(); }
+
     public string ZoomLabel => _zoom == 0 ? "Ajustar" : $"{_zoom * 100}%";
     public void ChangeZoom(int delta)
     {
@@ -71,7 +83,13 @@ public sealed class FramePreview : Control
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
-        if (!e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed) return;
+        var properties = e.GetCurrentPoint(this).Properties;
+        if (CanMoveSprite && _bitmap is not null && properties.IsLeftButtonPressed)
+        {
+            _spriteDrag = e.GetPosition(this); _startX = _offsetX; _startY = _offsetY;
+            e.Pointer.Capture(this); e.Handled = true; return;
+        }
+        if (!properties.IsMiddleButtonPressed) return;
         _drag = e.GetPosition(this);
         e.Pointer.Capture(this);
         e.Handled = true;
@@ -79,6 +97,14 @@ public sealed class FramePreview : Control
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
+        if (_spriteDrag is Point start)
+        {
+            var delta = e.GetPosition(this) - start;
+            SetOffset(Math.Clamp(_startX + (int)Math.Round(delta.X / _renderScale), -_cell.Width, _cell.Width),
+                Math.Clamp(_startY + (int)Math.Round(delta.Y / _renderScale), -_cell.Height, _cell.Height));
+            OffsetPreviewChanged?.Invoke(_offsetX, _offsetY);
+            e.Handled = true; return;
+        }
         if (_drag is not Point previous) return;
         var point = e.GetPosition(this);
         _pan += point - previous;
@@ -88,12 +114,14 @@ public sealed class FramePreview : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        if (_spriteDrag.HasValue) { _spriteDrag = null; OffsetCommitted?.Invoke(_offsetX, _offsetY); }
         _drag = null;
         if (e.Pointer.Captured == this) e.Pointer.Capture(null);
     }
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
+        if (_spriteDrag.HasValue) { _spriteDrag = null; SetOffset(_startX, _startY); OffsetPreviewChanged?.Invoke(_startX, _startY); }
         _drag = null;
     }
     private static readonly IBrush BackgroundBrush = new SolidColorBrush(Color.Parse("#11151C"));
@@ -107,8 +135,9 @@ public sealed class FramePreview : Control
         InvalidateVisual();
     }
 
-    public void SetOnion(CorePixelRect? previous, CorePixelRect? next, double opacity, bool tinted = true)
+    public void SetOnion(CorePixelRect? previous, CorePixelRect? next, double opacity, bool tinted = true, SpriteLab.Core.FrameOffset? previousOffset = null, SpriteLab.Core.FrameOffset? nextOffset = null)
     {
+        _previousOffset = previousOffset; _nextOffset = nextOffset;
         _tinted = tinted;
         TintFailed = false;
         _previous = previous;
@@ -152,28 +181,44 @@ public sealed class FramePreview : Control
         var scale = Math.Min(Bounds.Width / _cell.Width, Bounds.Height / _cell.Height);
         if (scale >= 1) scale = Math.Floor(scale);
         if (_zoom > 0) scale = _zoom;
+        _renderScale = scale;
         var w = _cell.Width * scale;
         var h = _cell.Height * scale;
         var target = new Rect((Bounds.Width - w) / 2 + _pan.X, (Bounds.Height - h) / 2 + _pan.Y, w, h);
         var sx = bitmap.Size.Width / bitmap.PixelSize.Width;
         var sy = bitmap.Size.Height / bitmap.PixelSize.Height;
         using var options = context.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None });
-        void Draw(CorePixelRect cell) =>
+        Rect Shift(int x, int y) => new(target.X + x * scale, target.Y + y * scale, target.Width, target.Height);
+        void Draw(CorePixelRect cell, Rect destination) =>
             context.DrawImage(bitmap, new Rect(cell.X * sx, cell.Y * sy,
-                cell.Width * sx, cell.Height * sy), target);
+                cell.Width * sx, cell.Height * sy), destination);
 
-        Draw(_cell);
+        Draw(_cell, Shift(_offsetX, _offsetY));
         if (_previous is { } previous)
         {
             using var opacity = context.PushOpacity(_opacity);
-            if (_tinted && _previousTint is { } ghost) context.DrawImage(ghost, new Rect(ghost.Size), target);
-            else Draw(previous);
+            if (_tinted && _previousTint is { } ghost) context.DrawImage(ghost, new Rect(ghost.Size), Shift(_previousOffset?.X ?? 0, _previousOffset?.Y ?? 0));
+            else Draw(previous, Shift(_previousOffset?.X ?? 0, _previousOffset?.Y ?? 0));
         }
         if (_next is { } next)
         {
             using var opacity = context.PushOpacity(_opacity);
-            if (_tinted && _nextTint is { } ghost) context.DrawImage(ghost, new Rect(ghost.Size), target);
-            else Draw(next);
+            if (_tinted && _nextTint is { } ghost) context.DrawImage(ghost, new Rect(ghost.Size), Shift(_nextOffset?.X ?? 0, _nextOffset?.Y ?? 0));
+            else Draw(next, Shift(_nextOffset?.X ?? 0, _nextOffset?.Y ?? 0));
+        }
+        var outline = new Pen(Brushes.SlateGray, 1);
+        var center = new Pen(Brushes.DeepSkyBlue, 1);
+        var ground = new Pen(Brushes.LightGreen, 1);
+        var custom = new Pen(Brushes.Gold, 1);
+        if (_guides.ShowBounds) context.DrawRectangle(null, outline, target);
+        if (_guides.ShowCenter) context.DrawLine(center, new Point(target.Center.X, target.Y), new Point(target.Center.X, target.Bottom));
+        if (_guides.ShowGround) context.DrawLine(ground, new Point(target.X, target.Bottom), new Point(target.Right, target.Bottom));
+        if (_guides.ShowCustom)
+        {
+            var gx = target.X + _guides.CustomX * scale;
+            var gy = target.Y + _guides.CustomY * scale;
+            context.DrawLine(custom, new Point(gx, 0), new Point(gx, Bounds.Height));
+            context.DrawLine(custom, new Point(0, gy), new Point(Bounds.Width, gy));
         }
     }
 }

@@ -48,6 +48,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeToolbarIcons();
+        FramePreview.OffsetCommitted += ApplyFrameOffset;
+        FramePreview.OffsetPreviewChanged += (x, y) => { OffsetX.Text = x.ToString(); OffsetY.Text = y.ToString(); };
         TimeScrubber.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) OnScrub(); };
         DiagnosticFilterBox.SelectionChanged += (_, _) => RefreshDiagnosticFilter();
         DiagnosticOverlay.IsCheckedChanged += (_, _) => RefreshDiagnosticFilter();
@@ -65,7 +67,7 @@ public partial class MainWindow : Window
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = "Ajustar";
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL3 validación";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL4 editor";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -186,6 +188,7 @@ public partial class MainWindow : Window
         ClearPlayback();
         _grid = null;
         _selected = null;
+        RefreshFrameEdit();
         Preview.SetGrid(null);
         GridInfo.Text = "Sin cuadrícula";
         FrameInfo.Text = "Sin selección";
@@ -299,11 +302,11 @@ public partial class MainWindow : Window
         }
         try
         {
-            if (_active >= 0 && _clips.Any(c => c.SheetId == _sheets[_active].Id) &&
+            if (_active >= 0 && (_clips.Any(c => c.SheetId == _sheets[_active].Id) || _sheets[_active].Offsets is { Length: > 0 }) &&
                 (_sheets[_active].CellWidth != width || _sheets[_active].CellHeight != height))
             {
                 RestoreGridFields();
-                StatusText.Text = "Quita los clips asociados antes de cambiar la cuadrícula.";
+                StatusText.Text = "Quita los clips y restablece los desplazamientos antes de cambiar la cuadrícula.";
                 return;
             }
             if (_grid is not null && _grid.Cell.Width == width && _grid.Cell.Height == height)
@@ -349,8 +352,57 @@ public partial class MainWindow : Window
         UpdateVisibleBounds();
         DurationInfo.Text = "Duración: sin asignar";
         AnchorInfo.Text = "Anclaje: sin asignar";
+        RefreshFrameEdit();
         TimelineInfo.Text = $"Celda {index + 1} / {_grid.Count}";
         UpdatePlaybackControls();
+    }
+
+    private FrameOffset GetOffset(int cell) =>
+        _active >= 0 ? _sheets[_active].Offsets?.FirstOrDefault(o => o.Cell == cell) ?? FrameOffset.Zero(cell)
+            : FrameOffset.Zero(cell);
+
+    private void RefreshFrameEdit()
+    {
+        var offset = GetOffset(_selected ?? 0);
+        OffsetX.Text = offset.X.ToString();
+        OffsetY.Text = offset.Y.ToString();
+        FramePreview.SetOffset(offset.X, offset.Y);
+    }
+
+    private void ApplyFrameOffset(int x, int y)
+    {
+        if (_importing || _playback?.IsPlaying == true || _grid is null || _active < 0 || _selected is not int cell) return;
+        try
+        {
+            var sheet = _sheets[_active];
+            var offset = new FrameOffset(cell, x, y);
+            if (offset == GetOffset(cell)) { RefreshFrameEdit(); return; }
+            _sheets[_active] = sheet with { Offsets = FrameOffset.Set(sheet.Offsets ?? [], _grid, offset) };
+            MarkDirty();
+            RefreshFrameEdit();
+            UpdateOnion();
+            StatusText.Text = $"Desplazamiento de celda {cell + 1}: {x}, {y} px · PNG intacto";
+        }
+        catch (ArgumentException ex) { RefreshFrameEdit(); StatusText.Text = ex.Message; }
+    }
+
+    private void OnApplyOffset(object? sender, RoutedEventArgs e)
+    {
+        if (int.TryParse(OffsetX.Text, out var x) && int.TryParse(OffsetY.Text, out var y)) ApplyFrameOffset(x, y);
+        else { RefreshFrameEdit(); StatusText.Text = "Introduce coordenadas enteras en píxeles."; }
+    }
+
+    private void OnResetOffset(object? sender, RoutedEventArgs e) => ApplyFrameOffset(0, 0);
+
+    private void OnMoveModeChanged(object? sender, RoutedEventArgs e) => UpdatePlaybackControls();
+
+    private void OnApplyGuides(object? sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(CustomGuideX.Text, out var x) || !int.TryParse(CustomGuideY.Text, out var y) ||
+            Math.Abs((long)x) > 8192 || Math.Abs((long)y) > 8192)
+        { StatusText.Text = "Introduce coordenadas de guía entre -8192 y 8192."; return; }
+        FramePreview.SetGuides(new EditorGuides(CenterGuide.IsChecked == true, GroundGuide.IsChecked == true,
+            BoundsGuide.IsChecked == true, CustomGuide.IsChecked == true, x, y));
     }
 
     private void OnPrevious(object? sender, RoutedEventArgs e)
@@ -923,6 +975,8 @@ public partial class MainWindow : Window
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
         OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = OnionTint.IsEnabled = available && _playback?.IsPlaying != true;
         var playing = _playback?.IsPlaying == true;
+        FrameEditPanel.IsEnabled = !_importing && !playing && _grid is not null && _selected.HasValue;
+        FramePreview.CanMoveSprite = FrameEditPanel.IsEnabled && MoveSpriteCheck.IsChecked == true;
         if (_playIconActive != playing)
         {
             _playIconActive = playing;
@@ -976,7 +1030,8 @@ public partial class MainWindow : Window
         var previous = OnionPrevious.IsChecked == true ? cursor.Neighbor(-1, loop) : null;
         var next = OnionNext.IsChecked == true ? cursor.Neighbor(1, loop) : null;
         FramePreview.SetOnion(previous is int a ? _grid.GetCell(a) : null,
-            next is int b ? _grid.GetCell(b) : null, OnionOpacity.Value / 100.0, OnionTint.IsChecked == true);
+            next is int b ? _grid.GetCell(b) : null, OnionOpacity.Value / 100.0, OnionTint.IsChecked == true,
+            previous is int pc ? GetOffset(pc) : null, next is int nc ? GetOffset(nc) : null);
         OnionFeedback.Text = FramePreview.TintFailed ? "No se pudieron aplicar los tintes; se muestran los colores originales." : "";
     }
 

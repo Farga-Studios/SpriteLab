@@ -1,9 +1,10 @@
+using SpriteLab.Core;
 using System.Security.Cryptography;
 
 namespace SpriteLab.Infrastructure;
 
 // Temporary viewer state; the persistent format remains owned by ProjectStore.
-public sealed record ViewerSheet(Guid Id, string Name, byte[] Png, int? CellWidth, int? CellHeight);
+public sealed record ViewerSheet(Guid Id, string Name, byte[] Png, int? CellWidth, int? CellHeight, FrameOffset[]? Offsets = null);
 public sealed record ViewerProject(Guid Id, string Name, IReadOnlyList<ViewerSheet> Sheets, IReadOnlyList<ViewerClip>? Clips = null);
 public sealed record LoadedViewerProject(ViewerProject Project, string ManifestHash);
 
@@ -29,7 +30,7 @@ public static class ViewerWorkspace
             var png = await ProjectStore.ReadSourceAsync(folder, entry, token);
             total += png.Length;
             if (total > MaxTotalBytes) throw new InvalidDataException("Project too large for the viewer.");
-            sheets.Add(new ViewerSheet(entry.Id, entry.Name, png, entry.CellWidth, entry.CellHeight));
+            sheets.Add(new ViewerSheet(entry.Id, entry.Name, png, entry.CellWidth, entry.CellHeight, entry.Offsets?.ToArray()));
         }
         return new LoadedViewerProject(new ViewerProject(loaded.Manifest.ProjectId,
             loaded.Manifest.Name, sheets.AsReadOnly(), loaded.Manifest.AnimationData?.ToViewer(loaded.Manifest.Assets) ?? loaded.Manifest.Clips ?? []), loaded.Revision);
@@ -46,11 +47,11 @@ public static class ViewerWorkspace
             var size = PngSource.GetSize(sheet.Png);
             var entry = new SheetEntry(sheet.Id, sheet.Name,
                 Convert.ToHexString(SHA256.HashData(sheet.Png)), size.Width, size.Height,
-                sheet.CellWidth, sheet.CellHeight);
+                sheet.CellWidth, sheet.CellHeight, sheet.Offsets is { Length: > 0 } ? sheet.Offsets.ToArray() : null);
             entries.Add(entry);
         }
         var animationData = FrameDocument.FromViewer(project.Clips ?? [], entries);
-        var manifest = new ProjectManifest(5, project.Id, project.Name, entries.ToArray(), AnimationData: animationData);
+        var manifest = new ProjectManifest(entries.Any(e => e.Offsets is { Length: > 0 }) ? 6 : 5, project.Id, project.Name, entries.ToArray(), AnimationData: animationData);
         return await ProjectStore.SaveWorkspaceAsync(folder, manifest,
             project.Sheets.ToDictionary(s => s.Id, s => s.Png), expectedHash, token);
     }

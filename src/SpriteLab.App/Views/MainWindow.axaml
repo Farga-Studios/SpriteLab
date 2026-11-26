@@ -143,6 +143,31 @@
             <Button x:Name="FrameZoomResetButton" Content="Centrar" Click="OnFrameZoomReset" />
           </StackPanel>
           <TextBlock Text="Arrastra con el botón central para desplazar." Classes="muted" TextWrapping="Wrap" />
+          <StackPanel x:Name="FrameEditPanel" Spacing="6" IsEnabled="False">
+            <TextBlock Text="EDICIÓN NO DESTRUCTIVA" Classes="panelHeading" />
+            <CheckBox x:Name="MoveSpriteCheck" Content="Mover sprite con botón izquierdo" IsCheckedChanged="OnMoveModeChanged" />
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="6">
+              <TextBlock Text="X" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" x:Name="OffsetX" Text="0" />
+              <TextBlock Grid.Column="2" Text="Y" VerticalAlignment="Center" />
+              <TextBox Grid.Column="3" x:Name="OffsetY" Text="0" />
+            </Grid>
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="Aplicar" Click="OnApplyOffset" Margin="0,0,6,0" />
+              <Button Content="Restablecer" Click="OnResetOffset" />
+            </WrapPanel>
+            <TextBlock Text="GUÍAS VISUALES" Classes="panelHeading" />
+            <CheckBox x:Name="CenterGuide" Content="Centro vertical" IsChecked="True" />
+            <CheckBox x:Name="GroundGuide" Content="Línea de suelo" IsChecked="True" />
+            <CheckBox x:Name="BoundsGuide" Content="Límite de celda" IsChecked="True" />
+            <CheckBox x:Name="CustomGuide" Content="Guías personalizadas X / Y" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <TextBox x:Name="CustomGuideX" Text="0" />
+              <TextBox Grid.Column="1" x:Name="CustomGuideY" Text="0" />
+            </Grid>
+            <Button Content="Actualizar guías" Click="OnApplyGuides" />
+            <TextBlock Text="Guías relativas a la celda. No cambian el PNG." Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
           <TextBlock Text="Comparar poses (Onion skin)" Classes="panelHeading" />
           <WrapPanel Orientation="Horizontal">
             <CheckBox x:Name="OnionPrevious" Content="Anterior (rojo)" IsEnabled="False" Margin="0,0,8,0" />

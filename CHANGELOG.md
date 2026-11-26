@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 — SL4 editor foundations, offsets and guides
+- Sparse per-cell offset metadata in schema 6, legacy schema 1–5 readable; original source PNG unchanged.
+- Numeric X/Y and drag editing in frame preview, corrected playback and onion previews.
+- Cell outline, center, ground and custom guide overlays; independent of source pixels.
+- Automated core tests and guided manual checks. CI and Windows acceptance pending.
+
 ## 0.3.0.3 — Visual consistency
 - Shared tool-window palette matching the main workspace, with bordered grid assistant panels and readable detail text.
 - Refined original vector icons with consistent 24-unit coordinates, rounded strokes and fixed visual proportions; retain tooltips and accessibility names.
