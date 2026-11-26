@@ -7,7 +7,8 @@ namespace SpriteLab.Infrastructure;
 
 public sealed record SheetEntry(Guid Id, string Name, string Sha256,
     int Width, int Height, int? CellWidth, int? CellHeight,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] FrameOffset[]? Offsets = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] FrameOffset[]? Offsets = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] FrameAnchor[]? Anchors = null);
 
 public sealed record ProjectManifest(int SchemaVersion, Guid ProjectId, string Name, SheetEntry[] Assets, ViewerClip[]? Clips = null, FrameDocument? AnimationData = null);
 
@@ -48,7 +49,7 @@ public static class ProjectStore
 
     private static void Validate(ProjectManifest manifest)
     {
-        if (manifest.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6) || manifest.ProjectId == Guid.Empty ||
+        if (manifest.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6 or 7) || manifest.ProjectId == Guid.Empty ||
             string.IsNullOrWhiteSpace(manifest.Name) || manifest.Assets is null ||
             manifest.Assets.Length > 256)
             throw new InvalidDataException("Unsupported or invalid project manifest.");
@@ -63,17 +64,20 @@ public static class ProjectStore
                 sheet.Height > 8192 || (long)sheet.Width * sheet.Height > 16_777_216 ||
                 sheet.CellWidth.HasValue != sheet.CellHeight.HasValue)
                 throw new InvalidDataException("Invalid sheet metadata.");
+            if (sheet.Anchors is not null && manifest.SchemaVersion < 7)
+                throw new InvalidDataException("Anchors require schema 7.");
             if (sheet.Offsets is not null && manifest.SchemaVersion < 6)
                 throw new InvalidDataException("Frame offsets require schema 6.");
             if (sheet.CellWidth is int w && sheet.CellHeight is int h)
             {
                 var grid = new CellGrid(new PixelSize(sheet.Width, sheet.Height), new PixelSize(w, h));
                 FrameOffset.Validate(grid, sheet.Offsets ?? []);
+                FrameAnchor.Validate(grid, sheet.Anchors ?? []);
             }
-            else if (sheet.Offsets is { Length: > 0 })
+            else if (sheet.Offsets is { Length: > 0 } || sheet.Anchors is { Length: > 0 })
                 throw new InvalidDataException("Offsets require a grid.");
         }
-        if (manifest.SchemaVersion is 5 or 6)
+        if (manifest.SchemaVersion is 5 or 6 or 7)
         {
             if (manifest.Clips is not null || manifest.AnimationData is null)
                 throw new InvalidDataException("Schema 5 requires ID-based animation data.");

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6 — Anchors, magnetic snapping and batch editing (0.3.4–0.3.6)
+- Persistent per-cell anchors with numeric coordinates and center/bottom presets; schema 7 when anchors exist.
+- Drag snapping to enabled guides within 3 source pixels; automatic alignment from raw visible bounds or anchor.
+- Explicit cell ranges, current row/direction selection, atomic absolute/relative offsets and anchor edits.
+- Core regression tests and manual instructions; CI pending.
+
 ## 0.3.3 — SL4 editor foundations, offsets and guides
 - Sparse per-cell offset metadata in schema 6, legacy schema 1–5 readable; original source PNG unchanged.
 - Numeric X/Y and drag editing in frame preview, corrected playback and onion previews.

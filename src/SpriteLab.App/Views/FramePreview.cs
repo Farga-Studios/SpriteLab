@@ -62,6 +62,9 @@ public sealed class FramePreview : Control
     private SpriteLab.Core.FrameOffset? _previousOffset, _nextOffset;
     private SpriteLab.Core.EditorGuides _guides = new(false, false, false);
     public bool CanMoveSprite { get; set; }
+    public bool SnapEnabled { get; set; }
+    private SpriteLab.Core.FrameAnchor? _anchor;
+    public void SetAnchor(SpriteLab.Core.FrameAnchor? anchor) { _anchor = anchor; InvalidateVisual(); }
     public event Action<int, int>? OffsetCommitted;
     public event Action<int, int>? OffsetPreviewChanged;
 
@@ -100,8 +103,21 @@ public sealed class FramePreview : Control
         if (_spriteDrag is Point start)
         {
             var delta = e.GetPosition(this) - start;
-            SetOffset(Math.Clamp(_startX + (int)Math.Round(delta.X / _renderScale), -_cell.Width, _cell.Width),
-                Math.Clamp(_startY + (int)Math.Round(delta.Y / _renderScale), -_cell.Height, _cell.Height));
+            var x = Math.Clamp(_startX + (int)Math.Round(delta.X / _renderScale), -_cell.Width, _cell.Width);
+            var y = Math.Clamp(_startY + (int)Math.Round(delta.Y / _renderScale), -_cell.Height, _cell.Height);
+            if (SnapEnabled)
+            {
+                var ax = _anchor?.X ?? _cell.Width / 2;
+                var ay = _anchor?.Y ?? _cell.Height;
+                var xs = new List<int> { 0 };
+                var ys = new List<int> { 0 };
+                if (_guides.ShowCenter) xs.Add(_cell.Width / 2 - ax);
+                if (_guides.ShowGround) ys.Add(_cell.Height - ay);
+                if (_guides.ShowCustom) { xs.Add(_guides.CustomX - ax); ys.Add(_guides.CustomY - ay); }
+                x = SpriteLab.Core.FrameAlignment.Snap(x, xs.Where(t => t >= -_cell.Width && t <= _cell.Width), 3);
+                y = SpriteLab.Core.FrameAlignment.Snap(y, ys.Where(t => t >= -_cell.Height && t <= _cell.Height), 3);
+            }
+            SetOffset(x, y);
             OffsetPreviewChanged?.Invoke(_offsetX, _offsetY);
             e.Handled = true; return;
         }
@@ -205,6 +221,13 @@ public sealed class FramePreview : Control
             using var opacity = context.PushOpacity(_opacity);
             if (_tinted && _nextTint is { } ghost) context.DrawImage(ghost, new Rect(ghost.Size), Shift(_nextOffset?.X ?? 0, _nextOffset?.Y ?? 0));
             else Draw(next, Shift(_nextOffset?.X ?? 0, _nextOffset?.Y ?? 0));
+        }
+        if (_anchor is { } anchor)
+        {
+            var point = new Point(target.X + (anchor.X + _offsetX) * scale, target.Y + (anchor.Y + _offsetY) * scale);
+            var pen = new Pen(Brushes.Orange, 1.5);
+            context.DrawLine(pen, new Point(point.X - 6, point.Y), new Point(point.X + 6, point.Y));
+            context.DrawLine(pen, new Point(point.X, point.Y - 6), new Point(point.X, point.Y + 6));
         }
         var outline = new Pen(Brushes.SlateGray, 1);
         var center = new Pen(Brushes.DeepSkyBlue, 1);

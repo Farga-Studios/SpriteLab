@@ -15,3 +15,6 @@ Use TestAssets/SL3/05_desalineados.png, 01_correcto.png, 08_rectangular.png.
 8. Confirm 0.3.0.3 icon and dialog colors; recheck timeline and diagnostics.
 
 CI pending; no claims of completed runtime validation.
+
+## 0.3.4–0.3.6 acceptance
+Use 05_desalineados.png and 07_animaciones.png from TestAssets/SL3. Vista: select cell 1, preset center bottom and Apply anchor; orange cross moves with sprite. Save/reopen: anchor and offset survive; schema 7 is not readable by older versions. Clear anchor independently of offset. Enable Snap, update guides with custom X/Y, drag near target (3 px). Align center/base on 05, verify visible center and bottom against fixed guides; transparent cells skipped. Anchor alignment moves origin to bottom center, skips unassigned. Batch select `1,3-4` then apply absolute X/Y; cell 2 unaffected. Apply ΔX=2, ΔY=-1 to preserve relative offsets. Apply/remove anchors in batch. Invalid range or out-of-range result rejects the entire edit. Select current row or direction (duplicates deduplicated). Drag always affects only displayed cell. Original PNG and source diagnostics unchanged; anchors are metadata and do not change rendering origin automatically, alignment explicitly applies offsets. CI and runtime testing pending. Undo/redo and replacement follow.

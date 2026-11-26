@@ -188,6 +188,7 @@ public partial class MainWindow : Window
         ClearPlayback();
         _grid = null;
         _selected = null;
+        BatchCells.Text = "";
         RefreshFrameEdit();
         Preview.SetGrid(null);
         GridInfo.Text = "Sin cuadrícula";
@@ -302,11 +303,11 @@ public partial class MainWindow : Window
         }
         try
         {
-            if (_active >= 0 && (_clips.Any(c => c.SheetId == _sheets[_active].Id) || _sheets[_active].Offsets is { Length: > 0 }) &&
+            if (_active >= 0 && (_clips.Any(c => c.SheetId == _sheets[_active].Id) || _sheets[_active].Offsets is { Length: > 0 } || _sheets[_active].Anchors is { Length: > 0 }) &&
                 (_sheets[_active].CellWidth != width || _sheets[_active].CellHeight != height))
             {
                 RestoreGridFields();
-                StatusText.Text = "Quita los clips y restablece los desplazamientos antes de cambiar la cuadrícula.";
+                StatusText.Text = "Quita los clips y restablece los desplazamientos y anclajes antes de cambiar la cuadrícula.";
                 return;
             }
             if (_grid is not null && _grid.Cell.Width == width && _grid.Cell.Height == height)
@@ -367,6 +368,11 @@ public partial class MainWindow : Window
         OffsetX.Text = offset.X.ToString();
         OffsetY.Text = offset.Y.ToString();
         FramePreview.SetOffset(offset.X, offset.Y);
+        var anchor = _selected is int c ? GetAnchor(c) : null;
+        AnchorX.Text = (anchor?.X ?? 0).ToString();
+        AnchorY.Text = (anchor?.Y ?? 0).ToString();
+        AnchorInfo.Text = anchor is null ? "Anclaje: sin asignar" : $"Anclaje: {anchor.X}, {anchor.Y} px";
+        FramePreview.SetAnchor(anchor);
     }
 
     private void ApplyFrameOffset(int x, int y)
@@ -386,13 +392,152 @@ public partial class MainWindow : Window
         catch (ArgumentException ex) { RefreshFrameEdit(); StatusText.Text = ex.Message; }
     }
 
+    private FrameAnchor? GetAnchor(int cell) =>
+        _active >= 0 ? _sheets[_active].Anchors?.FirstOrDefault(a => a.Cell == cell) : null;
+
+    private bool CanEditFrame() => !_importing && _playback?.IsPlaying != true && _grid is not null && _active >= 0 && _selected.HasValue;
+
+    private int[] EditCells()
+    {
+        if (BatchMode.IsChecked != true) return [_selected!.Value];
+        return FrameAlignment.ParseSelection(BatchCells.Text ?? "", _grid!.Count);
+    }
+
+    private void OnSelectTrackCells(object? sender, RoutedEventArgs e)
+    {
+        if (!CanEditFrame() || _playbackTrack is null) return;
+        BatchCells.Text = string.Join(",", _playbackTrack.Cells.Distinct().Order().Select(c => c + 1));
+        BatchMode.IsChecked = true;
+    }
+
+    private void OnSelectRowCells(object? sender, RoutedEventArgs e)
+    {
+        if (!CanEditFrame()) return;
+        var first = _selected!.Value / _grid!.Columns * _grid.Columns + 1;
+        BatchCells.Text = $"{first}-{first + _grid.Columns - 1}";
+        BatchMode.IsChecked = true;
+    }
+
+    private void OnAnchorPreset(object? sender, RoutedEventArgs e)
+    {
+        if (!CanEditFrame()) return;
+        var center = AnchorPreset.SelectedIndex == 1;
+        AnchorX.Text = (_grid!.Cell.Width / 2).ToString();
+        AnchorY.Text = (center ? _grid.Cell.Height / 2 : _grid.Cell.Height).ToString();
+    }
+
+    private void ChangeAnchors(bool clear)
+    {
+        if (!CanEditFrame()) return;
+        try
+        {
+            int? x = null, y = null;
+            if (!clear)
+            {
+                if (!int.TryParse(AnchorX.Text, out var ax) || !int.TryParse(AnchorY.Text, out var ay))
+                    throw new ArgumentException("Introduce coordenadas enteras.");
+                x = ax; y = ay;
+            }
+            var cells = EditCells();
+            var sheet = _sheets[_active];
+            var result = FrameAnchor.SetMany(_grid!, sheet.Anchors ?? [], cells, x, y);
+            if (result.SequenceEqual(sheet.Anchors ?? [])) return;
+            _sheets[_active] = sheet with { Anchors = result };
+            MarkDirty(); RefreshFrameEdit(); UpdateOnion();
+            StatusText.Text = $"Anclajes actualizados en {cells.Length} celdas.";
+        }
+        catch (ArgumentException ex) { StatusText.Text = ex.Message; }
+    }
+
+    private void OnApplyAnchor(object? sender, RoutedEventArgs e) => ChangeAnchors(false);
+    private void OnClearAnchor(object? sender, RoutedEventArgs e) => ChangeAnchors(true);
+    private void OnSnapChanged(object? sender, RoutedEventArgs e) => FramePreview.SnapEnabled = SnapCheck.IsChecked == true;
+
+    private void EditOffsets(Func<int, FrameOffset, FrameOffset> change)
+    {
+        if (!CanEditFrame()) return;
+        try
+        {
+            var cells = EditCells();
+            var sheet = _sheets[_active];
+            var result = FrameAlignment.EditMany(_grid!, sheet.Offsets ?? [], cells, change);
+            if (result.SequenceEqual(sheet.Offsets ?? [])) { RefreshFrameEdit(); return; }
+            _sheets[_active] = sheet with { Offsets = result };
+            MarkDirty(); RefreshFrameEdit(); UpdateOnion();
+            StatusText.Text = $"Desplazamientos actualizados en {cells.Length} celdas.";
+        }
+        catch (ArgumentException ex) { RefreshFrameEdit(); StatusText.Text = ex.Message; }
+        catch (OverflowException) { RefreshFrameEdit(); StatusText.Text = "Desplazamiento fuera de rango."; }
+    }
+
+    private void OnBatchDelta(object? sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(DeltaX.Text, out var x) || !int.TryParse(DeltaY.Text, out var y))
+        { StatusText.Text = "Introduce incrementos enteros."; return; }
+        EditOffsets((c, old) => new FrameOffset(c, checked(old.X + x), checked(old.Y + y)));
+    }
+
+    private async void OnAlignFrames(object? sender, RoutedEventArgs e)
+    {
+        if (!CanEditFrame() || _bitmap is null) return;
+        var mode = AlignMode.SelectedIndex;
+        var grid = _grid!;
+        int[] cells;
+        try { cells = EditCells(); }
+        catch (ArgumentException ex) { StatusText.Text = ex.Message; return; }
+        var sheet = _sheets[_active];
+        var sheetId = sheet.Id;
+        FrameOffset[]? result = null;
+        var skipped = 0;
+        SetBusy(true);
+        try
+        {
+            IReadOnlyDictionary<int, VisibleBounds> bounds = new Dictionary<int, VisibleBounds>();
+            if (mode != 2)
+            {
+                SheetValidation.CheckGridLimit(grid);
+                var pixels = ValidationPixels.Read(_bitmap);
+                bounds = (await Task.Run(() => SheetValidation.Analyze(grid, pixels, _lifetime.Token), _lifetime.Token)).Bounds;
+            }
+            if (_lifetime.IsCancellationRequested) return;
+            result = FrameAlignment.EditMany(grid, sheet.Offsets ?? [], cells, (c, old) =>
+            {
+                if (mode == 2)
+                {
+                    var anchor = sheet.Anchors?.FirstOrDefault(a => a.Cell == c);
+                    if (anchor is null) { skipped++; return old; }
+                    return new FrameOffset(c, grid.Cell.Width / 2 - anchor.X, grid.Cell.Height - anchor.Y);
+                }
+                if (!bounds.TryGetValue(c, out var b)) { skipped++; return old; }
+                var x = (int)Math.Round(grid.Cell.Width / 2.0 - (b.X + b.Width / 2.0));
+                var y = grid.Cell.Height - (b.Y + b.Height);
+                return mode switch
+                {
+                    0 => old with { X = x },
+                    1 => old with { Y = y },
+                    3 => new FrameOffset(c, x, y),
+                    _ => old
+                };
+            });
+        }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo alinear: {ex.Message}"; }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+        if (result is null || _lifetime.IsCancellationRequested || _active < 0 || _sheets[_active].Id != sheetId) return;
+        if (!result.SequenceEqual(sheet.Offsets ?? []))
+        {
+            _sheets[_active] = sheet with { Offsets = result };
+            MarkDirty(); RefreshFrameEdit(); UpdateOnion();
+        }
+        StatusText.Text = $"Alineación: {cells.Length - skipped} celdas procesadas, {skipped} omitidas.";
+    }
+
     private void OnApplyOffset(object? sender, RoutedEventArgs e)
     {
-        if (int.TryParse(OffsetX.Text, out var x) && int.TryParse(OffsetY.Text, out var y)) ApplyFrameOffset(x, y);
+        if (int.TryParse(OffsetX.Text, out var x) && int.TryParse(OffsetY.Text, out var y)) EditOffsets((c, _) => new FrameOffset(c, x, y));
         else { RefreshFrameEdit(); StatusText.Text = "Introduce coordenadas enteras en píxeles."; }
     }
 
-    private void OnResetOffset(object? sender, RoutedEventArgs e) => ApplyFrameOffset(0, 0);
+    private void OnResetOffset(object? sender, RoutedEventArgs e) => EditOffsets((c, _) => FrameOffset.Zero(c));
 
     private void OnMoveModeChanged(object? sender, RoutedEventArgs e) => UpdatePlaybackControls();
 
@@ -977,6 +1122,7 @@ public partial class MainWindow : Window
         var playing = _playback?.IsPlaying == true;
         FrameEditPanel.IsEnabled = !_importing && !playing && _grid is not null && _selected.HasValue;
         FramePreview.CanMoveSprite = FrameEditPanel.IsEnabled && MoveSpriteCheck.IsChecked == true;
+        FramePreview.SnapEnabled = SnapCheck.IsChecked == true;
         if (_playIconActive != playing)
         {
             _playIconActive = playing;

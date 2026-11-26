@@ -156,6 +156,45 @@
               <Button Content="Aplicar" Click="OnApplyOffset" Margin="0,0,6,0" />
               <Button Content="Restablecer" Click="OnResetOffset" />
             </WrapPanel>
+            <CheckBox x:Name="SnapCheck" Content="Ajuste magnético (3 px)" IsCheckedChanged="OnSnapChanged" />
+            <TextBlock Text="ANCLAJE / ORIGEN" Classes="panelHeading" />
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="6">
+              <TextBlock Text="X" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" x:Name="AnchorX" Text="0" />
+              <TextBlock Grid.Column="2" Text="Y" VerticalAlignment="Center" />
+              <TextBox Grid.Column="3" x:Name="AnchorY" Text="0" />
+            </Grid>
+            <ComboBox x:Name="AnchorPreset" SelectedIndex="-1" SelectionChanged="OnAnchorPreset">
+              <ComboBoxItem Content="Centro inferior (pies)" />
+              <ComboBoxItem Content="Centro de celda" />
+            </ComboBox>
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="Aplicar anclaje" Click="OnApplyAnchor" Margin="0,0,6,4" />
+              <Button Content="Quitar" Click="OnClearAnchor" />
+            </WrapPanel>
+            <TextBlock Text="ALINEACIÓN AUTOMÁTICA" Classes="panelHeading" />
+            <ComboBox x:Name="AlignMode" SelectedIndex="3">
+              <ComboBoxItem Content="Centro horizontal visible" />
+              <ComboBoxItem Content="Base visible" />
+              <ComboBoxItem Content="Anclaje a centro inferior" />
+              <ComboBoxItem Content="Centro y base visibles" />
+            </ComboBox>
+            <Button Content="Alinear selección" Click="OnAlignFrames" />
+            <TextBlock Text="EDICIÓN MÚLTIPLE" Classes="panelHeading" />
+            <CheckBox x:Name="BatchMode" Content="Editar varias celdas" />
+            <TextBox x:Name="BatchCells" Watermark="Ej.: 1,3-5,8" />
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="Fila actual" Click="OnSelectRowCells" Margin="0,0,6,4" />
+              <Button Content="Dirección actual" Click="OnSelectTrackCells" />
+            </WrapPanel>
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="6">
+              <TextBlock Text="ΔX" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" x:Name="DeltaX" Text="0" />
+              <TextBlock Grid.Column="2" Text="ΔY" VerticalAlignment="Center" />
+              <TextBox Grid.Column="3" x:Name="DeltaY" Text="0" />
+            </Grid>
+            <Button Content="Mover selección (incremento)" Click="OnBatchDelta" />
+            <TextBlock Text="Aplicar / Restablecer, anclajes y alinear actúan sobre la selección. Arrastrar mueve solo la celda visible." TextWrapping="Wrap" Classes="muted" />
             <TextBlock Text="GUÍAS VISUALES" Classes="panelHeading" />
             <CheckBox x:Name="CenterGuide" Content="Centro vertical" IsChecked="True" />
             <CheckBox x:Name="GroundGuide" Content="Línea de suelo" IsChecked="True" />
