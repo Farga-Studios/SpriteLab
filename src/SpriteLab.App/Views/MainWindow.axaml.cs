@@ -27,6 +27,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(10) };
     private readonly System.Diagnostics.Stopwatch _clock = new();
     private PlaybackClock? _previewClock;
+    private bool _syncingScrubber;
+    private bool _playIconActive;
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
     private string? _folder;
@@ -45,6 +47,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeToolbarIcons();
+        TimeScrubber.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) OnScrub(); };
         DiagnosticFilterBox.SelectionChanged += (_, _) => RefreshDiagnosticFilter();
         DiagnosticOverlay.IsCheckedChanged += (_, _) => RefreshDiagnosticFilter();
         Preview.CellSelected += OnManualCell;
@@ -64,6 +68,57 @@ public partial class MainWindow : Window
         VersionText.Text = $"SpriteLab {GetVersion()} · SL3 validación";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
+    }
+
+    private void InitializeToolbarIcons()
+    {
+        ToolbarIcons.Set(PreviousButton, "previous", "Fotograma anterior (←)");
+        ToolbarIcons.Set(PlayButton, "play", "Reproducir (Espacio)");
+        ToolbarIcons.Set(StopButton, "stop", "Detener");
+        ToolbarIcons.Set(NextButton, "next", "Fotograma siguiente (→)");
+        ToolbarIcons.Set(AddFrameButton, "plus", "Añadir fotograma");
+        ToolbarIcons.Set(DuplicateFrameButton, "copy", "Duplicar fotograma");
+        ToolbarIcons.Set(RemoveFrameButton, "trash", "Quitar fotograma");
+        ToolbarIcons.Set(MoveFrameLeftButton, "left", "Mover fotograma a la izquierda");
+        ToolbarIcons.Set(MoveFrameRightButton, "right", "Mover fotograma a la derecha");
+        ToolbarIcons.Set(EditSequenceButton, "edit", "Editar secuencia");
+        ToolbarIcons.Set(AssignTrackButton, "plus", "Asignar fila a dirección");
+        ToolbarIcons.Set(RemoveTrackButton, "trash", "Quitar dirección");
+        ToolbarIcons.Set(ApplyTimingButton, "check", "Aplicar tiempo");
+        ToolbarIcons.Set(ValidateButton, "check", "Validar hoja");
+        ToolbarIcons.Set(ExportReportButton, "export", "Exportar informe");
+        ToolbarIcons.Set(ZoomOutButton, "zoom-out", "Reducir zoom");
+        ToolbarIcons.Set(ZoomInButton, "zoom-in", "Ampliar zoom");
+        ToolbarIcons.Set(ZoomResetButton, "reset", "Zoom 100%");
+        ToolbarIcons.Set(FitButton, "fit", "Ajustar vista");
+        ToolbarIcons.Set(ToggleGridButton, "grid", "Mostrar u ocultar cuadrícula");
+        ToolbarIcons.Set(FrameZoomOutButton, "zoom-out", "Reducir vista de fotograma");
+        ToolbarIcons.Set(FrameZoomInButton, "zoom-in", "Ampliar vista de fotograma");
+        ToolbarIcons.Set(FrameZoomResetButton, "fit", "Centrar fotograma");
+    }
+
+    private void OnScrub()
+    {
+        if (_syncingScrubber || _importing || _previewClock is not { } timing) return;
+        var target = TimeScrubber.Value;
+        PausePlayback();
+        timing.Seek(target);
+        ShowPlaybackCell();
+    }
+
+    private void UpdateScrubber()
+    {
+        _syncingScrubber = true;
+        try
+        {
+            var timing = _previewClock;
+            TimeScrubber.IsEnabled = !_importing && timing is not null;
+            TimeScrubber.Maximum = timing?.Duration ?? 1;
+            TimeScrubber.Value = timing?.PositionMs ?? 0;
+            ScrubberTime.Text = timing is null ? "— / —" :
+                $"{timing.PositionMs / 1000:0.000} s / {timing.Duration / 1000:0.000} s";
+        }
+        finally { _syncingScrubber = false; }
     }
 
     private static string GetVersion() =>
@@ -156,25 +211,60 @@ public partial class MainWindow : Window
             var suggestions = await Task.Run(() => GridSuggestions.Analyze(image, pixels, _lifetime.Token), _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
             if (suggestions.Count == 0) { StatusText.Text = "No hay suficientes píxeles visibles para sugerir una cuadrícula."; return; }
-            var list = new ListBox { ItemsSource = suggestions, SelectedIndex = 0, MaxHeight = 180 };
-            var preview = new SheetPreview();
+            var list = new ListBox { ItemsSource = suggestions, SelectedIndex = 0 };
+            var preview = new SheetPreview { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             preview.SetImage(bitmap);
-            var scroll = new ScrollViewer { Content = preview, Height = 240 };
-            var dialog = new Window { Title = "Sugerir cuadrícula", Width = 600, Height = 620,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var scroll = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
+            var dialog = new Window { Title = "Asistente de cuadrícula", Width = 940, Height = 620,
+                MinWidth = 700, MinHeight = 440, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var detail = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            var zoomLabel = new TextBlock { Text = "100 %", VerticalAlignment = VerticalAlignment.Center };
+            var zoom = 1;
+            void SetZoom(int value)
+            {
+                zoom = Math.Clamp(value, 1, 8);
+                preview.SetZoom(zoom);
+                zoomLabel.Text = $"{zoom * 100} %";
+            }
             void UpdatePreview()
             {
                 if (list.SelectedItem is GridSuggestion s)
+                {
                     preview.SetGrid(new CellGrid(image, new PixelSize(s.Width, s.Height)));
+                    detail.Text = $"Celda: {s.Width} × {s.Height} px · {s.Columns * s.Rows} celdas";
+                }
             }
             list.SelectionChanged += (_, _) => UpdatePreview();
-            var apply = new Button { Content = "Aplicar sugerencia" };
+            var minus = ToolbarIcons.Create("zoom-out", "Reducir zoom");
+            var plus = ToolbarIcons.Create("zoom-in", "Ampliar zoom");
+            var reset = ToolbarIcons.Create("reset", "Zoom 100 %");
+            minus.Click += (_, _) => SetZoom(zoom - 1);
+            plus.Click += (_, _) => SetZoom(zoom + 1);
+            reset.Click += (_, _) => SetZoom(1);
+            var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                Children = { minus, zoomLabel, plus, reset } };
+            var viewer = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 8 };
+            Grid.SetRow(scroll, 1);
+            viewer.Children.Add(toolbar); viewer.Children.Add(scroll);
+            var choices = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 8 };
+            var label = new TextBlock { Text = "CUADRÍCULAS SUGERIDAS", FontWeight = FontWeight.SemiBold };
+            Grid.SetRow(list, 1); Grid.SetRow(detail, 2);
+            choices.Children.Add(label); choices.Children.Add(list); choices.Children.Add(detail);
+            var body = new Grid { ColumnDefinitions = new ColumnDefinitions("*,280"), ColumnSpacing = 16 };
+            Grid.SetColumn(choices, 1); body.Children.Add(viewer); body.Children.Add(choices);
+            var apply = new Button { Content = "Aplicar cuadrícula" };
             var cancel = new Button { Content = "Cancelar" };
             apply.Click += (_, _) => dialog.Close(list.SelectedItem as GridSuggestion);
             cancel.Click += (_, _) => dialog.Close(null);
-            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(16), Spacing = 8,
-                Children = { new TextBlock { Text = "Sugerencias aproximadas. Comprueba la cuadrícula antes de aplicar.", TextWrapping = TextWrapping.Wrap },
-                    list, scroll, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { cancel, apply } } } };
+            var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, apply } };
+            var hint = new TextBlock { Text = $"Imagen: {image.Width} × {image.Height} px · Selecciona una propuesta y comprueba la vista previa.",
+                TextWrapping = TextWrapping.Wrap };
+            var root = new Grid { Margin = new Avalonia.Thickness(16), RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 12 };
+            Grid.SetRow(body, 1); Grid.SetRow(footer, 2);
+            root.Children.Add(hint); root.Children.Add(body); root.Children.Add(footer);
+            dialog.Content = root;
             UpdatePreview();
             chosen = await dialog.ShowDialog<GridSuggestion?>(this);
             preview.SetImage(null);
@@ -824,7 +914,13 @@ public partial class MainWindow : Window
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
         OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = OnionTint.IsEnabled = available && _playback?.IsPlaying != true;
-        PlayButton.Content = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
+        var playing = _playback?.IsPlaying == true;
+        if (_playIconActive != playing)
+        {
+            _playIconActive = playing;
+            ToolbarIcons.Set(PlayButton, playing ? "pause" : "play", playing ? "Pausa (Espacio)" : "Reproducir (Espacio)");
+        }
+        UpdateScrubber();
         PlayMenu.Header = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         if (_playback is { } cursor)
         {
@@ -1002,6 +1098,7 @@ public partial class MainWindow : Window
         var elapsed = _clock.Elapsed.TotalMilliseconds;
         _clock.Restart();
         if (timing.Advance(elapsed, LoopCheck.IsChecked == true)) ShowPlaybackCell();
+        else UpdateScrubber();
         if (!cursor.IsPlaying) PausePlayback();
     }
 

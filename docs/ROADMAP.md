@@ -42,3 +42,5 @@ SL3 0.2.6: visual diagnostic filters and sheet markers. Next validation reports.
 SL3 0.2.7: export validation reports, JSON v1 and text; next stabilization and acceptance 0.3.0. CI and manual validation pending.
 
 SL3 0.3.0 acceptance candidate: CI 0.2.7.1 green confirmed by user; new CI and manual acceptance pending. No SL4 implementation yet.
+
+SL3 functional acceptance reported by user for 0.3.0.1. 0.3.0.2 usability pass: vector toolbar, scrubber, grid assistant; verify CI and targeted manual checks before SL4.

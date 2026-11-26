@@ -27,3 +27,6 @@ CI: build, tests, audit, smoke, portable. Registrar fallos y observaciones. No i
 
 ## Evidencia 0.3.0 (26/11/2026)
 CI verde confirmado por usuario. 6/29 correctas (validación de sprites completa), 0 fallos, 23 pendientes. Solicita sugerencias de cuadrícula y recursos de prueba preparados con instrucciones. SL3 permanece abierta. Retest 0.3.0.1.
+
+## Aceptación funcional 0.3.0.1
+Usuario comunica todas las pruebas correctas. Solicita revisión visual del asistente, botones con iconos/tooltips y desplazamiento temporal. SL3 funcionalmente aceptada; 0.3.0.2 revisión de usabilidad antes de SL4. CI nuevo y retest específico pendientes.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0.2 — Toolbar and playback usability
+- Shared vector toolbar icons and tooltips, including accessibility names and dynamic play/pause.
+- Millisecond timeline seeking with variable durations, repeated occurrences and playback synchronization.
+- Resizable two-panel grid suggestion dialog with independent preview zoom.
+- 0.3.0.1 manual checks all passed per user; new CI and targeted usability retest pending.
+
 ## 0.3.0.1 — Assisted grid and acceptance fixtures
 - Rank exact grid divisors using alpha projections, preview candidates, apply only with confirmation and existing clip protection.
 - 0.3.0 CI green, 6/29 manual checks passed; new CI and remaining checks pending.

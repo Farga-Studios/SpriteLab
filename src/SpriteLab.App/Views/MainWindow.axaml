@@ -104,12 +104,12 @@
           </StackPanel>
           <Grid x:Name="ImageViewer" Grid.Row="1" RowDefinitions="Auto,*" IsVisible="False">
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,8">
-              <Button Content="−" Click="OnZoomOut" />
+              <Button x:Name="ZoomOutButton" Content="−" Click="OnZoomOut" />
               <TextBlock x:Name="ZoomText" Text="100 %" VerticalAlignment="Center" />
-              <Button Content="+" Click="OnZoomIn" />
-              <Button Content="1:1" Click="OnZoomReset" />
-              <Button Content="Ajustar (entero)" Click="OnFit" />
-              <Button Content="Cuadrícula" Click="OnToggleGrid" />
+              <Button x:Name="ZoomInButton" Content="+" Click="OnZoomIn" />
+              <Button x:Name="ZoomResetButton" Content="1:1" Click="OnZoomReset" />
+              <Button x:Name="FitButton" Content="Ajustar (entero)" Click="OnFit" />
+              <Button x:Name="ToggleGridButton" Content="Cuadrícula" Click="OnToggleGrid" />
             </StackPanel>
             <ScrollViewer x:Name="SheetScroll" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
               <views:SheetPreview x:Name="Preview" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -137,10 +137,10 @@
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
           <views:FramePreview x:Name="FramePreview" MaxWidth="200" Height="200" ClipToBounds="True" HorizontalAlignment="Stretch" />
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <Button Content="−" Click="OnFrameZoomOut" />
+            <Button x:Name="FrameZoomOutButton" Content="−" Click="OnFrameZoomOut" />
             <TextBlock x:Name="FramePreviewZoom" VerticalAlignment="Center" Text="Ajustar" />
-            <Button Content="+" Click="OnFrameZoomIn" />
-            <Button Content="Centrar" Click="OnFrameZoomReset" />
+            <Button x:Name="FrameZoomInButton" Content="+" Click="OnFrameZoomIn" />
+            <Button x:Name="FrameZoomResetButton" Content="Centrar" Click="OnFrameZoomReset" />
           </StackPanel>
           <TextBlock Text="Arrastra con el botón central para desplazar." Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="Comparar poses (Onion skin)" Classes="panelHeading" />
@@ -184,6 +184,10 @@
               <Button x:Name="NextButton" Content="Siguiente" IsEnabled="False" Click="OnNext" Margin="0,0,4,4" />
               <CheckBox x:Name="LoopCheck" Content="Bucle" IsEnabled="False" IsChecked="True" Margin="0,0,4,4" />
             </WrapPanel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <Slider x:Name="TimeScrubber" Minimum="0" Maximum="1" Value="0" IsEnabled="False" ToolTip.Tip="Desplazarse por el tiempo de la animación" />
+              <TextBlock Grid.Column="1" x:Name="ScrubberTime" Text="— / —" Classes="muted" VerticalAlignment="Center" />
+            </Grid>
             <WrapPanel Orientation="Horizontal">
               <TextBlock Text="FPS" VerticalAlignment="Center" Margin="0,0,4,4" />
               <TextBox x:Name="FpsInput" Width="55" Text="8" IsEnabled="False" Margin="0,0,8,4" />
