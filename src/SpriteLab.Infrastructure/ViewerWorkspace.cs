@@ -27,7 +27,7 @@ public static class ViewerWorkspace
             sheets.Add(new ViewerSheet(entry.Id, entry.Name, png, entry.CellWidth, entry.CellHeight));
         }
         return new LoadedViewerProject(new ViewerProject(loaded.Manifest.ProjectId,
-            loaded.Manifest.Name, sheets.AsReadOnly(), loaded.Manifest.Clips ?? []), loaded.Revision);
+            loaded.Manifest.Name, sheets.AsReadOnly(), loaded.Manifest.AnimationData?.ToViewer(loaded.Manifest.Assets) ?? loaded.Manifest.Clips ?? []), loaded.Revision);
     }
 
     public static async Task<string> SaveAsync(string folder, ViewerProject project,
@@ -44,7 +44,8 @@ public static class ViewerWorkspace
                 sheet.CellWidth, sheet.CellHeight);
             entries.Add(entry);
         }
-        var manifest = new ProjectManifest(4, project.Id, project.Name, entries.ToArray(), project.Clips?.ToArray() ?? []);
+        var animationData = FrameDocument.FromViewer(project.Clips ?? [], entries);
+        var manifest = new ProjectManifest(5, project.Id, project.Name, entries.ToArray(), AnimationData: animationData);
         return await ProjectStore.SaveWorkspaceAsync(folder, manifest,
             project.Sheets.ToDictionary(s => s.Id, s => s.Png), expectedHash, token);
     }

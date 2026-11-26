@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.1 — SL2 architecture consolidation
+- Schema 5 stores frame IDs and ordered ID references rather than cell-index tracks; validates against the Core project model.
+- Schemas 1–4 remain readable; saving explicitly upgrades to schema 5. Stable IDs are derived from immutable sheet/cell identity. Viewer remains a grid adapter; editing arbitrary source rectangles and occurrence timing in Core are not yet implemented.
+- Freeze further SL3 features until SL2 acceptance. CI and manual testing pending.
+
 ## 0.2.1 — 2026-11-26 (SL3 initial)
 - Add local RGBA scan for transparent cells and nonzero alpha at cell edges.
 - Navigable warning list, bounded results, cancellation and invalidation on sheet/grid change.

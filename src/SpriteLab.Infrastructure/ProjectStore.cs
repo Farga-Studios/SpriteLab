@@ -8,7 +8,7 @@ namespace SpriteLab.Infrastructure;
 public sealed record SheetEntry(Guid Id, string Name, string Sha256,
     int Width, int Height, int? CellWidth, int? CellHeight);
 
-public sealed record ProjectManifest(int SchemaVersion, Guid ProjectId, string Name, SheetEntry[] Assets, ViewerClip[]? Clips = null);
+public sealed record ProjectManifest(int SchemaVersion, Guid ProjectId, string Name, SheetEntry[] Assets, ViewerClip[]? Clips = null, FrameDocument? AnimationData = null);
 
 public sealed record LoadedProject(ProjectManifest Manifest, string Revision);
 
@@ -47,7 +47,7 @@ public static class ProjectStore
 
     private static void Validate(ProjectManifest manifest)
     {
-        if (manifest.SchemaVersion is not (1 or 2 or 3 or 4) || manifest.ProjectId == Guid.Empty ||
+        if (manifest.SchemaVersion is not (1 or 2 or 3 or 4 or 5) || manifest.ProjectId == Guid.Empty ||
             string.IsNullOrWhiteSpace(manifest.Name) || manifest.Assets is null ||
             manifest.Assets.Length > 256)
             throw new InvalidDataException("Unsupported or invalid project manifest.");
@@ -65,6 +65,15 @@ public static class ProjectStore
             if (sheet.CellWidth is int w && sheet.CellHeight is int h)
                 _ = new CellGrid(new PixelSize(sheet.Width, sheet.Height), new PixelSize(w, h));
         }
+        if (manifest.SchemaVersion == 5)
+        {
+            if (manifest.Clips is not null || manifest.AnimationData is null)
+                throw new InvalidDataException("Schema 5 requires ID-based animation data.");
+            _ = manifest.AnimationData.ToCore(manifest.ProjectId, manifest.Name, manifest.Assets);
+            return;
+        }
+        if (manifest.AnimationData is not null)
+            throw new InvalidDataException("Frame data requires schema 5.");
         if (manifest.SchemaVersion == 1 && manifest.Clips is { Length: > 0 })
             throw new InvalidDataException("Clips require schema 2.");
         if (manifest.SchemaVersion < 3 && (manifest.Clips ?? []).Any(c => c?.Tracks is not null))
