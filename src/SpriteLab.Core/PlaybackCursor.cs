@@ -8,6 +8,7 @@ public sealed class PlaybackCursor
     public int Count => _cells.Length;
     public int Cell => _cells[Position];
     public bool IsPlaying { get; private set; }
+    public bool HasEnded { get; private set; }
 
     public int? Neighbor(int delta, bool loop)
     {
@@ -29,12 +30,15 @@ public sealed class PlaybackCursor
             throw new ArgumentException("Playback requires valid cells.");
     }
 
-    public void Play() => IsPlaying = true;
+    public void Play() { IsPlaying = true; HasEnded = false; }
     public void Pause() => IsPlaying = false;
-    public void Stop() { IsPlaying = false; Position = 0; }
+    public void Stop() { IsPlaying = false; HasEnded = false; Position = 0; }
 
-    public void Step(int delta) =>
+    public void Step(int delta)
+    {
         Position = (int)Math.Clamp((long)Position + delta, 0, Count - 1);
+        HasEnded = false;
+    }
 
     public bool Tick(bool loop)
     {
@@ -42,6 +46,7 @@ public sealed class PlaybackCursor
         if (Position < Count - 1) { Position++; return true; }
         if (loop) { Position = 0; return true; }
         Pause();
+        HasEnded = true;
         return false;
     }
 }

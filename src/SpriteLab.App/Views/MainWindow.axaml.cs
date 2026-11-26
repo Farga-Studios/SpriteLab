@@ -22,8 +22,7 @@ public partial class MainWindow : Window
     private ViewerTrack? _playbackTrack;
     private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(10) };
     private readonly System.Diagnostics.Stopwatch _clock = new();
-    private double _elapsedMs;
-    private double _cycleMs;
+    private PlaybackClock? _previewClock;
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
     private string? _folder;
@@ -214,14 +213,14 @@ public partial class MainWindow : Window
     private void OnPrevious(object? sender, RoutedEventArgs e)
     {
         if (_importing) return;
-        if (_playback is not null) { PausePlayback(); _playback.Step(-1); ShowPlaybackCell(); }
+        if (_playback is not null) { PausePlayback(); _playback.Step(-1); _previewClock?.Reset(); ShowPlaybackCell(); }
         else if (_selected is int index) SelectCell(index - 1);
     }
 
     private void OnNext(object? sender, RoutedEventArgs e)
     {
         if (_importing) return;
-        if (_playback is not null) { PausePlayback(); _playback.Step(1); ShowPlaybackCell(); }
+        if (_playback is not null) { PausePlayback(); _playback.Step(1); _previewClock?.Reset(); ShowPlaybackCell(); }
         else if (_selected is int index) SelectCell(index + 1);
     }
 
@@ -585,6 +584,7 @@ public partial class MainWindow : Window
         if (_importing || _playback is not { } cursor) return;
         PausePlayback();
         cursor.Step(position - cursor.Position);
+        _previewClock?.Reset();
         ShowPlaybackCell();
     }
 
@@ -600,8 +600,7 @@ public partial class MainWindow : Window
         ClearPlayback();
         _playback = new PlaybackCursor(track.Cells);
         _playbackTrack = track;
-        _elapsedMs = 0;
-        _cycleMs = Enumerable.Range(0, track.Cells.Length).Sum(track.DurationAt);
+        _previewClock = new PlaybackClock(_playback, Enumerable.Range(0, track.Cells.Length).Select(track.DurationAt));
         CellStrip.SetSequence(track.Cells);
         FpsInput.Text = (track.Fps ?? PreviewTiming.DefaultFps).ToString();
         ShowPlaybackCell();
@@ -611,7 +610,7 @@ public partial class MainWindow : Window
     {
         _playTimer.Stop();
         _clock.Reset();
-        _elapsedMs = 0;
+        _previewClock = null;
         _playback = null;
         _playbackTrack = null;
         CellStrip.SetSequence(null);
@@ -624,7 +623,6 @@ public partial class MainWindow : Window
     {
         _playTimer.Stop();
         _clock.Reset();
-        _elapsedMs = 0;
         _playback?.Pause();
         UpdatePlaybackControls();
         UpdateOnion();
@@ -681,10 +679,9 @@ public partial class MainWindow : Window
     {
         if (_importing || _playback is not { } cursor) return;
         if (cursor.IsPlaying) { PausePlayback(); return; }
-        if (cursor.Position == cursor.Count - 1) cursor.Stop();
+        if (cursor.HasEnded) { cursor.Stop(); _previewClock?.Reset(); }
         cursor.Play();
         ShowPlaybackCell();
-        _elapsedMs = 0;
         _clock.Restart();
         _playTimer.Start();
     }
@@ -694,7 +691,7 @@ public partial class MainWindow : Window
         if (_importing || _playback is null) return;
         _playTimer.Stop();
         _clock.Reset();
-        _elapsedMs = 0;
+        _previewClock?.Reset();
         _playback.Stop();
         ShowPlaybackCell();
     }
@@ -799,19 +796,12 @@ public partial class MainWindow : Window
 
     private void PlaybackTick()
     {
-        if (_importing || _playback is not { } cursor || _playbackTrack is not { } track) { PausePlayback(); return; }
-        _elapsedMs += _clock.Elapsed.TotalMilliseconds;
+        if (_importing || _playback is not { } cursor || _previewClock is not { } timing)
+        { PausePlayback(); return; }
+        var elapsed = _clock.Elapsed.TotalMilliseconds;
         _clock.Restart();
-        var loop = LoopCheck.IsChecked == true;
-        if (loop && _cycleMs > 0 && _elapsedMs >= _cycleMs) _elapsedMs %= _cycleMs;
-        var changed = false;
-        while (_elapsedMs >= track.DurationAt(cursor.Position))
-        {
-            _elapsedMs -= track.DurationAt(cursor.Position);
-            if (!cursor.Tick(loop)) { PausePlayback(); break; }
-            changed = true;
-        }
-        if (changed) ShowPlaybackCell();
+        if (timing.Advance(elapsed, LoopCheck.IsChecked == true)) ShowPlaybackCell();
+        if (!cursor.IsPlaying) PausePlayback();
     }
 
     private void ClearDiagnostics()

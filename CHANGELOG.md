@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.3 — SL2 acceptance candidate
+- Add historical schema 1–4 migration integration tests, source/backup checks and future-schema write protection.
+- Move elapsed-time accumulator to testable Core; distinguish pause on last frame from natural completion and retain elapsed time from last timer tick across pause.
+- Document manual acceptance gate; CI and Windows checks pending. No new SL3 features.
+
 ## 0.2.1.2 — SL2 usability and timing consolidation
 - Core tracks retain FPS and per-occurrence timing; schema 5 mapping preserves them.
 - Editable ordered cell sequences with repeat support, keyboard playback/navigation, integer preview zoom and middle-button pan.

@@ -20,3 +20,5 @@ SL2 candidate 0.2.0: verify CI, manual workflow and outstanding architecture ite
 SL3 initial 0.2.1: local alpha and border diagnostics with cell navigation. SL2 acceptance remains pending.
 
 Freeze additional SL3 work until SL2 acceptance. 0.2.1.1 consolidates SL2 without rolling back existing SL3 code or version numbering.
+
+SL2 acceptance candidate 0.2.1.3: await CI and manual checklist, do not expand SL3 until accepted.

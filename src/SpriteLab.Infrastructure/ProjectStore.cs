@@ -163,6 +163,9 @@ public static class ProjectStore
             var existing = await ReadManifestAsync(path, ct);
             if (expectedRevision is null || Hash(existing) != expectedRevision)
                 throw new IOException("Project changed externally; reopen before saving.");
+            var previous = JsonSerializer.Deserialize<ProjectManifest>(existing, Json)
+                ?? throw new InvalidDataException("Empty existing manifest.");
+            Validate(previous);
         }
         else if (expectedRevision is not null)
             throw new IOException("Project manifest disappeared.");
