@@ -25,3 +25,5 @@ SL2 acceptance candidate 0.2.1.3: await CI and manual checklist, do not expand S
 
 ## Estado vigente — 26/11/2026
 SL2 aceptada en 0.2.1.9: CI verde comunicado por el usuario, 46/47 comprobaciones correctas en 0.2.1.8 y 9/9 en el retest final, incluida la cuadrícula rectangular. SL3 desbloqueada; revisar la implementación existente de diagnósticos alpha/bordes y definir criterios de aceptación antes de ampliar detectores. Mantener esquema 5 y fuentes originales inmutables. No tocar otros proyectos.
+
+SL3 0.2.2: consolidate read-only empty/edge detectors, exact counts and bounded list. Next: duplicates after CI and targeted manual checks. UI redesign deferred; functional review after SL4 and aesthetic review during SL7 are proposed, not gates for SL3.

@@ -55,7 +55,7 @@ public partial class MainWindow : Window
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = "Ajustar";
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL2 revisión";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL3 validación";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -718,7 +718,7 @@ public partial class MainWindow : Window
         WorkspaceGrid.ColumnDefinitions[4].Width = new Avalonia.Controls.GridLength(300);
         WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
         WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(320);
-        WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(100);
+        WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(150);
         StatusText.Text = "Distribución restablecida";
     }
 
@@ -968,12 +968,11 @@ public partial class MainWindow : Window
         try
         {
             var pixels = ValidationPixels.Read(_bitmap);
-            var findings = await Task.Run(() => SheetValidation.Scan(grid, pixels, _lifetime.Token), _lifetime.Token);
+            var result = await Task.Run(() => SheetValidation.Analyze(grid, pixels, _lifetime.Token), _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
-            FindingList.ItemsSource = findings;
-            DiagnosticText.Text = findings.Count == 0
-                ? "Sin avisos en las comprobaciones realizadas."
-                : $"{findings.Count} resultados · Selecciona un aviso para revisar la celda.";
+            FindingList.ItemsSource = result.Findings;
+            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.CleanCells} sin avisos" +
+                (result.OmittedFindings > 0 ? $" · {result.OmittedFindings} avisos no listados" : "");
         }
         catch (Exception ex)
         {
@@ -986,7 +985,7 @@ public partial class MainWindow : Window
     {
         if (_importing || FindingList.SelectedItem is not SheetFinding { Cell: int cell }) return;
         OnManualCell(cell);
-        StatusText.Text = $"Revisando celda {cell + 1}";
+        StatusText.Text = $"Revisando celda {cell + 1} · El aviso requiere revisión manual";
     }
 
     private static Bitmap Decode(byte[] bytes)

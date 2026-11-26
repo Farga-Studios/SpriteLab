@@ -43,4 +43,52 @@ public sealed class SheetValidationTests
         Assert.Equal(1001, findings.Count);
         Assert.Equal("LIMIT", findings[^1].Code);
     }
+
+    [Fact]
+    public void ReportsEveryTouchedEdgeIncludingCorners()
+    {
+        var grid = new CellGrid(new PixelSize(3, 3), new PixelSize(3, 3));
+        var pixels = new byte[36];
+        pixels[3] = 1;
+        pixels[35] = 255;
+        var result = SheetValidation.Analyze(grid, pixels);
+        Assert.Equal(1, result.EdgeCells);
+        Assert.Equal(CellEdges.Top | CellEdges.Left | CellEdges.Right | CellEdges.Bottom,
+            Assert.Single(result.Findings).Edges);
+    }
+
+    [Fact]
+    public void CountsEntireSheetBeyondListLimit()
+    {
+        var grid = new CellGrid(new PixelSize(1002, 1), new PixelSize(1, 1));
+        var pixels = new byte[4008];
+        pixels[^1] = 255;
+        var result = SheetValidation.Analyze(grid, pixels);
+        Assert.Equal(1002, result.TotalCells);
+        Assert.Equal(1001, result.EmptyCells);
+        Assert.Equal(1, result.EdgeCells);
+        Assert.Equal(0, result.CleanCells);
+        Assert.Equal(2, result.OmittedFindings);
+    }
+
+    [Fact]
+    public void ExactlyAtLimitDoesNotReportOmittedFindings()
+    {
+        var grid = new CellGrid(new PixelSize(1000, 1), new PixelSize(1, 1));
+        var result = SheetValidation.Analyze(grid, new byte[4000]);
+        Assert.Equal(0, result.OmittedFindings);
+        Assert.Equal(1000, result.Findings.Count);
+    }
+
+    [Fact]
+    public void RectangularGridReportsCleanAndEmptyCounts()
+    {
+        var grid = new CellGrid(new PixelSize(6, 4), new PixelSize(3, 4));
+        var pixels = new byte[96];
+        pixels[(6 + 1) * 4 + 3] = 128;
+        var result = SheetValidation.Analyze(grid, pixels);
+        Assert.Equal(1, result.CleanCells);
+        Assert.Equal(1, result.EmptyCells);
+        Assert.Equal(0, result.EdgeCells);
+    }
 }

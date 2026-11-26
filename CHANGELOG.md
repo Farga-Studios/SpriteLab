@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 — SL3 alpha and border diagnostics
+- Report exact touched cell edges and complete sheet counts even when the finding list is capped.
+- Distinguish possible clipping from confirmed errors; transparent cells remain review warnings.
+- Improve diagnostics summary and default panel height. Four additional Core tests. CI and manual validation pending.
+
 ## 0.2.1.9 — Final SL2 usability review
 - Named project save dialog with automatic child folder creation; safe confirmed overwrite of valid existing SpriteLab projects with revision protection and manifest backup. Non-project occupied directories remain protected.
 - Rename project metadata without moving folder; timeline heading, per-frame number/time, Spanish inspector and implicit direction labels.

@@ -39,15 +39,15 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           Copy-Item docs/PORTABLE.md portable/LEEME.md
-          Compress-Archive -Path portable/* -DestinationPath SpriteLab-0.2.1.9-win-x64.zip
-          (Get-FileHash SpriteLab-0.2.1.9-win-x64.zip -Algorithm SHA256).Hash + '  SpriteLab-0.2.1.9-win-x64.zip' | Set-Content SpriteLab-0.2.1.9-win-x64.sha256
+          Compress-Archive -Path portable/* -DestinationPath SpriteLab-0.2.2-win-x64.zip
+          (Get-FileHash SpriteLab-0.2.2-win-x64.zip -Algorithm SHA256).Hash + '  SpriteLab-0.2.2-win-x64.zip' | Set-Content SpriteLab-0.2.2-win-x64.sha256
       - name: Upload private build artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: SpriteLab-0.2.1.9-win-x64
+          name: SpriteLab-0.2.2-win-x64
           path: |
-            SpriteLab-0.2.1.9-win-x64.zip
-            SpriteLab-0.2.1.9-win-x64.sha256
+            SpriteLab-0.2.2-win-x64.zip
+            SpriteLab-0.2.2-win-x64.sha256
           retention-days: 14
           if-no-files-found: error
