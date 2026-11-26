@@ -17,8 +17,8 @@
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
       <MenuItem Header="_Edición">
-        <MenuItem Header="Deshacer" IsEnabled="False" />
-        <MenuItem Header="Rehacer" IsEnabled="False" />
+        <MenuItem x:Name="UndoMenu" Header="Deshacer" HotKey="Ctrl+Z" Click="OnUndo" IsEnabled="False" />
+        <MenuItem x:Name="RedoMenu" Header="Rehacer" HotKey="Ctrl+Y" Click="OnRedo" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="_Ver">
         <MenuItem x:Name="GridMenu" Header="Mostrar/ocultar cuadrícula" IsEnabled="False" Click="OnToggleGrid" />
@@ -145,6 +145,10 @@
           <TextBlock Text="Arrastra con el botón central para desplazar." Classes="muted" TextWrapping="Wrap" />
           <StackPanel x:Name="FrameEditPanel" Spacing="6" IsEnabled="False">
             <TextBlock Text="EDICIÓN NO DESTRUCTIVA" Classes="panelHeading" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button x:Name="UndoButton" Content="Deshacer" Click="OnUndo" IsEnabled="False" />
+              <Button x:Name="RedoButton" Content="Rehacer" Click="OnRedo" IsEnabled="False" />
+            </StackPanel>
             <CheckBox x:Name="MoveSpriteCheck" Content="Mover sprite con botón izquierdo" IsCheckedChanged="OnMoveModeChanged" />
             <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="6">
               <TextBlock Text="X" VerticalAlignment="Center" />
@@ -265,6 +269,7 @@
                 <views:CellStrip x:Name="CellStrip" Height="76" />
                 <TextBlock Text="Arrastra las miniaturas para reordenar las visibles." Classes="muted" TextWrapping="Wrap" />
                 <WrapPanel Orientation="Horizontal">
+                  <Button x:Name="ReplaceFrameButton" Content="Reemplazar" Click="OnReplaceFrame" IsEnabled="False" Margin="0,0,4,4" />
                   <Button x:Name="AddFrameButton" Content="+ Añadir" Click="OnAddFrame" IsEnabled="False" Margin="0,0,4,4" />
                   <Button x:Name="DuplicateFrameButton" Content="Duplicar" Click="OnDuplicateFrame" IsEnabled="False" Margin="0,0,4,4" />
                   <Button x:Name="RemoveFrameButton" Content="Quitar" Click="OnRemoveFrame" IsEnabled="False" Margin="0,0,4,4" />

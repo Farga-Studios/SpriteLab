@@ -13,6 +13,9 @@ namespace SpriteLab.App.Views;
 
 public partial class MainWindow : Window
 {
+    private sealed record EditorState(Guid SheetId, FrameOffset[]? Offsets, FrameAnchor[]? Anchors,
+        ViewerClip[] Clips, Guid? ClipId, string? Direction, int Position, int? Cell);
+    private readonly EditHistory<EditorState> _editHistory = new(64);
     private Bitmap? _bitmap;
     private SheetValidationResult? _validationResult;
     private ValidationReport? _validationReport;
@@ -78,6 +81,9 @@ public partial class MainWindow : Window
         ToolbarIcons.Set(PlayButton, "play", "Reproducir (Espacio)");
         ToolbarIcons.Set(StopButton, "stop", "Detener");
         ToolbarIcons.Set(NextButton, "next", "Fotograma siguiente (→)");
+        ToolbarIcons.Set(UndoButton, "left", "Deshacer (Ctrl+Z)");
+        ToolbarIcons.Set(RedoButton, "right", "Rehacer (Ctrl+Y)");
+        ToolbarIcons.Set(ReplaceFrameButton, "edit", "Reemplazar fotograma");
         ToolbarIcons.Set(AddFrameButton, "plus", "Añadir fotograma");
         ToolbarIcons.Set(DuplicateFrameButton, "copy", "Duplicar fotograma");
         ToolbarIcons.Set(RemoveFrameButton, "trash", "Quitar fotograma");
@@ -184,6 +190,7 @@ public partial class MainWindow : Window
 
     private void ResetGrid()
     {
+        ClearEditorHistory();
         ClearDiagnostics();
         ClearPlayback();
         _grid = null;
@@ -318,6 +325,7 @@ public partial class MainWindow : Window
             var candidate = new CellGrid(
                 new PixelSize(_bitmap.PixelSize.Width, _bitmap.PixelSize.Height),
                 new PixelSize(width, height));
+            ClearEditorHistory();
             ClearDiagnostics();
             _grid = candidate;
             if (_active >= 0)
@@ -358,6 +366,77 @@ public partial class MainWindow : Window
         UpdatePlaybackControls();
     }
 
+    private EditorState CaptureEditorState()
+    {
+        var sheet = _sheets[_active];
+        return new EditorState(sheet.Id, sheet.Offsets, sheet.Anchors, _clips.ToArray(),
+            (ClipList.SelectedItem as ViewerClip)?.Id, _playbackTrack?.Direction,
+            _playback?.Position ?? 0, _selected);
+    }
+
+    private void RecordEditorChange(string label)
+    {
+        if (_active >= 0 && _grid is not null) _editHistory.Record(CaptureEditorState(), label);
+    }
+
+    private void ClearEditorHistory()
+    {
+        _editHistory.Clear();
+        UpdateHistoryControls();
+    }
+
+    private void UpdateHistoryControls()
+    {
+        var enabled = !_importing && _active >= 0 && _grid is not null && _playback?.IsPlaying != true;
+        UndoMenu.IsEnabled = UndoButton.IsEnabled = enabled && _editHistory.CanUndo;
+        RedoMenu.IsEnabled = RedoButton.IsEnabled = enabled && _editHistory.CanRedo;
+        ToolTip.SetTip(UndoButton, _editHistory.UndoLabel is { } u ? $"Deshacer: {u} (Ctrl+Z)" : "Deshacer (Ctrl+Z)");
+        ToolTip.SetTip(RedoButton, _editHistory.RedoLabel is { } r ? $"Rehacer: {r} (Ctrl+Y)" : "Rehacer (Ctrl+Y)");
+    }
+
+    private void RestoreEditorState(EditorState state)
+    {
+        if (_active < 0 || _sheets[_active].Id != state.SheetId)
+        { ClearEditorHistory(); return; }
+        PausePlayback();
+        _sheets[_active] = _sheets[_active] with { Offsets = state.Offsets, Anchors = state.Anchors };
+        _clips.Clear(); _clips.AddRange(state.Clips);
+        RefreshClips();
+        var index = _clips.FindIndex(c => c.Id == state.ClipId && c.SheetId == state.SheetId);
+        if (index >= 0)
+        {
+            var clip = _clips[index];
+            var tracks = clip.EffectiveTracks;
+            var trackIndex = Math.Max(0, Array.FindIndex(tracks.ToArray(), t => t.Direction == state.Direction));
+            _refreshingClips = true;
+            try { ClipList.SelectedIndex = index; }
+            finally { _refreshingClips = false; }
+            RefreshTracks(clip, trackIndex);
+            SetPlayback(tracks[trackIndex]);
+            _playback?.Step(state.Position);
+            ShowPlaybackCell();
+        }
+        else if (state.Cell is int cell) SelectCell(cell);
+        MarkDirty();
+        RefreshFrameEdit(); UpdateOnion(); UpdateHistoryControls();
+    }
+
+    private void OnUndo(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0 || _grid is null || _playback?.IsPlaying == true || !_editHistory.CanUndo) return;
+        var label = _editHistory.UndoLabel;
+        RestoreEditorState(_editHistory.Undo(CaptureEditorState()));
+        StatusText.Text = $"Deshecho: {label}";
+    }
+
+    private void OnRedo(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0 || _grid is null || _playback?.IsPlaying == true || !_editHistory.CanRedo) return;
+        var label = _editHistory.RedoLabel;
+        RestoreEditorState(_editHistory.Redo(CaptureEditorState()));
+        StatusText.Text = $"Rehecho: {label}";
+    }
+
     private FrameOffset GetOffset(int cell) =>
         _active >= 0 ? _sheets[_active].Offsets?.FirstOrDefault(o => o.Cell == cell) ?? FrameOffset.Zero(cell)
             : FrameOffset.Zero(cell);
@@ -383,7 +462,9 @@ public partial class MainWindow : Window
             var sheet = _sheets[_active];
             var offset = new FrameOffset(cell, x, y);
             if (offset == GetOffset(cell)) { RefreshFrameEdit(); return; }
-            _sheets[_active] = sheet with { Offsets = FrameOffset.Set(sheet.Offsets ?? [], _grid, offset) };
+            var result = FrameOffset.Set(sheet.Offsets ?? [], _grid, offset);
+            RecordEditorChange("Mover sprite");
+            _sheets[_active] = sheet with { Offsets = result };
             MarkDirty();
             RefreshFrameEdit();
             UpdateOnion();
@@ -442,6 +523,7 @@ public partial class MainWindow : Window
             var sheet = _sheets[_active];
             var result = FrameAnchor.SetMany(_grid!, sheet.Anchors ?? [], cells, x, y);
             if (result.SequenceEqual(sheet.Anchors ?? [])) return;
+            RecordEditorChange(clear ? "Quitar anclajes" : "Asignar anclajes");
             _sheets[_active] = sheet with { Anchors = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
             StatusText.Text = $"Anclajes actualizados en {cells.Length} celdas.";
@@ -462,6 +544,7 @@ public partial class MainWindow : Window
             var sheet = _sheets[_active];
             var result = FrameAlignment.EditMany(_grid!, sheet.Offsets ?? [], cells, change);
             if (result.SequenceEqual(sheet.Offsets ?? [])) { RefreshFrameEdit(); return; }
+            RecordEditorChange("Desplazamientos de selección");
             _sheets[_active] = sheet with { Offsets = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
             StatusText.Text = $"Desplazamientos actualizados en {cells.Length} celdas.";
@@ -525,6 +608,7 @@ public partial class MainWindow : Window
         if (result is null || _lifetime.IsCancellationRequested || _active < 0 || _sheets[_active].Id != sheetId) return;
         if (!result.SequenceEqual(sheet.Offsets ?? []))
         {
+            RecordEditorChange("Alineación automática");
             _sheets[_active] = sheet with { Offsets = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
         }
@@ -616,6 +700,7 @@ public partial class MainWindow : Window
     private void MarkDirty()
     {
         _dirty = true;
+        UpdateHistoryControls();
         if (_validationResult is not null) ClearDiagnostics();
         ProjectText.Text = _projectName + " *";
         SaveIndicator.Text = "● Cambios sin guardar";
@@ -736,6 +821,7 @@ public partial class MainWindow : Window
             if (replacement >= 0)
                 candidate = await Task.Run(() => Decode(_sheets[replacement].Png), _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
+            ClearEditorHistory();
             _sheets.RemoveAt(removed);
             if (candidate is not null)
             {
@@ -799,6 +885,7 @@ public partial class MainWindow : Window
                         Children = { cancel, ok } } } };
             var name = await dialog.ShowDialog<string?>(this);
             if (string.IsNullOrWhiteSpace(name)) return;
+            RecordEditorChange("Crear clip");
             _clips.Add(new ViewerClip(Guid.NewGuid(), name, _sheets[_active].Id,
                 Enumerable.Range(row * _grid.Columns, _grid.Columns).ToArray()));
             RefreshClips();
@@ -811,6 +898,7 @@ public partial class MainWindow : Window
     private void OnRemoveClip(object? sender, RoutedEventArgs e)
     {
         if (_importing || ClipList.SelectedItem is not ViewerClip clip) return;
+        RecordEditorChange("Quitar clip");
         _clips.Remove(clip);
         RefreshClips();
         MarkDirty();
@@ -861,6 +949,7 @@ public partial class MainWindow : Window
         var position = _clips.FindIndex(c => c.Id == clip.Id);
         if (position < 0) return;
         var updated = clip with { Cells = tracks[0].Cells, Tracks = tracks };
+        RecordEditorChange("Editar animación");
         _clips[position] = updated;
         _refreshingClips = true;
         try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = position; }
@@ -944,7 +1033,9 @@ public partial class MainWindow : Window
             _playbackTrack is not { } current || _grid is null ||
             ClipList.SelectedItem is not ViewerClip clip || _active < 0 ||
             _sheets[_active].Id != clip.SheetId) return;
-        if (operation == TimelineOperation.Insert && (argument < 0 || argument >= _grid.Count)) return;
+        if ((operation is TimelineOperation.Insert or TimelineOperation.Replace) && (argument < 0 || argument >= _grid.Count)) return;
+        if (operation == TimelineOperation.Replace && current.Cells[position] == argument) return;
+        if (operation == TimelineOperation.Move && position == argument) return;
         try
         {
             var result = TimelineEdit.Apply(current.Cells, current.DurationsMs, position, operation, argument);
@@ -981,6 +1072,33 @@ public partial class MainWindow : Window
     private void OnMoveFrameRight(object? sender, RoutedEventArgs e)
     {
         if (_playback is { } cursor) EditTimeline(TimelineOperation.Move, cursor.Position, cursor.Position + 1);
+    }
+
+    private async void OnReplaceFrame(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _playback is not { IsPlaying: false } cursor || _grid is null) return;
+        var position = cursor.Position;
+        var count = _grid.Count;
+        var input = new TextBox { Text = (cursor.Cell + 1).ToString() };
+        var hint = new TextBlock { Text = $"Sustituir aparición {position + 1} por una celda de la misma hoja (1–{count}). Conserva duración y posición en la secuencia.", TextWrapping = TextWrapping.Wrap };
+        var dialog = new Window { Title = "Reemplazar fotograma", Width = 460, Height = 230,
+            Background = UiPalette.Window, Foreground = UiPalette.Text, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var ok = new Button { Content = "Reemplazar" };
+        var cancel = new Button { Content = "Cancelar" };
+        ok.Click += (_, _) =>
+        {
+            if (int.TryParse(input.Text, out var cell) && cell >= 1 && cell <= count) dialog.Close((int?)(cell - 1));
+            else hint.Text = $"Introduce una celda entre 1 y {count}.";
+        };
+        cancel.Click += (_, _) => dialog.Close(null);
+        dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+            Children = { hint, input, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { cancel, ok } } } };
+        SetBusy(true);
+        int? selected = null;
+        try { selected = await dialog.ShowDialog<int?>(this); }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+        if (!_lifetime.IsCancellationRequested && selected is int source)
+            EditTimeline(TimelineOperation.Replace, position, source);
     }
 
     private async void OnAddFrame(object? sender, RoutedEventArgs e)
@@ -1119,6 +1237,8 @@ public partial class MainWindow : Window
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
         OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = OnionTint.IsEnabled = available && _playback?.IsPlaying != true;
+        UpdateHistoryControls();
+        ReplaceFrameButton.IsEnabled = editing;
         var playing = _playback?.IsPlaying == true;
         FrameEditPanel.IsEnabled = !_importing && !playing && _grid is not null && _selected.HasValue;
         FramePreview.CanMoveSprite = FrameEditPanel.IsEnabled && MoveSpriteCheck.IsChecked == true;
@@ -1669,6 +1789,7 @@ public partial class MainWindow : Window
                 catch { result?.Dispose(); throw; }
             });
             if (_lifetime.IsCancellationRequested) return;
+            ClearEditorHistory();
             _sheets.Clear();
             _sheets.AddRange(loaded.Project.Sheets);
             _clips.Clear();

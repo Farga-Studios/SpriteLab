@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.8 — Frame replacement and edit history (0.3.7–0.3.8)
+- Replace individual animation occurrences with another cell from the same sheet; preserve position and timing, original PNG unchanged.
+- Bounded 64-step undo/redo for offsets, anchor changes, batch alignment and animation edits; new edits invalidate redo.
+- History is session-only and scoped to the current sheet/grid; reset on resource switch, grid changes or project opening. Saving retains history until a boundary.
+- Core tests and guided acceptance; CI pending.
+
 ## 0.3.6 — Anchors, magnetic snapping and batch editing (0.3.4–0.3.6)
 - Persistent per-cell anchors with numeric coordinates and center/bottom presets; schema 7 when anchors exist.
 - Drag snapping to enabled guides within 3 source pixels; automatic alignment from raw visible bounds or anchor.

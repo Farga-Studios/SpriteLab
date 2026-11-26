@@ -1,6 +1,6 @@
 namespace SpriteLab.Core;
 
-public enum TimelineOperation { Move, Duplicate, Remove, Insert }
+public enum TimelineOperation { Move, Duplicate, Remove, Insert, Replace }
 
 public sealed record TimelineResult(int[] Cells, int?[]? Durations, int Selected);
 
@@ -37,6 +37,11 @@ public static class TimelineEdit
                 if (argument < 0 || frames.Count >= 4096) throw new ArgumentException("Celda o longitud inválida.");
                 selected = position + 1;
                 frames.Insert(selected, (argument, null));
+                break;
+            case TimelineOperation.Replace:
+                if (argument < 0) throw new ArgumentException("Celda inválida.");
+                frames[position] = (argument, item.Time);
+                selected = position;
                 break;
             default: throw new ArgumentOutOfRangeException(nameof(operation));
         }
