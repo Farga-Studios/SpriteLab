@@ -15,6 +15,8 @@ public partial class MainWindow : Window
 {
     private Bitmap? _bitmap;
     private SheetValidationResult? _validationResult;
+    private SheetFinding[] _allFindings = [];
+    private string _diagnosticSummary = "Validación no ejecutada.";
     private readonly List<ViewerSheet> _sheets = new();
     private readonly List<ViewerClip> _clips = new();
     private bool _refreshingClips;
@@ -42,6 +44,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        DiagnosticFilterBox.SelectionChanged += (_, _) => RefreshDiagnosticFilter();
+        DiagnosticOverlay.IsCheckedChanged += (_, _) => RefreshDiagnosticFilter();
         Preview.CellSelected += OnManualCell;
         CellStrip.CellSelected += OnManualCell;
         CellStrip.OccurrenceSelected += OnOccurrenceSelected;
@@ -263,7 +267,7 @@ public partial class MainWindow : Window
         DeselectClipButton.IsEnabled = !busy && ClipList.SelectedIndex >= 0;
         TrackList.IsEnabled = !busy;
         ValidateMenu.IsEnabled = ValidateButton.IsEnabled = !busy && _grid is not null;
-        FindingList.IsEnabled = !busy;
+        FindingList.IsEnabled = DiagnosticFilterBox.IsEnabled = DiagnosticOverlay.IsEnabled = !busy;
         UpdatePlaybackControls();
         RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
@@ -968,8 +972,21 @@ public partial class MainWindow : Window
     {
         _validationResult = null;
         VisibleBoundsInfo.Text = "Área visible: valida la hoja";
+        _allFindings = [];
+        _diagnosticSummary = "Validación no ejecutada.";
         FindingList.ItemsSource = null;
-        DiagnosticText.Text = "Validación no ejecutada.";
+        Preview.SetDiagnosticMarkers(null);
+        DiagnosticText.Text = _diagnosticSummary;
+    }
+
+    private void RefreshDiagnosticFilter()
+    {
+        if (_validationResult is null) return;
+        var category = (DiagnosticCategory)Math.Clamp(DiagnosticFilterBox.SelectedIndex, 0, 5);
+        var filtered = DiagnosticFilter.Apply(_allFindings, category);
+        FindingList.ItemsSource = filtered;
+        Preview.SetDiagnosticMarkers(DiagnosticOverlay.IsChecked == true ? DiagnosticFilter.Markers(filtered) : null);
+        DiagnosticText.Text = _diagnosticSummary + $" · {filtered.Count(f => f.Code != \"LIMIT\")} avisos visibles";
     }
 
     private async void OnValidate(object? sender, RoutedEventArgs e)
@@ -1005,10 +1022,11 @@ public partial class MainWindow : Window
             if (_lifetime.IsCancellationRequested) return;
             _validationResult = analysis.Sheet;
             UpdateVisibleBounds();
-            FindingList.ItemsSource = analysis.Findings;
+            _allFindings = analysis.Findings.ToArray();
             var result = analysis.Sheet;
-            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación · {analysis.Clips.TotalFindings} de animaciones" +
+            _diagnosticSummary = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación · {analysis.Clips.TotalFindings} de animaciones" +
                 (analysis.Omitted > 0 ? $" · {analysis.Omitted} avisos no listados" : "");
+            RefreshDiagnosticFilter();
         }
         catch (Exception ex)
         {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6 — Visual diagnostic filters
+- Filter diagnostics by category and display optional color-coded cell markers on the sheet, with combined categories and a legend.
+- Preserve navigation and full summary; markers cover retained findings only, and truncation notice remains visible. Three Core tests; CI and GUI checks pending.
+
 ## 0.2.5 — Animation consistency diagnostics
 - Review transparent occurrences, similar direction labels, unspecified directions in multi-track clips and defensive reference/timing checks.
 - Preserve free labels, unequal track lengths and deliberate repeated frames. Shared bounded diagnostic list. Five Core tests; CI and manual verification pending.

@@ -14,6 +14,14 @@ public sealed class SheetPreview : Control
     private CellGrid? _grid;
     private int? _selected;
     private bool _showGrid = true;
+    private IReadOnlyDictionary<int, DiagnosticCategory[]>? _markers;
+    private static readonly IBrush[] MarkerBrushes = [Brushes.White, new SolidColorBrush(Color.Parse("#9CA3AF")), new SolidColorBrush(Color.Parse("#F59E0B")), new SolidColorBrush(Color.Parse("#B18AFF")), new SolidColorBrush(Color.Parse("#60A5FA")), new SolidColorBrush(Color.Parse("#F472B6")), Brushes.White];
+
+    public void SetDiagnosticMarkers(IReadOnlyDictionary<int, DiagnosticCategory[]>? markers)
+    {
+        _markers = markers;
+        InvalidateVisual();
+    }
     private static readonly Pen GridPen = new(new SolidColorBrush(Color.Parse("#90A0B0")), 1);
     private static readonly Pen SelectionPen = new(new SolidColorBrush(Color.Parse("#FFC65C")), 2);
     public event Action<int>? CellSelected;
@@ -21,6 +29,7 @@ public sealed class SheetPreview : Control
     public void SetGrid(CellGrid? grid)
     {
         _grid = grid;
+        _markers = null;
         _selected = null;
         InvalidateVisual();
     }
@@ -101,6 +110,21 @@ public sealed class SheetPreview : Control
             if (dy >= 4)
                 for (int row = 1; row < _grid.Rows; row++)
                     context.DrawLine(GridPen, new Point(0, row * dy), new Point(Width, row * dy));
+        }
+        if (_markers is not null)
+        {
+            foreach (var (index, categories) in _markers)
+            {
+                if (index < 0 || index >= _grid.Count || categories.Length == 0) continue;
+                var cell = _grid.GetCell(index);
+                var w = (double)cell.Width * _zoom;
+                var h = (double)cell.Height * _zoom;
+                var segment = w / categories.Length;
+                var height = Math.Min(5, h);
+                for (var i = 0; i < categories.Length; i++)
+                    context.DrawRectangle(MarkerBrushes[(int)categories[i]], null,
+                        new Rect(cell.X * _zoom + i * segment, cell.Y * _zoom, segment, height));
+            }
         }
         if (_selected is int selected)
         {

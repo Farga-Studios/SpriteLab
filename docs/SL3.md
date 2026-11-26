@@ -19,3 +19,6 @@ Comparar celdas no vacías de la misma hoja: igualdad RGBA en coordenadas locale
 
 ## 0.2.5 — Clips y direcciones
 Avisos de ocurrencias transparentes agrupadas por pista, etiquetas similares ignorando mayúsculas y espacios exteriores, pista none junto a direcciones explícitas y comprobaciones defensivas de referencias/tiempos. Las etiquetas libres, distintas longitudes y FPS y repeticiones intencionadas siguen permitidas. Se limita al recurso activo. La validación estructural del guardado sigue siendo independiente. CI y revisión manual pendientes.
+
+## 0.2.6 — Diagnósticos visuales
+Filtros por categoría, leyenda y marcas opcionales sobre hoja, independientes de la cuadrícula. Varias categorías de una celda se representan como segmentos de color en su borde superior. Lista y marcas reflejan el filtro; resumen global y aviso LIMIT permanecen. Las marcas solo cubren los hallazgos retenidos (máximo 1000), no los omitidos. Selección de aviso mantiene navegación existente. Invalidar resultados y marcas al cambiar hoja, cuadrícula o proyecto. Manual: filtrar cada categoría, alternar marcas, zoom, selección, cambio de recurso y combinación de categorías. CI pendiente.

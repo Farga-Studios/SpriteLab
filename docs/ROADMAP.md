@@ -36,3 +36,5 @@ SL3 0.2.5: clip consistency diagnostics. Next visual filtering/navigation. CI pe
 
 ## SL4 — propuesta de editor de corrección (pendiente de diseño)
 Editor no destructivo con desplazamiento por arrastre y X/Y, guías horizontales/verticales configurables, centro y línea de suelo, anclajes, ajuste magnético, onion skin, alineación asistida por centro/base/anclaje, edición múltiple, deshacer/rehacer y navegación desde diagnósticos de SL3. Conservar originales y aplicar correcciones en exportación. Definir modelo y ADR antes de implementar; guías geométricas no equivalen a detección anatómica. Pintura avanzada fuera del MVP. Revisión funcional de UI tras SL4 y estética en SL7.
+
+SL3 0.2.6: visual diagnostic filters and sheet markers. Next validation reports. CI and manual validation pending.
