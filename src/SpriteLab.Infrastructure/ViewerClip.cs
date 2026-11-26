@@ -4,9 +4,11 @@ namespace SpriteLab.Infrastructure;
 
 // Transitional persisted clip: stable sheet ID plus ordered indices into its fixed grid.
 // Grid changes and removal are blocked while referenced. Full Frame-ID mapping follows in SL2.
-public sealed record ViewerTrack(string Direction, int[] Cells)
+public sealed record ViewerTrack(string Direction, int[] Cells, int? Fps = null, int?[]? DurationsMs = null)
 {
     public override string ToString() => Direction;
+
+    public double DurationAt(int index) => PreviewTiming.Duration(Fps ?? PreviewTiming.DefaultFps, DurationsMs?[index]);
 }
 
 public sealed record ViewerClip(Guid Id, string Name, Guid SheetId, int[] Cells, ViewerTrack[]? Tracks = null)
@@ -43,6 +45,10 @@ public sealed record ViewerClip(Guid Id, string Name, Guid SheetId, int[] Cells,
                     !directions.Add(track.Direction) || track.Cells is null || track.Cells.Length is < 1 or > 4096 ||
                     track.Cells.Any(i => i < 0 || i >= grid.Count))
                     throw new InvalidDataException("Invalid direction track.");
+                if (track.Fps is < 1 or > 60 ||
+                    (track.DurationsMs is not null && (track.DurationsMs.Length != track.Cells.Length ||
+                        track.DurationsMs.Any(d => d is < 1 or > PreviewTiming.MaxDurationMs))))
+                    throw new InvalidDataException("Invalid preview timing.");
             }
         }
     }

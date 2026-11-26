@@ -102,7 +102,7 @@
       </Border>
       <GridSplitter Grid.Column="3" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
       <Border Grid.Column="4" Grid.RowSpan="5" Background="#202630" Padding="12">
-        <StackPanel Spacing="12">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Spacing="12">
           <TextBlock Text="PROPIEDADES" Classes="panelHeading" />
           <TextBlock Text="Imagen" FontWeight="SemiBold" />
           <TextBlock x:Name="ResolutionText" Text="Resolución: —" Classes="muted" />
@@ -119,9 +119,16 @@
           <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
           <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+            <TextBlock Text="FPS de pista" Classes="muted" />
+            <TextBlock Grid.Column="1" Text="Duración (ms)" Classes="muted" />
+            <TextBox Grid.Row="1" x:Name="FpsInput" Text="8" IsEnabled="False" Margin="0,4,4,0" />
+            <TextBox Grid.Row="1" Grid.Column="1" x:Name="DurationInput" Watermark="Auto" IsEnabled="False" Margin="4,4,0,0" />
+          </Grid>
+          <Button x:Name="ApplyTimingButton" Content="Aplicar tiempo" Click="OnApplyTiming" IsEnabled="False" HorizontalAlignment="Stretch" />
           <TextBlock x:Name="AnchorInfo" Text="Anclaje: —" Classes="muted" />
           <TextBlock Text="Desplazamiento: —" Classes="muted" />
-        </StackPanel>
+        </StackPanel></ScrollViewer>
       </Border>
       <GridSplitter Grid.Column="2" Grid.Row="1" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
       <Border Grid.Column="2" Grid.Row="2" Background="#202630" Padding="12">

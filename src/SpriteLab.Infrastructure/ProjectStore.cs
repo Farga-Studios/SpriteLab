@@ -47,7 +47,7 @@ public static class ProjectStore
 
     private static void Validate(ProjectManifest manifest)
     {
-        if (manifest.SchemaVersion is not (1 or 2 or 3) || manifest.ProjectId == Guid.Empty ||
+        if (manifest.SchemaVersion is not (1 or 2 or 3 or 4) || manifest.ProjectId == Guid.Empty ||
             string.IsNullOrWhiteSpace(manifest.Name) || manifest.Assets is null ||
             manifest.Assets.Length > 256)
             throw new InvalidDataException("Unsupported or invalid project manifest.");
@@ -70,6 +70,9 @@ public static class ProjectStore
         if (manifest.SchemaVersion < 3 && (manifest.Clips ?? []).Any(c => c?.Tracks is not null))
             throw new InvalidDataException("Direction tracks require schema 3.");
         ViewerClip.ValidateAll(manifest.Clips ?? [], manifest.Assets);
+        if (manifest.SchemaVersion < 4 && (manifest.Clips ?? []).Any(c =>
+            c.EffectiveTracks.Any(t => t.Fps.HasValue || t.DurationsMs is not null)))
+            throw new InvalidDataException("Preview timing requires schema 4.");
     }
 
     public static async Task<LoadedProject> LoadAsync(string root, CancellationToken ct = default)

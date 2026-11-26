@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5 — 2026-11-26
+- Add per-track FPS (1–60) and optional per-occurrence preview duration (1–60000 ms), persisted in schema 4.
+- Update timer interval per occurrence and allow blank duration to restore FPS default. Older schemas remain readable; older applications cannot open schema 4.
+- Add timing validation and regression tests. No gameplay timing semantics. CI and manual verification pending.
+
 ## 0.1.4 — 2026-11-26
 - Add fixed 8 FPS playback of the selected direction, pause, stop, loop and occurrence navigation.
 - Synchronize the frame inspector and sheet highlight with playback; pause before workspace operations.

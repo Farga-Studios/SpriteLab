@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private bool _refreshingClips;
     private bool _refreshingTracks;
     private PlaybackCursor? _playback;
+    private ViewerTrack? _playbackTrack;
     private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromMilliseconds(125) };
     private Guid _projectId = Guid.NewGuid();
     private string _projectName = "Proyecto";
@@ -573,6 +574,8 @@ public partial class MainWindow : Window
     {
         ClearPlayback();
         _playback = new PlaybackCursor(track.Cells);
+        _playbackTrack = track;
+        FpsInput.Text = (track.Fps ?? PreviewTiming.DefaultFps).ToString();
         ShowPlaybackCell();
     }
 
@@ -580,6 +583,7 @@ public partial class MainWindow : Window
     {
         _playTimer.Stop();
         _playback = null;
+        _playbackTrack = null;
         UpdatePlaybackControls();
     }
 
@@ -594,6 +598,7 @@ public partial class MainWindow : Window
     {
         var available = !_importing && _playback is not null;
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
+        FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
         PlayButton.Content = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         PlayMenu.Header = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         if (_playback is { } cursor)
@@ -608,6 +613,13 @@ public partial class MainWindow : Window
         if (_playback is not { } cursor) return;
         SelectCell(cursor.Cell);
         TimelineInfo.Text = $"Fotograma {cursor.Position + 1} / {cursor.Count} · Celda {cursor.Cell + 1}";
+        if (_playbackTrack is { } track)
+        {
+            var duration = track.DurationAt(cursor.Position);
+            DurationInfo.Text = $"Duración: {duration:0.##} ms";
+            DurationInput.Text = track.DurationsMs?[cursor.Position]?.ToString() ?? "";
+            _playTimer.Interval = TimeSpan.FromMilliseconds(duration);
+        }
         UpdatePlaybackControls();
     }
 
@@ -629,10 +641,42 @@ public partial class MainWindow : Window
         ShowPlaybackCell();
     }
 
+    private void OnApplyTiming(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _playback is not { } cursor || cursor.IsPlaying ||
+            ClipList.SelectedItem is not ViewerClip clip || _playbackTrack is null ||
+            _active < 0 || _sheets[_active].Id != clip.SheetId) return;
+        if (!int.TryParse(FpsInput.Text, out var fps) || fps is < 1 or > 60)
+        { StatusText.Text = "Introduce FPS entre 1 y 60."; return; }
+        int? duration = null;
+        if (!string.IsNullOrWhiteSpace(DurationInput.Text))
+        {
+            if (!int.TryParse(DurationInput.Text, out var ms) || ms is < 1 or > PreviewTiming.MaxDurationMs)
+            { StatusText.Text = "Duración entre 1 y 60000 ms, o vacía para usar FPS."; return; }
+            duration = ms;
+        }
+        var tracks = clip.EffectiveTracks.ToArray();
+        var index = Array.FindIndex(tracks, t => t.Direction == _playbackTrack.Direction);
+        if (index < 0) return;
+        var position = cursor.Position;
+        var overrides = tracks[index].DurationsMs?.ToArray() ?? new int?[cursor.Count];
+        overrides[position] = duration;
+        tracks[index] = tracks[index] with { Fps = fps, DurationsMs = overrides.Any(d => d.HasValue) ? overrides : null };
+        ReplaceClip(clip, tracks, index);
+        _playback?.Step(position);
+        ShowPlaybackCell();
+        StatusText.Text = "Tiempo de previsualización actualizado";
+    }
+
     private void PlaybackTick()
     {
         if (_importing || _playback is not { } cursor) { PausePlayback(); return; }
-        if (cursor.Tick(LoopCheck.IsChecked == true)) ShowPlaybackCell();
+        _playTimer.Stop();
+        if (cursor.Tick(LoopCheck.IsChecked == true))
+        {
+            ShowPlaybackCell();
+            _playTimer.Start();
+        }
         else PausePlayback();
     }
 
