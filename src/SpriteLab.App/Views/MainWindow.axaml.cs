@@ -52,7 +52,7 @@ public partial class MainWindow : Window
         OnionOpacity.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) UpdateOnion(); };
         LoopCheck.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         Preview.PointerWheelChanged += OnPreviewWheel;
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL2";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL3";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -133,6 +133,7 @@ public partial class MainWindow : Window
 
     private void ResetGrid()
     {
+        ClearDiagnostics();
         ClearPlayback();
         _grid = null;
         _selected = null;
@@ -170,6 +171,7 @@ public partial class MainWindow : Window
             var candidate = new CellGrid(
                 new PixelSize(_bitmap.PixelSize.Width, _bitmap.PixelSize.Height),
                 new PixelSize(width, height));
+            ClearDiagnostics();
             _grid = candidate;
             if (_active >= 0)
             {
@@ -181,6 +183,7 @@ public partial class MainWindow : Window
             RefreshClips();
             GridInfo.Text = $"{candidate.Columns} columnas × {candidate.Rows} filas · {candidate.Count} celdas";
             SelectCell(0);
+            ValidateMenu.IsEnabled = ValidateButton.IsEnabled = true;
             StatusText.Text = "Cuadrícula aplicada · Sin modificar el PNG";
         }
         catch (ArgumentException)
@@ -261,6 +264,8 @@ public partial class MainWindow : Window
             SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
         TrackList.IsEnabled = !busy;
+        ValidateMenu.IsEnabled = ValidateButton.IsEnabled = !busy && _grid is not null;
+        FindingList.IsEnabled = !busy;
         UpdatePlaybackControls();
         RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !busy && _active >= 0;
     }
@@ -733,6 +738,43 @@ public partial class MainWindow : Window
             changed = true;
         }
         if (changed) ShowPlaybackCell();
+    }
+
+    private void ClearDiagnostics()
+    {
+        FindingList.ItemsSource = null;
+        DiagnosticText.Text = "Validación no ejecutada.";
+    }
+
+    private async void OnValidate(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _bitmap is null || _grid is null) return;
+        var grid = _grid;
+        SetBusy(true);
+        ClearDiagnostics();
+        DiagnosticText.Text = "Analizando alfa y bordes...";
+        try
+        {
+            var pixels = ValidationPixels.Read(_bitmap);
+            var findings = await Task.Run(() => SheetValidation.Scan(grid, pixels, _lifetime.Token), _lifetime.Token);
+            if (_lifetime.IsCancellationRequested) return;
+            FindingList.ItemsSource = findings;
+            DiagnosticText.Text = findings.Count == 0
+                ? "Sin avisos en las comprobaciones realizadas."
+                : $"{findings.Count} resultados · Selecciona un aviso para revisar la celda.";
+        }
+        catch (Exception ex)
+        {
+            if (!_lifetime.IsCancellationRequested) DiagnosticText.Text = $"Validación incompleta: {ex.Message}";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private void OnFindingSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_importing || FindingList.SelectedItem is not SheetFinding { Cell: int cell }) return;
+        OnManualCell(cell);
+        StatusText.Text = $"Revisando celda {cell + 1}";
     }
 
     private static Bitmap Decode(byte[] bytes)

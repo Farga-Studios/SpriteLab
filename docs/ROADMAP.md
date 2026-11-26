@@ -16,3 +16,5 @@ Cada fase debe cumplir ADR 007; no fechas ni estimaciones cerradas sin medir. El
 
 ## Próxima acción
 SL2 candidate 0.2.0: verify CI, manual workflow and outstanding architecture items. SL3 work may begin in parallel without marking SL2 accepted. No tocar juego, GraphicsLab ni dashboard.
+
+SL3 initial 0.2.1: local alpha and border diagnostics with cell navigation. SL2 acceptance remains pending.

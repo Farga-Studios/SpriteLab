@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 — 2026-11-26 (SL3 initial)
+- Add local RGBA scan for transparent cells and nonzero alpha at cell edges.
+- Navigable warning list, bounded results, cancellation and invalidation on sheet/grid change.
+- Findings are heuristic warnings, not artistic approval. No schema change. CI and GUI validation pending.
+
 ## 0.2.0 — 2026-11-26 (SL2 candidate)
 - Timeline displays actual ordered clip occurrences, including repeated cells, and supports direct occurrence selection.
 - Monotonic accumulated preview clock with cycle skipping and variable durations; UI tick resolution remains approximate.

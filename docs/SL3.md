@@ -1,0 +1,3 @@
+# SL3 — Validación local
+
+0.2.1: analyse active sheet grid for fully transparent cells and visible alpha on cell boundaries. Warnings are advisory, not proof of clipping or invalid art. Results capped at 1000 warnings plus explicit partial-scan notice. Pixel copy on UI thread; scan on worker, cancellation on lifetime. No Python, no source edits or persisted diagnostics. Clear results on sheet/grid changes. Next: bounds, coverage, ground consistency, duplicate frames, profiles and review workflow. Verify actual Avalonia RGBA conversion and manual navigation on Windows. SL2 acceptance still pending.

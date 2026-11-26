@@ -27,7 +27,7 @@
         <MenuItem x:Name="PlayMenu" Header="Reproducir" IsEnabled="False" Click="OnPlay" />
       </MenuItem>
       <MenuItem Header="_Herramientas">
-        <MenuItem Header="Validar" IsEnabled="False" />
+        <MenuItem x:Name="ValidateMenu" Header="Validar hoja" IsEnabled="False" Click="OnValidate" />
         <MenuItem Header="Sprite Pipeline" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="Ay_uda">
@@ -158,10 +158,14 @@
       </Border>
       <GridSplitter Grid.Column="2" Grid.Row="3" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
       <Border Grid.Column="2" Grid.Row="4" Background="#202630" Padding="12">
-        <StackPanel Spacing="8">
-          <TextBlock Text="DIAGNÓSTICOS" Classes="panelHeading" />
-          <TextBlock Text="Validación no ejecutada." Classes="muted" />
-        </StackPanel>
+        <Grid RowDefinitions="Auto,Auto,*">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="DIAGNÓSTICOS" Classes="panelHeading" VerticalAlignment="Center" />
+            <Button Grid.Column="1" x:Name="ValidateButton" Content="Validar hoja" Click="OnValidate" IsEnabled="False" />
+          </Grid>
+          <TextBlock Grid.Row="1" x:Name="DiagnosticText" Text="Validación no ejecutada." Classes="muted" TextWrapping="Wrap" />
+          <ListBox Grid.Row="2" x:Name="FindingList" SelectionChanged="OnFindingSelected" />
+        </Grid>
       </Border>
     </Grid>
     <Border Grid.Row="3" Background="#242A34" Padding="12,7">
