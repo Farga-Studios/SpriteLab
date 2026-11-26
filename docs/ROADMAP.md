@@ -44,3 +44,6 @@ SL3 0.2.7: export validation reports, JSON v1 and text; next stabilization and a
 SL3 0.3.0 acceptance candidate: CI 0.2.7.1 green confirmed by user; new CI and manual acceptance pending. No SL4 implementation yet.
 
 SL3 functional acceptance reported by user for 0.3.0.1. 0.3.0.2 usability pass: vector toolbar, scrubber, grid assistant; verify CI and targeted manual checks before SL4.
+
+## SL4 — 0.4.0 acceptance candidate (27/11/2026)
+0.3.0.3–0.3.8 implemented in main. Acceptance candidate 0.4.0 includes regression fixes and checklist docs/SL4-ACCEPTANCE.md. Do not mark SL4 accepted until CI and manual checks pass. Replacement refers to an occurrence within the same sheet; external replacement is out of current scope. Export applies offsets/anchors in SL6. Optional Python integration follows SL5, then SL6 export and SL7 stabilization. The proposed detailed 27-point roadmap is a planning aid, not an additional approved scope.

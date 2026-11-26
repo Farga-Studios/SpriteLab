@@ -130,7 +130,12 @@ public sealed class FramePreview : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if (_spriteDrag.HasValue) { _spriteDrag = null; OffsetCommitted?.Invoke(_offsetX, _offsetY); }
+        if (_spriteDrag.HasValue)
+        {
+            _spriteDrag = null;
+            if (CanMoveSprite) OffsetCommitted?.Invoke(_offsetX, _offsetY);
+            else { SetOffset(_startX, _startY); OffsetPreviewChanged?.Invoke(_startX, _startY); }
+        }
         _drag = null;
         if (e.Pointer.Captured == this) e.Pointer.Capture(null);
     }
@@ -144,6 +149,8 @@ public sealed class FramePreview : Control
 
     public void SetFrame(Bitmap? bitmap, CorePixelRect cell)
     {
+        _spriteDrag = null;
+        _drag = null;
         if (!ReferenceEquals(_bitmap, bitmap)) ClearTints();
         _bitmap = bitmap;
         _cell = cell;
@@ -194,7 +201,7 @@ public sealed class FramePreview : Control
         var bitmap = _bitmap;
         if (bitmap is null || _cell.Width <= 0 || _cell.Height <= 0 ||
             Bounds.Width <= 0 || Bounds.Height <= 0) return;
-        var scale = Math.Min(Bounds.Width / _cell.Width, Bounds.Height / _cell.Height);
+        var scale = Math.Min(Math.Max(1, Bounds.Width - 16) / _cell.Width, Math.Max(1, Bounds.Height - 16) / _cell.Height);
         if (scale >= 1) scale = Math.Floor(scale);
         if (_zoom > 0) scale = _zoom;
         _renderScale = scale;

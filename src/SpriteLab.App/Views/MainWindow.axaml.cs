@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private sealed record EditorState(Guid SheetId, FrameOffset[]? Offsets, FrameAnchor[]? Anchors,
         ViewerClip[] Clips, Guid? ClipId, string? Direction, int Position, int? Cell);
     private readonly EditHistory<EditorState> _editHistory = new(64);
+    private bool _editorReady;
     private Bitmap? _bitmap;
     private SheetValidationResult? _validationResult;
     private ValidationReport? _validationReport;
@@ -51,6 +52,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeToolbarIcons();
+        _editorReady = true;
+        OnApplyGuides(this, new RoutedEventArgs());
         FramePreview.OffsetCommitted += ApplyFrameOffset;
         FramePreview.OffsetPreviewChanged += (x, y) => { OffsetX.Text = x.ToString(); OffsetY.Text = y.ToString(); };
         TimeScrubber.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) OnScrub(); };
@@ -81,9 +84,9 @@ public partial class MainWindow : Window
         ToolbarIcons.Set(PlayButton, "play", "Reproducir (Espacio)");
         ToolbarIcons.Set(StopButton, "stop", "Detener");
         ToolbarIcons.Set(NextButton, "next", "Fotograma siguiente (→)");
-        ToolbarIcons.Set(UndoButton, "left", "Deshacer (Ctrl+Z)");
-        ToolbarIcons.Set(RedoButton, "right", "Rehacer (Ctrl+Y)");
-        ToolbarIcons.Set(ReplaceFrameButton, "edit", "Reemplazar fotograma");
+        ToolbarIcons.Set(UndoButton, "undo", "Deshacer (Ctrl+Z)");
+        ToolbarIcons.Set(RedoButton, "redo", "Rehacer (Ctrl+Y)");
+        ToolbarIcons.Set(ReplaceFrameButton, "replace", "Reemplazar fotograma");
         ToolbarIcons.Set(AddFrameButton, "plus", "Añadir fotograma");
         ToolbarIcons.Set(DuplicateFrameButton, "copy", "Duplicar fotograma");
         ToolbarIcons.Set(RemoveFrameButton, "trash", "Quitar fotograma");
@@ -195,6 +198,7 @@ public partial class MainWindow : Window
         ClearPlayback();
         _grid = null;
         _selected = null;
+        BatchMode.IsChecked = false;
         BatchCells.Text = "";
         RefreshFrameEdit();
         Preview.SetGrid(null);
@@ -447,6 +451,7 @@ public partial class MainWindow : Window
         OffsetX.Text = offset.X.ToString();
         OffsetY.Text = offset.Y.ToString();
         FramePreview.SetOffset(offset.X, offset.Y);
+        OffsetInfo.Text = _selected.HasValue ? $"Desplazamiento: {offset.X}, {offset.Y} px" : "Desplazamiento: —";
         var anchor = _selected is int c ? GetAnchor(c) : null;
         AnchorX.Text = (anchor?.X ?? 0).ToString();
         AnchorY.Text = (anchor?.Y ?? 0).ToString();
@@ -501,7 +506,7 @@ public partial class MainWindow : Window
 
     private void OnAnchorPreset(object? sender, RoutedEventArgs e)
     {
-        if (!CanEditFrame()) return;
+        if (!_editorReady || !CanEditFrame() || AnchorPreset.SelectedIndex < 0) return;
         var center = AnchorPreset.SelectedIndex == 1;
         AnchorX.Text = (_grid!.Cell.Width / 2).ToString();
         AnchorY.Text = (center ? _grid.Cell.Height / 2 : _grid.Cell.Height).ToString();
@@ -533,7 +538,7 @@ public partial class MainWindow : Window
 
     private void OnApplyAnchor(object? sender, RoutedEventArgs e) => ChangeAnchors(false);
     private void OnClearAnchor(object? sender, RoutedEventArgs e) => ChangeAnchors(true);
-    private void OnSnapChanged(object? sender, RoutedEventArgs e) => FramePreview.SnapEnabled = SnapCheck.IsChecked == true;
+    private void OnSnapChanged(object? sender, RoutedEventArgs e) { if (_editorReady) FramePreview.SnapEnabled = SnapCheck.IsChecked == true; }
 
     private void EditOffsets(Func<int, FrameOffset, FrameOffset> change)
     {
@@ -623,7 +628,7 @@ public partial class MainWindow : Window
 
     private void OnResetOffset(object? sender, RoutedEventArgs e) => EditOffsets((c, _) => FrameOffset.Zero(c));
 
-    private void OnMoveModeChanged(object? sender, RoutedEventArgs e) => UpdatePlaybackControls();
+    private void OnMoveModeChanged(object? sender, RoutedEventArgs e) { if (_editorReady) UpdatePlaybackControls(); }
 
     private void OnApplyGuides(object? sender, RoutedEventArgs e)
     {
@@ -1034,6 +1039,7 @@ public partial class MainWindow : Window
             ClipList.SelectedItem is not ViewerClip clip || _active < 0 ||
             _sheets[_active].Id != clip.SheetId) return;
         if ((operation is TimelineOperation.Insert or TimelineOperation.Replace) && (argument < 0 || argument >= _grid.Count)) return;
+        if (position < 0 || position >= current.Cells.Length) return;
         if (operation == TimelineOperation.Replace && current.Cells[position] == argument) return;
         if (operation == TimelineOperation.Move && position == argument) return;
         try

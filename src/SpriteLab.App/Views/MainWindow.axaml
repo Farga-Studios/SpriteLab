@@ -230,7 +230,7 @@
           <TextBlock x:Name="VisibleBoundsInfo" Text="Área visible: valida la hoja" Classes="muted" TextWrapping="Wrap" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
           <TextBlock x:Name="AnchorInfo" Text="Anclaje: —" Classes="muted" />
-          <TextBlock Text="Desplazamiento: —" Classes="muted" />
+          <TextBlock x:Name="OffsetInfo" Text="Desplazamiento: —" Classes="muted" />
           </StackPanel></ScrollViewer></TabItem>
         </TabControl>
       </Border>

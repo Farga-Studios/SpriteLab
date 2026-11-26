@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 — SL4 acceptance candidate
+- Harden initialization-time editor events, drag cancellation and timeline bounds checks.
+- Reset batch selection at sheet/grid boundaries and synchronize initial guide settings.
+- Show actual offset in frame inspector; improve preview margins and dedicated history/replacement icons.
+- Consolidated acceptance checklist and roadmap. Manual and CI gates remain open.
+
 ## 0.3.8 — Frame replacement and edit history (0.3.7–0.3.8)
 - Replace individual animation occurrences with another cell from the same sheet; preserve position and timing, original PNG unchanged.
 - Bounded 64-step undo/redo for offsets, anchor changes, batch alignment and animation edits; new edits invalidate redo.

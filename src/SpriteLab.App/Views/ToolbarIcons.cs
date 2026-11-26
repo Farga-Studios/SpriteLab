@@ -12,6 +12,9 @@ internal static class ToolbarIcons
 {
     private static readonly Dictionary<string, string> Paths = new()
     {
+        ["undo"] = "M4,4 V10 H10 M4,10 L8,6 Q10,4 14,5 A8,8 0 0 1 15,21",
+        ["redo"] = "M20,4 V10 H14 M20,10 L16,6 Q14,4 10,5 A8,8 0 0 0 9,21",
+        ["replace"] = "M4,7 H19 L15,3 M19,7 L15,11 M20,17 H5 L9,13 M5,17 L9,21",
         ["play"] = "M8,5 L19,12 L8,19 Z",
         ["pause"] = "M9,5 L9,19 M15,5 L15,19",
         ["stop"] = "M6,5 H18 Q19,5 19,6 V18 Q19,19 18,19 H6 Q5,19 5,18 V6 Q5,5 6,5 Z",

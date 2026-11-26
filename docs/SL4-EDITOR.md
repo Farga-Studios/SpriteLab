@@ -21,3 +21,6 @@ Use 05_desalineados.png and 07_animaciones.png from TestAssets/SL3. Vista: selec
 
 ## 0.3.7–0.3.8 acceptance
 Use 01_correcto.png (48×48) and create a row clip. Set duration 250 ms on occurrence 2, replace it with cell 4 using the timeline edit icon. Verify four occurrences remain, only occurrence 2 changes, duration remains 250 ms and source untouched. Cancel or enter invalid cell: no edit. Ctrl+Z restores prior cell, Ctrl+Y reapplies replacement. Drag a sprite and undo once (one history step); apply a batch offset and undo once (all selected cells); assign anchors and align, undo/redo each. Test add/duplicate/remove/reorder/timing changes and clip creation/removal. New edit after undo discards redo. History limited to 64 operations and current sheet/grid, resets when changing resource/grid or opening project; not persisted. Saving preserves current edit state, not history. Undo/redo mark document dirty conservatively even if returned to saved state. No source replacement/import of external PNG in this iteration; replacement means changing one occurrence reference. CI and manual tests pending. SL4 acceptance 0.4.0 is separate.
+
+## 0.4.0
+This file records implementation history; the consolidated current acceptance checklist is [SL4-ACCEPTANCE.md](SL4-ACCEPTANCE.md). CI and manual gates remain open.
