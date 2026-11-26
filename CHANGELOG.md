@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.6 — Visual timeline editing
+- Drag visible occurrences to reorder; move left/right, duplicate, remove and insert by sheet cell number.
+- Preserve exact occurrence timing through moves and duplicates; new occurrences use automatic timing.
+- Protect last occurrence, disable edits during playback, retain textual sequence editor. Four Core tests. CI and GUI acceptance pending.
+
 ## 0.2.1.5 — SL2 workspace organization
 - Split inspector into sheet, preview and frame tabs; automatically reveal sheet configuration on import and preview on clip selection.
 - Move track selection, direction operations and timing fields into animation timeline; wrap controls and allow vertical scrolling.

@@ -55,7 +55,7 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="*" MinHeight="200" />
         <RowDefinition Height="5" />
-        <RowDefinition Height="280" MinHeight="220" MaxHeight="380" />
+        <RowDefinition Height="340" MinHeight="220" MaxHeight="440" />
         <RowDefinition Height="5" />
         <RowDefinition Height="100" MinHeight="90" MaxHeight="250" />
       </Grid.RowDefinitions>
@@ -183,6 +183,14 @@
               <StackPanel Spacing="4">
                 <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" />
                 <views:CellStrip x:Name="CellStrip" Height="56" />
+                <TextBlock Text="Arrastra las miniaturas para reordenar las visibles." Classes="muted" TextWrapping="Wrap" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button x:Name="AddFrameButton" Content="+ Añadir" Click="OnAddFrame" IsEnabled="False" Margin="0,0,4,4" />
+                  <Button x:Name="DuplicateFrameButton" Content="Duplicar" Click="OnDuplicateFrame" IsEnabled="False" Margin="0,0,4,4" />
+                  <Button x:Name="RemoveFrameButton" Content="Quitar" Click="OnRemoveFrame" IsEnabled="False" Margin="0,0,4,4" />
+                  <Button x:Name="MoveFrameLeftButton" Content="←" Click="OnMoveFrameLeft" IsEnabled="False" ToolTip.Tip="Mover fotograma a la izquierda" Margin="0,0,4,4" />
+                  <Button x:Name="MoveFrameRightButton" Content="→" Click="OnMoveFrameRight" IsEnabled="False" ToolTip.Tip="Mover fotograma a la derecha" Margin="0,0,4,4" />
+                </WrapPanel>
               </StackPanel>
             </Border>
           </StackPanel>

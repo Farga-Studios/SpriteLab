@@ -44,6 +44,7 @@ public partial class MainWindow : Window
         Preview.CellSelected += OnManualCell;
         CellStrip.CellSelected += OnManualCell;
         CellStrip.OccurrenceSelected += OnOccurrenceSelected;
+        CellStrip.OccurrenceMoved += OnOccurrenceMoved;
         _playTimer.Tick += (_, _) => PlaybackTick();
         UpdatePlaybackControls();
         OnionPrevious.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
@@ -582,6 +583,77 @@ public partial class MainWindow : Window
         StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
     }
 
+    private void EditTimeline(TimelineOperation operation, int position, int argument = 0)
+    {
+        if (_importing || _playback is not { IsPlaying: false } ||
+            _playbackTrack is not { } current || _grid is null ||
+            ClipList.SelectedItem is not ViewerClip clip || _active < 0 ||
+            _sheets[_active].Id != clip.SheetId) return;
+        if (operation == TimelineOperation.Insert && (argument < 0 || argument >= _grid.Count)) return;
+        try
+        {
+            var result = TimelineEdit.Apply(current.Cells, current.DurationsMs, position, operation, argument);
+            var tracks = clip.EffectiveTracks.ToArray();
+            var index = Array.FindIndex(tracks, t => t.Direction == current.Direction);
+            if (index < 0) return;
+            tracks[index] = current with { Cells = result.Cells, DurationsMs = result.Durations };
+            ReplaceClip(clip, tracks, index);
+            _playback?.Step(result.Selected);
+            ShowPlaybackCell();
+            StatusText.Text = "Secuencia actualizada · Cambios sin guardar";
+        }
+        catch (ArgumentException ex) { StatusText.Text = ex.Message; }
+    }
+
+    private void OnOccurrenceMoved(int source, int destination) =>
+        EditTimeline(TimelineOperation.Move, source, destination);
+
+    private void OnDuplicateFrame(object? sender, RoutedEventArgs e)
+    {
+        if (_playback is { } cursor) EditTimeline(TimelineOperation.Duplicate, cursor.Position);
+    }
+
+    private void OnRemoveFrame(object? sender, RoutedEventArgs e)
+    {
+        if (_playback is { } cursor) EditTimeline(TimelineOperation.Remove, cursor.Position);
+    }
+
+    private void OnMoveFrameLeft(object? sender, RoutedEventArgs e)
+    {
+        if (_playback is { } cursor) EditTimeline(TimelineOperation.Move, cursor.Position, cursor.Position - 1);
+    }
+
+    private void OnMoveFrameRight(object? sender, RoutedEventArgs e)
+    {
+        if (_playback is { } cursor) EditTimeline(TimelineOperation.Move, cursor.Position, cursor.Position + 1);
+    }
+
+    private async void OnAddFrame(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _playback is not { IsPlaying: false } cursor || _grid is null) return;
+        var count = _grid.Count;
+        var position = cursor.Position;
+        var input = new TextBox { Text = (cursor.Cell + 1).ToString() };
+        var hint = new TextBlock { Text = $"Celda de la hoja (1–{count}). Se inserta después del fotograma seleccionado.", TextWrapping = TextWrapping.Wrap };
+        var dialog = new Window { Title = "Añadir fotograma", Width = 420, Height = 200, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var ok = new Button { Content = "Añadir" };
+        var cancel = new Button { Content = "Cancelar" };
+        ok.Click += (_, _) =>
+        {
+            if (int.TryParse(input.Text, out var cell) && cell >= 1 && cell <= count) dialog.Close((int?)(cell - 1));
+            else hint.Text = $"Introduce una celda entre 1 y {count}.";
+        };
+        cancel.Click += (_, _) => dialog.Close(null);
+        dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+            Children = { hint, input, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { cancel, ok } } } };
+        SetBusy(true);
+        int? selected = null;
+        try { selected = await dialog.ShowDialog<int?>(this); }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+        if (!_lifetime.IsCancellationRequested && selected is int source)
+            EditTimeline(TimelineOperation.Insert, position, source);
+    }
+
     private void OnOccurrenceSelected(int position)
     {
         if (_importing || _playback is not { } cursor) return;
@@ -638,7 +710,7 @@ public partial class MainWindow : Window
         WorkspaceGrid.ColumnDefinitions[2].Width = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
         WorkspaceGrid.ColumnDefinitions[4].Width = new Avalonia.Controls.GridLength(300);
         WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
-        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(280);
+        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(340);
         WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(100);
         StatusText.Text = "Distribución restablecida";
     }
@@ -683,7 +755,12 @@ public partial class MainWindow : Window
     {
         DeselectClipButton.IsEnabled = !_importing && ClipList.SelectedIndex >= 0;
         var available = !_importing && _playback is not null;
-        EditSequenceButton.IsEnabled = available && _playback?.IsPlaying != true;
+        var editing = available && _playback?.IsPlaying != true;
+        EditSequenceButton.IsEnabled = AddFrameButton.IsEnabled = DuplicateFrameButton.IsEnabled = editing;
+        RemoveFrameButton.IsEnabled = editing && _playback!.Count > 1;
+        MoveFrameLeftButton.IsEnabled = editing && _playback!.Position > 0;
+        MoveFrameRightButton.IsEnabled = editing && _playback!.Position < _playback.Count - 1;
+        CellStrip.CanEdit = editing;
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
         OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = available && _playback?.IsPlaying != true;

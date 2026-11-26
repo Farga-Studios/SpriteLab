@@ -16,9 +16,32 @@ public sealed class CellStrip : Control
     private int[]? _sequence;
     private int Count => _sequence?.Length ?? _grid?.Count ?? 0;
     public event Action<int>? OccurrenceSelected;
+    public event Action<int, int>? OccurrenceMoved;
+    public bool CanEdit { get; set; }
+    private int? _dragSource;
+    private int? _dropTarget;
+    private Point _dragStart;
+    private bool _dragging;
+
+    private int? Hit(Point point)
+    {
+        if (point.X < 0 || point.X >= Bounds.Width || point.Y < 0 || point.Y >= Bounds.Height) return null;
+        var slot = (int)(point.X / Slot);
+        if (slot >= Math.Max(1, (int)(Bounds.Width / Slot))) return null;
+        var index = _first + slot;
+        return index < Count ? index : null;
+    }
+
+    private void ClearDrag()
+    {
+        _dragSource = _dropTarget = null;
+        _dragging = false;
+        InvalidateVisual();
+    }
 
     public void SetSequence(int[]? cells)
     {
+        ClearDrag();
         _sequence = cells;
         _selected = _first = 0;
         InvalidateVisual();
@@ -26,11 +49,13 @@ public sealed class CellStrip : Control
     private int _first;
     private const int Slot = 64;
     private static readonly IBrush Tile = new SolidColorBrush(Color.Parse("#303946"));
+    private static readonly Pen Drop = new(new SolidColorBrush(Color.Parse("#6AC5FF")), 3);
     private static readonly Pen Active = new(new SolidColorBrush(Color.Parse("#FFC65C")), 2);
     public event Action<int>? CellSelected;
 
     public void SetSheet(Bitmap? bitmap, CellGrid? grid)
     {
+        ClearDrag();
         _bitmap = bitmap;
         _grid = grid;
         _sequence = null;
@@ -49,16 +74,47 @@ public sealed class CellStrip : Control
         base.OnPointerPressed(e);
         if (_grid is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
         var point = e.GetPosition(this);
-        if (point.X < 0 || point.X >= Bounds.Width || point.Y < 0 || point.Y >= Bounds.Height) return;
-        var slot = (int)(point.X / Slot);
-        if (slot >= Math.Max(1, (int)(Bounds.Width / Slot))) return;
-        var index = _first + slot;
-        if (index < Count)
+        if (Hit(point) is not int index) return;
+        if (_sequence is null) CellSelected?.Invoke(index);
+        else if (CanEdit)
         {
-            if (_sequence is null) CellSelected?.Invoke(index);
-            else OccurrenceSelected?.Invoke(index);
-            e.Handled = true;
+            _dragSource = index;
+            _dragStart = point;
+            e.Pointer.Capture(this);
         }
+        else OccurrenceSelected?.Invoke(index);
+        e.Handled = true;
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_dragSource is null || !CanEdit) return;
+        var point = e.GetPosition(this);
+        if (!_dragging && Math.Abs(point.X - _dragStart.X) + Math.Abs(point.Y - _dragStart.Y) < 5) return;
+        _dragging = true;
+        _dropTarget = Hit(point);
+        InvalidateVisual();
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        if (_dragSource is not int source) return;
+        var dragging = _dragging;
+        var target = Hit(e.GetPosition(this));
+        ClearDrag();
+        e.Pointer.Capture(null);
+        if (CanEdit && dragging && target is int destination && source != destination)
+            OccurrenceMoved?.Invoke(source, destination);
+        else if (!dragging && target == source) OccurrenceSelected?.Invoke(source);
+        e.Handled = true;
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        ClearDrag();
     }
 
     public override void Render(DrawingContext context)
@@ -76,7 +132,7 @@ public sealed class CellStrip : Control
             var index = _first + i;
             var cell = _grid.GetCell(_sequence is null ? index : _sequence[index]);
             var slot = new Rect(i * Slot + 2, 2, Slot - 4, Math.Max(1, height - 4));
-            context.DrawRectangle(Tile, index == _selected ? Active : null, slot);
+            context.DrawRectangle(Tile, _dragging && index == _dropTarget ? Drop : index == _selected ? Active : null, slot);
             var scale = Math.Min((slot.Width - 4) / cell.Width, Math.Max(1, slot.Height - 4) / cell.Height);
             if (scale >= 1) scale = Math.Floor(scale);
             var w = cell.Width * scale;

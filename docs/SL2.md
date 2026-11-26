@@ -21,3 +21,5 @@
 0.2.1.4: manual feedback fixes for sheet/clip selection, new sheet import, rejected grid inputs, rename selection and splitter constraints. Exact grid divisibility remains intentional. CI and manual retest required; UI redesign, visual sequence editing, onion tint and Save As remain pending.
 
 0.2.1.5: inspector tabs and grouped animation controls, scrollable wrapping timeline. Explorer retains flat resource/clip lists for now; tree and context menus deferred. Visual sequence drag editing and onion tint pending. CI and manual verification pending.
+
+0.2.1.6: visual timeline drag among visible thumbnails and move buttons for longer sequences; duplicate/remove and insert via cell-number dialog. Timings follow exact occurrences, no schema change. Direct source-sheet insertion and edge auto-scroll are not implemented. CI and manual checks pending.
