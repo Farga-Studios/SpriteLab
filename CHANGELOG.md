@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6 — 2026-11-26
+- Add previous/next pose overlays with adjustable opacity in the frame inspector, available when playback is paused or stopped.
+- Respect direction sequence and loop setting at boundaries; keep overlays out of live playback and persistent metadata.
+- Enlarge frame preview to 160 DIP. Add neighbor lookup tests; CI and GUI checks pending.
+
 ## 0.1.5 — 2026-11-26
 - Add per-track FPS (1–60) and optional per-occurrence preview duration (1–60000 ms), persisted in schema 4.
 - Update timer interval per occurrence and allow blank duration to restore FPS default. Older schemas remain readable; older applications cannot open schema 4.

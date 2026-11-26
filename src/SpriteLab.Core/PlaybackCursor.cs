@@ -9,6 +9,19 @@ public sealed class PlaybackCursor
     public int Cell => _cells[Position];
     public bool IsPlaying { get; private set; }
 
+    public int? Neighbor(int delta, bool loop)
+    {
+        if (delta is not (-1 or 1)) throw new ArgumentOutOfRangeException(nameof(delta));
+        if (Count == 1) return null;
+        var index = Position + delta;
+        if (index < 0 || index >= Count)
+        {
+            if (!loop) return null;
+            index = (index + Count) % Count;
+        }
+        return _cells[index];
+    }
+
     public PlaybackCursor(IEnumerable<int> cells)
     {
         _cells = cells.ToArray();

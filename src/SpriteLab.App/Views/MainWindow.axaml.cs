@@ -43,6 +43,10 @@ public partial class MainWindow : Window
         CellStrip.CellSelected += OnManualCell;
         _playTimer.Tick += (_, _) => PlaybackTick();
         UpdatePlaybackControls();
+        OnionPrevious.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
+        OnionNext.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
+        OnionOpacity.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) UpdateOnion(); };
+        LoopCheck.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         Preview.PointerWheelChanged += OnPreviewWheel;
         VersionText.Text = $"SpriteLab {GetVersion()} · SL2";
         Closing += OnClosing;
@@ -585,6 +589,7 @@ public partial class MainWindow : Window
         _playback = null;
         _playbackTrack = null;
         UpdatePlaybackControls();
+        UpdateOnion();
     }
 
     private void PausePlayback()
@@ -592,6 +597,7 @@ public partial class MainWindow : Window
         _playTimer.Stop();
         _playback?.Pause();
         UpdatePlaybackControls();
+        UpdateOnion();
     }
 
     private void UpdatePlaybackControls()
@@ -599,6 +605,7 @@ public partial class MainWindow : Window
         var available = !_importing && _playback is not null;
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
+        OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = available && _playback?.IsPlaying != true;
         PlayButton.Content = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         PlayMenu.Header = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         if (_playback is { } cursor)
@@ -621,6 +628,21 @@ public partial class MainWindow : Window
             _playTimer.Interval = TimeSpan.FromMilliseconds(duration);
         }
         UpdatePlaybackControls();
+        UpdateOnion();
+    }
+
+    private void UpdateOnion()
+    {
+        if (_playback is not { } cursor || cursor.IsPlaying || _grid is null)
+        {
+            FramePreview.SetOnion(null, null, 0);
+            return;
+        }
+        var loop = LoopCheck.IsChecked == true;
+        var previous = OnionPrevious.IsChecked == true ? cursor.Neighbor(-1, loop) : null;
+        var next = OnionNext.IsChecked == true ? cursor.Neighbor(1, loop) : null;
+        FramePreview.SetOnion(previous is int a ? _grid.GetCell(a) : null,
+            next is int b ? _grid.GetCell(b) : null, OnionOpacity.Value / 100.0);
     }
 
     private void OnPlay(object? sender, RoutedEventArgs e)

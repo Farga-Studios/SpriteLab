@@ -115,7 +115,14 @@
           <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />
           <Separator />
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
-          <views:FramePreview x:Name="FramePreview" Width="112" Height="112" HorizontalAlignment="Center" />
+          <views:FramePreview x:Name="FramePreview" Width="160" Height="160" HorizontalAlignment="Center" />
+          <TextBlock Text="Comparar poses (Onion skin)" Classes="panelHeading" />
+          <WrapPanel Orientation="Horizontal">
+            <CheckBox x:Name="OnionPrevious" Content="Anterior" IsEnabled="False" Margin="0,0,8,0" />
+            <CheckBox x:Name="OnionNext" Content="Siguiente" IsEnabled="False" />
+          </WrapPanel>
+          <TextBlock Text="Opacidad de la superposición" Classes="muted" />
+          <Slider x:Name="OnionOpacity" Minimum="10" Maximum="80" Value="35" IsEnabled="False" />
           <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
           <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
