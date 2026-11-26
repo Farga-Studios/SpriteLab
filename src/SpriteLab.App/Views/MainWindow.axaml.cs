@@ -93,29 +93,13 @@ public partial class MainWindow : Window
                 }, token);
             }
             if (token.IsCancellationRequested) return;
-            var previous = _bitmap;
-            Preview.SetImage(candidate);
-            _bitmap = candidate;
-            candidate = null;
-            FramePreview.SetFrame(null, default);
-        CellStrip.SetSheet(null, null);
-        previous?.Dispose();
-            _zoom = 1;
-            ZoomText.Text = "100 %";
-            EmptyViewer.IsVisible = false;
-            ImageViewer.IsVisible = true;
-            RefreshClips();
             _sheets.Add(new ViewerSheet(Guid.NewGuid(), files[0].Name, imported!, null, null));
-            _active = _sheets.Count - 1;
+            ShowSheet(_sheets.Count - 1, candidate!);
+            candidate = null;
             RefreshResources();
+            RefreshClips();
             MarkDirty();
-            ResourceText.Text = $"{_sheets.Count} recursos";
-            ResolutionText.Text = $"Resolución: {_bitmap.PixelSize.Width} × {_bitmap.PixelSize.Height}";
-            ViewerInfo.Text = $"{_bitmap.PixelSize.Width} × {_bitmap.PixelSize.Height} px";
-            ResetGrid();
-            ApplyGridButton.IsEnabled = GridMenu.IsEnabled = true;
-            StatusText.Text = "PNG cargado · Configura la cuadrícula";
-            CellWidth.Text = CellHeight.Text = "48";
+            StatusText.Text = "PNG cargado · Configura la cuadrícula en Propiedades";
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex)
@@ -158,6 +142,7 @@ public partial class MainWindow : Window
         if (!int.TryParse(CellWidth.Text, out var width) ||
             !int.TryParse(CellHeight.Text, out var height) || width <= 0 || height <= 0)
         {
+            RestoreGridFields();
             StatusText.Text = "Introduce ancho y alto positivos.";
             return;
         }
@@ -166,7 +151,8 @@ public partial class MainWindow : Window
             if (_active >= 0 && _clips.Any(c => c.SheetId == _sheets[_active].Id) &&
                 (_sheets[_active].CellWidth != width || _sheets[_active].CellHeight != height))
             {
-                StatusText.Text = "Quita los clips asociados antes de cambiar la cuadrícula.";
+                RestoreGridFields();
+            StatusText.Text = "Quita los clips asociados antes de cambiar la cuadrícula.";
                 return;
             }
             var candidate = new CellGrid(
@@ -189,6 +175,7 @@ public partial class MainWindow : Window
         }
         catch (ArgumentException)
         {
+            RestoreGridFields();
             StatusText.Text = "La imagen debe dividirse exactamente en celdas completas.";
         }
     }
@@ -263,7 +250,8 @@ public partial class MainWindow : Window
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
             SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
-        ApplyGridButton.IsEnabled = !busy && _bitmap is not null;
+        ApplyGridButton.IsEnabled = RestoreGridButton.IsEnabled = !busy && _bitmap is not null;
+        DeselectClipButton.IsEnabled = !busy && ClipList.SelectedIndex >= 0;
         TrackList.IsEnabled = !busy;
         ValidateMenu.IsEnabled = ValidateButton.IsEnabled = !busy && _grid is not null;
         FindingList.IsEnabled = !busy;
@@ -325,6 +313,9 @@ public partial class MainWindow : Window
     private async void OnRenameResource(object? sender, RoutedEventArgs e)
     {
         if (_importing || _active < 0) return;
+        var selectedClip = ClipList.SelectedItem as ViewerClip;
+        var selectedTrack = TrackList.SelectedIndex;
+        var selectedOccurrence = _playback?.Position ?? 0;
         SetBusy(true);
         try
         {
@@ -344,6 +335,16 @@ public partial class MainWindow : Window
             _sheets[_active] = _sheets[_active] with { Name = name };
             RefreshResources();
             MarkDirty();
+            if (selectedClip is not null && selectedClip.SheetId == _sheets[_active].Id && selectedTrack >= 0 && selectedTrack < selectedClip.EffectiveTracks.Count)
+            {
+                _refreshingClips = true;
+                try { ClipList.SelectedIndex = _clips.FindIndex(c => c.Id == selectedClip.Id); }
+                finally { _refreshingClips = false; }
+                RefreshTracks(selectedClip, selectedTrack);
+                SetPlayback(selectedClip.EffectiveTracks[selectedTrack]);
+                _playback?.Step(selectedOccurrence);
+                ShowPlaybackCell();
+            }
             StatusText.Text = "Recurso renombrado · Archivo fuente intacto";
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -461,7 +462,8 @@ public partial class MainWindow : Window
 
     private async void OnClipSelected(object? sender, SelectionChangedEventArgs e)
     {
-        if (_refreshingClips || _importing || ClipList.SelectedItem is not ViewerClip clip) return;
+        if (_refreshingClips || _importing) return;
+        if (ClipList.SelectedItem is not ViewerClip clip) { RefreshTracks(null); return; }
         var index = _sheets.FindIndex(s => s.Id == clip.SheetId);
         if (index < 0) return;
         SetBusy(true);
@@ -590,9 +592,54 @@ public partial class MainWindow : Window
 
     private void OnManualCell(int index)
     {
-        if (_importing) return;
-        ClearPlayback();
+        if (_importing || _grid is null || index < 0 || index >= _grid.Count) return;
+        if (_playback is { } cursor && _playbackTrack is { } track)
+        {
+            var occurrence = SequenceSelection.Find(track.Cells, cursor.Position, index);
+            if (occurrence is int position) { OnOccurrenceSelected(position); return; }
+        }
+        DeselectClip();
         SelectCell(index);
+    }
+
+    private void DeselectClip()
+    {
+        _refreshingClips = true;
+        try { ClipList.SelectedIndex = -1; RefreshTracks(null); }
+        finally { _refreshingClips = false; }
+        if (_selected is int cell) SelectCell(cell);
+    }
+
+    private void OnDeselectClip(object? sender, RoutedEventArgs e)
+    {
+        if (_importing) return;
+        DeselectClip();
+        StatusText.Text = "Modo hoja · Selecciona un clip para reproducir";
+    }
+
+    private void RestoreGridFields()
+    {
+        if (_active < 0) return;
+        CellWidth.Text = (_sheets[_active].CellWidth ?? 48).ToString();
+        CellHeight.Text = (_sheets[_active].CellHeight ?? 48).ToString();
+    }
+
+    private void OnRestoreGrid(object? sender, RoutedEventArgs e)
+    {
+        if (_importing) return;
+        RestoreGridFields();
+        StatusText.Text = "Dimensiones restablecidas · Cuadrícula sin cambios";
+    }
+
+    private void OnResetLayout(object? sender, RoutedEventArgs e)
+    {
+        WorkspaceGrid.ColumnDefinitions[0].Width = new Avalonia.Controls.GridLength(240);
+        WorkspaceGrid.ColumnDefinitions[2].Width = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
+        WorkspaceGrid.ColumnDefinitions[4].Width = new Avalonia.Controls.GridLength(300);
+        WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
+        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(210);
+        WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(100);
+        StatusText.Text = "Distribución restablecida";
     }
 
     private void SetPlayback(ViewerTrack track)
@@ -630,6 +677,7 @@ public partial class MainWindow : Window
 
     private void UpdatePlaybackControls()
     {
+        DeselectClipButton.IsEnabled = !_importing && ClipList.SelectedIndex >= 0;
         var available = !_importing && _playback is not null;
         EditSequenceButton.IsEnabled = available && _playback?.IsPlaying != true;
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;

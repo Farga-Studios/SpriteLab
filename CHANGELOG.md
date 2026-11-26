@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1.4 — SL2 manual feedback fixes
+- Keep active animation when selecting a cell in its sequence; explicitly deselect clip when inspecting another cell. Add deselect button.
+- Unify new sheet import with sheet switching; restore invalid grid inputs and provide explicit reset.
+- Restore selected clip/direction after resource rename.
+- Bound panel sizes, clip overflowing content, add reset layout command.
+- Three selection regression tests. CI and manual retest required.
+
 ## 0.2.1.3 — SL2 acceptance candidate
 - Add historical schema 1–4 migration integration tests, source/backup checks and future-schema write protection.
 - Move elapsed-time accumulator to testable Core; distinguish pause on last frame from natural completion and retain elapsed time from last timer tick across pause.

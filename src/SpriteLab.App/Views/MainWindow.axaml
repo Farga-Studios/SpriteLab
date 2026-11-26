@@ -3,7 +3,7 @@
         xmlns:views="using:SpriteLab.App.Views"
         x:Class="SpriteLab.App.Views.MainWindow"
         Title="SpriteLab" Icon="avares://SpriteLab.App/Assets/SpriteLab.png" Width="1280" Height="800"
-        MinWidth="900" MinHeight="600"
+        MinWidth="1040" MinHeight="720"
         Background="#171B22">
   <Grid RowDefinitions="Auto,Auto,*,Auto">
     <Menu Grid.Row="0" Background="#242A34">
@@ -21,6 +21,7 @@
       <MenuItem Header="_Ver">
         <MenuItem x:Name="GridMenu" Header="Mostrar/ocultar cuadrícula" IsEnabled="False" Click="OnToggleGrid" />
         <MenuItem Header="Anclaje" IsEnabled="False" />
+        <MenuItem Header="Restablecer distribución" Click="OnResetLayout" />
       </MenuItem>
       <MenuItem Header="_Animación">
         <MenuItem Header="Crear clip de la fila..." Click="OnCreateClip" />
@@ -43,8 +44,22 @@
         <TextBlock Grid.Column="1" x:Name="ProjectText" Text="Proyecto sin guardar" Classes="muted" VerticalAlignment="Center" />
       </Grid>
     </Border>
-    <Grid Grid.Row="2" ColumnDefinitions="230,5,*,5,260" RowDefinitions="*,5,180,5,100">
-      <Border Grid.Column="0" Grid.RowSpan="5" Background="#202630" Padding="12">
+    <Grid x:Name="WorkspaceGrid" Grid.Row="2" ClipToBounds="True">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="240" MinWidth="210" MaxWidth="350" />
+        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="*" MinWidth="400" />
+        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="300" MinWidth="250" MaxWidth="450" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" MinHeight="200" />
+        <RowDefinition Height="5" />
+        <RowDefinition Height="210" MinHeight="170" MaxHeight="350" />
+        <RowDefinition Height="5" />
+        <RowDefinition Height="100" MinHeight="90" MaxHeight="250" />
+      </Grid.RowDefinitions>
+      <Border ClipToBounds="True" Grid.Column="0" Grid.RowSpan="5" Background="#202630" Padding="12">
         <Grid RowDefinitions="Auto,*">
           <TextBlock Text="EXPLORADOR" Classes="panelHeading" Margin="0,0,0,12" />
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel Spacing="10">
@@ -59,6 +74,7 @@
             <ListBox x:Name="ClipList" MaxHeight="180" SelectionChanged="OnClipSelected" />
             <Button Content="Crear clip de la fila..." Click="OnCreateClip" />
             <Button Content="Quitar clip" Click="OnRemoveClip" />
+            <Button x:Name="DeselectClipButton" Content="Deseleccionar clip" Click="OnDeselectClip" IsEnabled="False" />
             <TextBlock Text="DIRECCIONES" Classes="panelHeading" />
             <ComboBox x:Name="TrackList" HorizontalAlignment="Stretch" SelectionChanged="OnTrackSelected" />
             <Button Content="Asignar fila a dirección..." Click="OnAssignTrack" />
@@ -68,7 +84,7 @@
         </Grid>
       </Border>
       <GridSplitter Grid.Column="1" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
-      <Border Grid.Column="2" Grid.Row="0" Background="#11151C" Padding="12">
+      <Border ClipToBounds="True" Grid.Column="2" Grid.Row="0" Background="#11151C" Padding="12">
         <Grid RowDefinitions="Auto,*">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="VISOR" Classes="panelHeading" />
@@ -102,7 +118,7 @@
         </Grid>
       </Border>
       <GridSplitter Grid.Column="3" Grid.RowSpan="5" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
-      <Border Grid.Column="4" Grid.RowSpan="5" Background="#202630" Padding="12">
+      <Border ClipToBounds="True" Grid.Column="4" Grid.RowSpan="5" Background="#202630" Padding="12">
         <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Spacing="12">
           <TextBlock Text="PROPIEDADES" Classes="panelHeading" />
           <TextBlock Text="Imagen" FontWeight="SemiBold" />
@@ -113,6 +129,7 @@
             <TextBox Grid.Column="1" x:Name="CellHeight" Watermark="Alto" Text="48" Margin="4,0,0,0" />
           </Grid>
           <Button x:Name="ApplyGridButton" Content="Aplicar cuadrícula" Click="OnApplyGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
+          <Button x:Name="RestoreGridButton" Content="Restablecer dimensiones" Click="OnRestoreGrid" IsEnabled="False" HorizontalAlignment="Stretch" />
           <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />
           <Separator />
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
@@ -146,7 +163,7 @@
         </StackPanel></ScrollViewer>
       </Border>
       <GridSplitter Grid.Column="2" Grid.Row="1" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
-      <Border Grid.Column="2" Grid.Row="2" Background="#202630" Padding="12">
+      <Border ClipToBounds="True" Grid.Column="2" Grid.Row="2" Background="#202630" Padding="12">
         <Grid RowDefinitions="Auto,Auto,*">
           <TextBlock Text="LÍNEA DE TIEMPO" Classes="panelHeading" />
           <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,8">
@@ -165,7 +182,7 @@
         </Grid>
       </Border>
       <GridSplitter Grid.Column="2" Grid.Row="3" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="#353E4C" />
-      <Border Grid.Column="2" Grid.Row="4" Background="#202630" Padding="12">
+      <Border ClipToBounds="True" Grid.Column="2" Grid.Row="4" Background="#202630" Padding="12">
         <Grid RowDefinitions="Auto,Auto,*">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="DIAGNÓSTICOS" Classes="panelHeading" VerticalAlignment="Center" />
