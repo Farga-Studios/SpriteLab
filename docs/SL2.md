@@ -29,3 +29,6 @@
 0.2.1.8: regression candidate after 0.2.1.3 manual feedback. Action enablement, unchanged-grid handling, long labels and onion fallback feedback reviewed. See SL2-ACCEPTANCE.md for retest. Full tree explorer, direct drag from sheet and automatic drag scrolling remain future UX improvements, not claimed implemented. SL3 frozen until acceptance.
 
 0.2.1.9: final usability review following 46/47 successful manual checks on 0.2.1.8 (CI green; rectangular grid pending). Named save, confirmed overwrite with .bak and retained sources, metadata rename, clearer timeline. No new SL3 work.
+
+## Aceptación definitiva
+26/11/2026: SL2 aprobada por el usuario en 0.2.1.9 (58cb4bc). CI verde comunicado, retest final 9/9, sin observaciones. La ronda anterior 0.2.1.8 tuvo 46/47 correctas y la rectangular pendiente se verificó en la última ronda. Véase SL2-ACCEPTANCE.md. SL3 desbloqueada; no se cambia versión ni código en el commit de cierre documental.

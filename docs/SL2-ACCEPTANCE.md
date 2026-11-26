@@ -1,6 +1,6 @@
-# SL2 — Aceptación 0.2.1.8
+# SL2 — Aceptación definitiva 0.2.1.9
 
-Estado: candidata pendiente de CI y pruebas manuales. No cerrar SL2 hasta confirmar los resultados. Usar copias de proyectos y registrar versión, Windows y DPI.
+Estado: APROBADA por el usuario el 26/11/2026. Base validada: 0.2.1.9, commit 58cb4bcaa8c26e216c3a5041661b9418ed909321. CI verde comunicado por el usuario. Las listas históricas conservadas abajo no representan pruebas pendientes de esta aceptación. No se registró DPI ni versión exacta de Windows.
 
 ## Evidencia anterior: 0.2.1.3
 El usuario confirmó CI verde y realizó pruebas manuales. De 58 comprobaciones: 52 correctas, 3 fallos, 3 pendientes. Fallos: cuadrícula rectangular, selección de celdas, recuperación de animación tras inspeccionar hoja. Observaciones adicionales: segundo PNG, pérdida temporal de dirección al renombrar, campos de cuadrícula rechazados, deformaciones de paneles, edición de secuencia poco intuitiva, onion poco visible, falta Guardar como y confirmación persistente. No trasladar automáticamente resultados a la nueva versión.
@@ -26,7 +26,20 @@ El usuario confirmó CI verde y realizó pruebas manuales. De 58 comprobaciones:
 - [ ] Cerrar con cambios: guardar, descartar, cancelar.
 
 ## CI y alcance
-Confirmar build Release, pruebas, auditoría, smoke test, portable Windows x64. Migraciones 1–4 a 5 cubiertas por tests. No se afirma aceptación de esta versión hasta contar con resultados. Se mantiene cuadrícula exacta e inmutable mientras tenga referencias. Árbol de recursos, inserción directa desde hoja y auto-scroll durante arrastre siguen pendientes como mejoras de UX. Anclajes, offsets, edición de imágenes e historial corresponden a SL4. SL3 congelado.
+Confirmar build Release, pruebas, auditoría, smoke test, portable Windows x64. Migraciones 1–4 a 5 cubiertas por tests. No se afirma aceptación de esta versión hasta contar con resultados. Se mantiene cuadrícula exacta e inmutable mientras tenga referencias. Árbol de recursos, inserción directa desde hoja y auto-scroll durante arrastre siguen pendientes como mejoras de UX. Anclajes, offsets, edición de imágenes e historial corresponden a SL4. SL3 estuvo congelado hasta esta aceptación.
 
 ## Revisión final 0.2.1.9
-0.2.1.8: CI verde confirmado por usuario, 46 correctas, 0 fallos, 1 pendiente (cuadrícula rectangular). Retest 0.2.1.9: guardar proyecto con nombre y carpeta automática; cancelar; sobrescribir proyecto válido solo tras confirmar y comprobar .bak; rechazar carpeta ajena ocupada; renombrar nombre visible y guardar/reabrir sin mover carpeta; verificar etiquetas Fotograma/Sin dirección y números/duraciones de miniaturas; cuadrícula rectangular válida. CI y aceptación pendientes. No cerrar SL2 todavía.
+0.2.1.8: CI verde confirmado por usuario, 46 correctas, 0 fallos, 1 pendiente (cuadrícula rectangular). Retest 0.2.1.9: guardar proyecto con nombre y carpeta automática; cancelar; sobrescribir proyecto válido solo tras confirmar y comprobar .bak; rechazar carpeta ajena ocupada; renombrar nombre visible y guardar/reabrir sin mover carpeta; verificar etiquetas Fotograma/Sin dirección y números/duraciones de miniaturas; cuadrícula rectangular válida. CI verde y aceptación final confirmados por el usuario el 26/11/2026.
+
+## Resultado final comunicado por el usuario (26/11/2026)
+- [x] Guardar proyecto nuevo con nombre y ubicación.
+- [x] Crear automáticamente la carpeta.
+- [x] Cancelar diálogo de guardado.
+- [x] Sobrescribir proyecto existente previa confirmación.
+- [x] Conservar copia .bak.
+- [x] Renombrar proyecto y verificar tras reabrir.
+- [x] Números y duraciones de miniaturas.
+- [x] Nuevas etiquetas de interfaz.
+- [x] Cuadrícula rectangular válida.
+
+9 correctas, 0 fallos, 0 pendientes en esta ronda. La comprobación rectangular pendiente de 0.2.1.8 queda resuelta. CI verde confirmado para ambas versiones. Sin observaciones adicionales. No se realizó verificación independiente de CI ni se repitió la suite manual completa en 0.2.1.9. SL2 aceptada; se desbloquea SL3. Las mejoras de UX diferidas no forman parte de la puerta de salida.

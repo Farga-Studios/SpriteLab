@@ -4,7 +4,7 @@
 |---|---|---|
 | SL0 | 0.0.x | SDK y paquetes verificados, solución mínima, ventana, pruebas base, ADR aprobados. |
 | SL1 | 0.1.0 | Importar PNG, cuadrícula configurable, selección, proyecto local round-trip, fuente protegida. |
-| SL2 | 0.2.0 | Clips y direcciones libres, reproducción, zoom, timeline, duración variable. |
+| SL2 | 0.2.0 | Clips y direcciones libres, reproducción, zoom, timeline, duración variable. Aceptada en 0.2.1.9 (26/11/2026). |
 | SL3 | 0.3.0 | Validación local, diagnósticos navegables y revisión manual. |
 | SL4 | 0.4.0 | Anclajes, offsets, reemplazo, reordenar, undo/redo, comparación básica. |
 | SL5 | 0.5.0 | Adaptador opcional Python, pruebas simuladas y con Pipeline 0.3.0. |
@@ -22,3 +22,6 @@ SL3 initial 0.2.1: local alpha and border diagnostics with cell navigation. SL2 
 Freeze additional SL3 work until SL2 acceptance. 0.2.1.1 consolidates SL2 without rolling back existing SL3 code or version numbering.
 
 SL2 acceptance candidate 0.2.1.3: await CI and manual checklist, do not expand SL3 until accepted.
+
+## Estado vigente — 26/11/2026
+SL2 aceptada en 0.2.1.9: CI verde comunicado por el usuario, 46/47 comprobaciones correctas en 0.2.1.8 y 9/9 en el retest final, incluida la cuadrícula rectangular. SL3 desbloqueada; revisar la implementación existente de diagnósticos alpha/bordes y definir criterios de aceptación antes de ampliar detectores. Mantener esquema 5 y fuentes originales inmutables. No tocar otros proyectos.
