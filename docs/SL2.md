@@ -23,3 +23,5 @@
 0.2.1.5: inspector tabs and grouped animation controls, scrollable wrapping timeline. Explorer retains flat resource/clip lists for now; tree and context menus deferred. Visual sequence drag editing and onion tint pending. CI and manual verification pending.
 
 0.2.1.6: visual timeline drag among visible thumbnails and move buttons for longer sequences; duplicate/remove and insert via cell-number dialog. Timings follow exact occurrences, no schema change. Direct source-sheet insertion and edge auto-scroll are not implemented. CI and manual checks pending.
+
+0.2.1.7: optional red/green onion tint with numeric opacity, Save As and visible save feedback. Save As copies original sources and animation metadata into an empty destination, assigns a new project identity when copying an existing project. Schema 5 unchanged. Tint generation is cached per neighboring cell; fallback to original colors on conversion failure. CI and manual verification pending.

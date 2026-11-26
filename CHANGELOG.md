@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.7 — Onion skin and save feedback
+- Optional red/green alpha-preserving onion overlays, numerical opacity.
+- Save As to a new empty folder with independent project identity; never silently overwrite another project. Same folder uses normal revision protection.
+- Persistent save status and error indicator. Two infrastructure tests. CI and manual validation pending.
+
 ## 0.2.1.6 — Visual timeline editing
 - Drag visible occurrences to reorder; move left/right, duplicate, remove and insert by sheet cell number.
 - Preserve exact occurrence timing through moves and duplicates; new occurrences use automatic timing.

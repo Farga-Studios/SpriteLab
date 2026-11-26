@@ -11,6 +11,7 @@
         <MenuItem x:Name="ImportMenu" Header="Importar PNG..." Click="OnImport" />
         <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." HotKey="Ctrl+O" Click="OnOpenProject" />
         <MenuItem x:Name="SaveProjectMenu" Header="Guardar proyecto..." HotKey="Ctrl+S" Click="OnSaveProject" />
+        <MenuItem x:Name="SaveAsMenu" Header="Guardar como..." HotKey="Ctrl+Shift+S" Click="OnSaveAs" />
         <Separator />
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
@@ -41,7 +42,10 @@
           <TextBlock Text="SPRITELAB" FontSize="17" FontWeight="Bold" VerticalAlignment="Center" />
           <TextBlock Text="Espacio de trabajo" Classes="muted" VerticalAlignment="Center" />
         </StackPanel>
-        <TextBlock Grid.Column="1" x:Name="ProjectText" Text="Proyecto sin guardar" Classes="muted" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Spacing="2">
+          <TextBlock x:Name="ProjectText" Text="Proyecto sin guardar" HorizontalAlignment="Right" Classes="muted" />
+          <TextBlock x:Name="SaveIndicator" Text="Sin guardar" FontSize="11" HorizontalAlignment="Right" Classes="muted" />
+        </StackPanel>
       </Grid>
     </Border>
     <Grid x:Name="WorkspaceGrid" Grid.Row="2" ClipToBounds="True">
@@ -139,10 +143,14 @@
           <TextBlock Text="Arrastra con el botón central para desplazar." Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="Comparar poses (Onion skin)" Classes="panelHeading" />
           <WrapPanel Orientation="Horizontal">
-            <CheckBox x:Name="OnionPrevious" Content="Anterior" IsEnabled="False" Margin="0,0,8,0" />
-            <CheckBox x:Name="OnionNext" Content="Siguiente" IsEnabled="False" />
+            <CheckBox x:Name="OnionPrevious" Content="Anterior (rojo)" IsEnabled="False" Margin="0,0,8,0" />
+            <CheckBox x:Name="OnionNext" Content="Siguiente (verde)" IsEnabled="False" />
           </WrapPanel>
-          <TextBlock Text="Opacidad de la superposición" Classes="muted" />
+          <CheckBox x:Name="OnionTint" Content="Tintes diferenciados" IsChecked="True" IsEnabled="False" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Opacidad" Classes="muted" />
+            <TextBlock Grid.Column="1" x:Name="OnionOpacityText" Text="35%" Classes="muted" />
+          </Grid>
           <Slider x:Name="OnionOpacity" Minimum="10" Maximum="80" Value="35" IsEnabled="False" />
           </StackPanel></ScrollViewer></TabItem>
           <TabItem Header="Frame"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">

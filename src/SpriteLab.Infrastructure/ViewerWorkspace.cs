@@ -12,6 +12,11 @@ public static class ViewerWorkspace
     private const long MaxTotalBytes = 256L * 1024 * 1024;
     private const int MaxSheets = 64;
 
+    public static bool SameFolder(string left, string right) => string.Equals(
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(left)),
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(right)),
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
     public static async Task<LoadedViewerProject> LoadAsync(string folder, CancellationToken token)
     {
         var loaded = await ProjectStore.LoadAsync(folder, token);

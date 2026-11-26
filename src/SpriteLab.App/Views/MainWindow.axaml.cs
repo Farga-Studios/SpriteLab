@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         UpdatePlaybackControls();
         OnionPrevious.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         OnionNext.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
+        OnionTint.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         OnionOpacity.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) UpdateOnion(); };
         LoopCheck.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         Preview.PointerWheelChanged += OnPreviewWheel;
@@ -251,7 +252,7 @@ public partial class MainWindow : Window
         if (busy) PausePlayback();
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
-            SaveProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
+            SaveProjectMenu.IsEnabled = SaveAsMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = RestoreGridButton.IsEnabled = !busy && _bitmap is not null;
         DeselectClipButton.IsEnabled = !busy && ClipList.SelectedIndex >= 0;
         TrackList.IsEnabled = !busy;
@@ -265,6 +266,8 @@ public partial class MainWindow : Window
     {
         _dirty = true;
         ProjectText.Text = _projectName + " *";
+        SaveIndicator.Text = "● Cambios sin guardar";
+        SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#E5B760"));
     }
 
     private void RefreshResources()
@@ -763,7 +766,7 @@ public partial class MainWindow : Window
         CellStrip.CanEdit = editing;
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
-        OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = available && _playback?.IsPlaying != true;
+        OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = OnionTint.IsEnabled = available && _playback?.IsPlaying != true;
         PlayButton.Content = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         PlayMenu.Header = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
         if (_playback is { } cursor)
@@ -792,6 +795,7 @@ public partial class MainWindow : Window
 
     private void UpdateOnion()
     {
+        OnionOpacityText.Text = $"{OnionOpacity.Value:0}%";
         if (_playback is not { } cursor || cursor.IsPlaying || _grid is null)
         {
             FramePreview.SetOnion(null, null, 0);
@@ -801,7 +805,7 @@ public partial class MainWindow : Window
         var previous = OnionPrevious.IsChecked == true ? cursor.Neighbor(-1, loop) : null;
         var next = OnionNext.IsChecked == true ? cursor.Neighbor(1, loop) : null;
         FramePreview.SetOnion(previous is int a ? _grid.GetCell(a) : null,
-            next is int b ? _grid.GetCell(b) : null, OnionOpacity.Value / 100.0);
+            next is int b ? _grid.GetCell(b) : null, OnionOpacity.Value / 100.0, OnionTint.IsChecked == true);
     }
 
     private void OnPlay(object? sender, RoutedEventArgs e)
@@ -1019,25 +1023,54 @@ public partial class MainWindow : Window
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
-    private async Task<bool> SaveProjectAsync()
+    private async void OnSaveAs(object? sender, RoutedEventArgs e)
+    {
+        if (_importing) return;
+        SetBusy(true);
+        try { await SaveProjectAsync(saveAs: true); }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private async Task<bool> SaveProjectAsync(bool saveAs = false)
     {
         try
         {
-            var folder = _folder ?? await PickFolder("Selecciona una carpeta para guardar el proyecto");
+            var folder = saveAs || _folder is null
+                ? await PickFolder(saveAs ? "Guardar copia en una carpeta nueva o vacía" : "Selecciona una carpeta para guardar el proyecto")
+                : _folder;
             if (folder is null || _lifetime.IsCancellationRequested) return false;
-            var name = _folder is null ? new DirectoryInfo(folder).Name : _projectName;
-            var project = new ViewerProject(_projectId, name, _sheets.ToArray(), _clips.ToArray());
-            var hash = await Task.Run(() => ViewerWorkspace.SaveAsync(folder, project, _manifestHash, _lifetime.Token));
+            var newDestination = _folder is null || !ViewerWorkspace.SameFolder(_folder, folder);
+            var name = newDestination ? new DirectoryInfo(folder).Name : _projectName;
+            var id = newDestination && _folder is not null ? Guid.NewGuid() : _projectId;
+            if (saveAs && newDestination && Directory.Exists(folder) && Directory.EnumerateFileSystemEntries(folder).Any())
+                throw new IOException("Guardar como requiere una carpeta vacía. No se sobrescribirá otro proyecto.");
+            var project = new ViewerProject(id, name, _sheets.ToArray(), _clips.ToArray());
+            var revision = newDestination ? null : _manifestHash;
+            SaveIndicator.Text = "Guardando…";
+            SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#AEBCCA"));
+            var hash = await Task.Run(() => ViewerWorkspace.SaveAsync(folder, project, revision, _lifetime.Token));
             if (_lifetime.IsCancellationRequested) return false;
             _folder = folder;
+            _projectId = id;
             _projectName = name;
             _manifestHash = hash;
             _dirty = false;
             ProjectText.Text = name;
-            StatusText.Text = "Proyecto guardado";
+            SaveIndicator.Text = $"✓ Guardado a las {DateTime.Now:HH:mm:ss}";
+            SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#79C9A0"));
+            StatusText.Text = $"Proyecto guardado · {folder}";
             return true;
         }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo guardar: {ex.Message}"; return false; }
+        catch (Exception ex)
+        {
+            if (!_lifetime.IsCancellationRequested)
+            {
+                StatusText.Text = $"No se pudo guardar: {ex.Message}";
+                SaveIndicator.Text = "Error al guardar";
+                SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#F08B8B"));
+            }
+            return false;
+        }
     }
 
     private async void OnOpenProject(object? sender, RoutedEventArgs e)
@@ -1079,6 +1112,8 @@ public partial class MainWindow : Window
             _manifestHash = loaded.ManifestHash;
             _dirty = false;
             ProjectText.Text = _projectName;
+            SaveIndicator.Text = "✓ Proyecto abierto";
+            SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#79C9A0"));
             if (first is not null) { ShowSheet(0, first); first = null; }
             else
             {
