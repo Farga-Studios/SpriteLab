@@ -4,13 +4,22 @@ public sealed class AnimationTrack
 {
     public string Direction { get; }
     public IReadOnlyList<Guid> FrameIds { get; }
+    public int Fps { get; }
+    public IReadOnlyList<int?> DurationsMs { get; }
+    public double DurationAt(int index) => PreviewTiming.Duration(Fps, DurationsMs[index]);
 
-    public AnimationTrack(string direction, IEnumerable<Guid> frameIds)
+    public AnimationTrack(string direction, IEnumerable<Guid> frameIds, int fps = PreviewTiming.DefaultFps, IEnumerable<int?>? durationsMs = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(direction);
         var copy = frameIds.ToArray();
         if (copy.Length == 0 || copy.Any(id => id == Guid.Empty))
             throw new ArgumentException("A track needs valid frame references.");
+        var durations = durationsMs?.ToArray() ?? new int?[copy.Length];
+        if (durations.Length != copy.Length) throw new ArgumentException("Timing length mismatch.");
+        _ = PreviewTiming.Duration(fps, null);
+        foreach (var duration in durations) _ = PreviewTiming.Duration(fps, duration);
+        Fps = fps;
+        DurationsMs = Array.AsReadOnly(durations);
         Direction = direction;
         FrameIds = Array.AsReadOnly(copy);
     }

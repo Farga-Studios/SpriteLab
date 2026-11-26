@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.2 — SL2 usability and timing consolidation
+- Core tracks retain FPS and per-occurrence timing; schema 5 mapping preserves them.
+- Editable ordered cell sequences with repeat support, keyboard playback/navigation, integer preview zoom and middle-button pan.
+- Three regression tests added; UI/CI acceptance still pending. SL3 remains frozen.
+
 ## 0.2.1.1 — SL2 architecture consolidation
 - Schema 5 stores frame IDs and ordered ID references rather than cell-index tracks; validates against the Core project model.
 - Schemas 1–4 remain readable; saving explicitly upgrades to schema 5. Stable IDs are derived from immutable sheet/cell identity. Viewer remains a grid adapter; editing arbitrary source rectangles and occurrence timing in Core are not yet implemented.

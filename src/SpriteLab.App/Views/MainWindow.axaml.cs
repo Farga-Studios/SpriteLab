@@ -52,7 +52,9 @@ public partial class MainWindow : Window
         OnionOpacity.PropertyChanged += (_, e) => { if (e.Property == Slider.ValueProperty) UpdateOnion(); };
         LoopCheck.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         Preview.PointerWheelChanged += OnPreviewWheel;
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL3";
+        AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
+        FramePreviewZoom.Text = "Ajustar";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL2 revisión";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -631,6 +633,7 @@ public partial class MainWindow : Window
     private void UpdatePlaybackControls()
     {
         var available = !_importing && _playback is not null;
+        EditSequenceButton.IsEnabled = available && _playback?.IsPlaying != true;
         PlayButton.IsEnabled = PlayMenu.IsEnabled = StopButton.IsEnabled = LoopCheck.IsEnabled = available;
         FpsInput.IsEnabled = DurationInput.IsEnabled = ApplyTimingButton.IsEnabled = available && _playback?.IsPlaying != true;
         OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = available && _playback?.IsPlaying != true;
@@ -694,6 +697,77 @@ public partial class MainWindow : Window
         _elapsedMs = 0;
         _playback.Stop();
         ShowPlaybackCell();
+    }
+
+    private void OnAnimationKey(object? sender, KeyEventArgs e)
+    {
+        if (_importing || _playback is null || e.KeyModifiers != KeyModifiers.None ||
+            e.Source is TextBox || e.Source is Button || e.Source is CheckBox ||
+            e.Source is ComboBox || e.Source is ListBoxItem || e.Source is Slider) return;
+        switch (e.Key)
+        {
+            case Key.Space: OnPlay(this, e); break;
+            case Key.Left: OnPrevious(this, e); break;
+            case Key.Right: OnNext(this, e); break;
+            default: return;
+        }
+        e.Handled = true;
+    }
+
+    private void OnFrameZoomIn(object? sender, RoutedEventArgs e)
+    {
+        FramePreview.ChangeZoom(1);
+        FramePreviewZoom.Text = FramePreview.ZoomLabel;
+    }
+
+    private void OnFrameZoomOut(object? sender, RoutedEventArgs e)
+    {
+        FramePreview.ChangeZoom(-1);
+        FramePreviewZoom.Text = FramePreview.ZoomLabel;
+    }
+
+    private void OnFrameZoomReset(object? sender, RoutedEventArgs e)
+    {
+        FramePreview.ResetView();
+        FramePreviewZoom.Text = FramePreview.ZoomLabel;
+    }
+
+    private async void OnEditSequence(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _grid is null || _playbackTrack is not { } current ||
+            ClipList.SelectedItem is not ViewerClip clip || _active < 0 ||
+            _sheets[_active].Id != clip.SheetId) return;
+        SetBusy(true);
+        try
+        {
+            var input = new TextBox { Text = string.Join(", ", current.Cells.Select(c => c + 1)),
+                AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 90 };
+            var dialog = new Window { Title = "Editar secuencia", Width = 500, Height = 300,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var ok = new Button { Content = "Aplicar" };
+            var cancel = new Button { Content = "Cancelar" };
+            var hint = new TextBlock { Text = "Números de celda (desde 1), separados por comas. Puedes repetir, quitar o cambiar el orden. Los tiempos siguen a cada aparición conservada.",
+                TextWrapping = TextWrapping.Wrap };
+            ok.Click += (_, _) =>
+            {
+                try { dialog.Close(SequenceEdit.Parse(input.Text ?? "", _grid.Count)); }
+                catch (ArgumentException ex) { hint.Text = ex.Message; }
+            };
+            cancel.Click += (_, _) => dialog.Close(null);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+                Children = { hint, input, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                    Children = { cancel, ok } } } };
+            var cells = await dialog.ShowDialog<int[]?>(this);
+            if (cells is null) return;
+            var tracks = clip.EffectiveTracks.ToArray();
+            var index = Array.FindIndex(tracks, t => t.Direction == current.Direction);
+            if (index < 0) return;
+            var timings = SequenceEdit.Remap(current.Cells, current.DurationsMs, cells);
+            tracks[index] = current with { Cells = cells, DurationsMs = timings };
+            ReplaceClip(clip, tracks, index);
+            StatusText.Text = "Secuencia actualizada";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
     private void OnApplyTiming(object? sender, RoutedEventArgs e)

@@ -24,7 +24,7 @@
       </MenuItem>
       <MenuItem Header="_Animación">
         <MenuItem Header="Crear clip de la fila..." Click="OnCreateClip" />
-        <MenuItem x:Name="PlayMenu" Header="Reproducir" IsEnabled="False" Click="OnPlay" />
+        <MenuItem x:Name="PlayMenu" Header="Reproducir (Espacio)" IsEnabled="False" Click="OnPlay" />
       </MenuItem>
       <MenuItem Header="_Herramientas">
         <MenuItem x:Name="ValidateMenu" Header="Validar hoja" IsEnabled="False" Click="OnValidate" />
@@ -63,6 +63,7 @@
             <ComboBox x:Name="TrackList" HorizontalAlignment="Stretch" SelectionChanged="OnTrackSelected" />
             <Button Content="Asignar fila a dirección..." Click="OnAssignTrack" />
             <Button Content="Quitar dirección" Click="OnRemoveTrack" />
+            <Button x:Name="EditSequenceButton" Content="Editar secuencia..." Click="OnEditSequence" IsEnabled="False" />
           </StackPanel></ScrollViewer>
         </Grid>
       </Border>
@@ -115,7 +116,14 @@
           <TextBlock x:Name="GridInfo" Text="Sin cuadrícula" Classes="muted" />
           <Separator />
           <TextBlock Text="Fotograma" FontWeight="SemiBold" />
-          <views:FramePreview x:Name="FramePreview" Width="160" Height="160" HorizontalAlignment="Center" />
+          <views:FramePreview x:Name="FramePreview" Width="200" Height="200" ClipToBounds="True" HorizontalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="−" Click="OnFrameZoomOut" />
+            <TextBlock x:Name="FramePreviewZoom" VerticalAlignment="Center" Text="Ajustar" />
+            <Button Content="+" Click="OnFrameZoomIn" />
+            <Button Content="Centrar" Click="OnFrameZoomReset" />
+          </StackPanel>
+          <TextBlock Text="Arrastra con el botón central para desplazar." Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="Comparar poses (Onion skin)" Classes="panelHeading" />
           <WrapPanel Orientation="Horizontal">
             <CheckBox x:Name="OnionPrevious" Content="Anterior" IsEnabled="False" Margin="0,0,8,0" />

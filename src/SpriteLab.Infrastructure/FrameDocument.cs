@@ -89,7 +89,7 @@ public sealed record FrameDocument(StoredFrame[] Frames, StoredClip[] Clips)
             return new SpriteAsset(s.Id, s.Name, s.Id, grid.Image, grid.Cell, frames);
         });
         var clips = Clips.Select(c => new AnimationClip(c.Id, c.Name,
-            c.Tracks.Select(t => new AnimationTrack(t.Direction, t.FrameIds))));
+            c.Tracks.Select(t => new AnimationTrack(t.Direction, t.FrameIds, t.Fps ?? PreviewTiming.DefaultFps, t.DurationsMs))));
         return new SpriteProject(projectId, name, assets, clips);
     }
 }
