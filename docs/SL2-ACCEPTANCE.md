@@ -1,25 +1,29 @@
-# SL2 — Lista de aceptación (0.2.1.3)
+# SL2 — Aceptación 0.2.1.8
 
-Estado: candidata, no aprobada. Registrar versión/commit, Windows, DPI y resultado; usar copias de proyectos. El usuario confirmó CI de 0.2.1.2, no de esta candidata.
+Estado: candidata pendiente de CI y pruebas manuales. No cerrar SL2 hasta confirmar los resultados. Usar copias de proyectos y registrar versión, Windows y DPI.
 
-## Comprobaciones automáticas
-- CI Release, auditoría, tests, smoke test, portable Windows x64.
-- Fixtures históricos esquemas 1–4, migración a 5, PNG intacto, backup intacto, referencias y tiempos.
-- Rechazo de versiones futuras y referencias inválidas.
-- Reloj de duración variable, retrasos, bucle, pausa en última pose.
+## Evidencia anterior: 0.2.1.3
+El usuario confirmó CI verde y realizó pruebas manuales. De 58 comprobaciones: 52 correctas, 3 fallos, 3 pendientes. Fallos: cuadrícula rectangular, selección de celdas, recuperación de animación tras inspeccionar hoja. Observaciones adicionales: segundo PNG, pérdida temporal de dirección al renombrar, campos de cuadrícula rechazados, deformaciones de paneles, edición de secuencia poco intuitiva, onion poco visible, falta Guardar como y confirmación persistente. No trasladar automáticamente resultados a la nueva versión.
 
-## Comprobaciones manuales
-- [ ] Arrancar portable limpio, importar PNG transparente y cuadrículas rectangular/cuadrada.
-- [ ] Crear clips de una, cuatro y ocho pistas con etiquetas libres; cambiar de recurso y pista.
-- [ ] Editar secuencia: repetir, excluir, reordenar; comprobar tiempos individuales.
-- [ ] Reproducir con/sin bucle; pausar en última pose y reanudar; parar; anterior/siguiente; selección directa.
-- [ ] Cambiar FPS y duración, confirmar que cada pista conserva sus tiempos tras guardar/reabrir.
-- [ ] Activar Onion Skin anterior/siguiente; variar opacidad; comprobar límites y bucle.
-- [ ] Zoom/pan del visor y zoom de hoja; teclado sin interceptar escritura en campos.
-- [ ] Guardar y reabrir copia de proyecto antiguo, verificar fuentes intactas y backup.
-- [ ] Probar cerrar sin guardar, guardar, cancelar y rechazar cambios de cuadrícula con referencias.
-- [ ] Probar ventana mínima, DPI 100/150%, controles accesibles y ausencia de recortes.
-- [ ] Anotar defectos y repetir tras corrección.
+## Retest prioritario
+- [ ] Importar primer y segundo PNG, configurar cuadrículas independientes y alternar recursos.
+- [ ] Probar cuadrícula rectangular válida (por ejemplo hoja 192×384 con celdas 48×64); confirmar rechazo de dimensiones que no dividen exactamente la hoja y restauración de valores.
+- [ ] Aplicar las mismas dimensiones con clip activo: conservar selección. Intentar cambiarlas con clip asociado: bloquear sin pérdida.
+- [ ] Seleccionar celda dentro del clip: mantener pista; fuera del clip: salir del clip, volver a seleccionarlo y reproducir.
+- [ ] Deseleccionar clip explícitamente; volver a seleccionarlo.
+- [ ] Renombrar recurso con pista seleccionada: conservar clip, dirección y posición.
+- [ ] Crear clips y direcciones, cambiar entre tres clips varias veces sin cerrar la aplicación.
+- [ ] Arrastrar miniatura visible, mover mediante flechas, duplicar, añadir por número de celda, quitar; no quitar último fotograma.
+- [ ] Asignar tiempos distintos a ocurrencias repetidas; comprobar que los tiempos siguen a la ocurrencia al mover/duplicar.
+- [ ] Reproducir con/sin bucle, pausa en último frame, reanudar y parar. Comprobar que edición se desactiva durante reproducción.
+- [ ] Probar espacio y flechas sin interferir con campos de texto.
+- [ ] Inspector Hoja/Vista/Frame; comprobar que los controles de tiempos están en la línea de tiempo.
+- [ ] Onion anterior rojo, siguiente verde, ambos, sin tintes, opacidad numérica, ocultación durante reproducción; comprobar ausencia de errores.
+- [ ] Zoom y pan; probar extremos de splitters, ventana mínima, maximizada y DPI 100/150%; restablecer distribución.
+- [ ] Guardar, verificar indicador, modificar, guardar como en carpeta vacía, reabrir ambas versiones y verificar independencia.
+- [ ] Guardar como a carpeta ocupada: rechazo sin sobrescritura; cancelar diálogo sin cambios.
+- [ ] Reabrir proyecto con clips/direcciones/tiempos y secuencias editadas; verificar PNG originales intactos.
+- [ ] Cerrar con cambios: guardar, descartar, cancelar.
 
-## Alcance
-La fase SL2 edita secuencias de fotogramas originales inmutables, identificados en esquema 5. La interfaz usa una proyección de celdas; el Core valida referencias y conserva duración por aparición. Edición de rectángulos arbitrarios, anclajes, offsets, historial y persistencia de derivados corresponden a SL4. El inicio de SL3 ya existe en main, pero queda congelado. No cerrar SL2 hasta tener resultados reales.
+## CI y alcance
+Confirmar build Release, pruebas, auditoría, smoke test, portable Windows x64. Migraciones 1–4 a 5 cubiertas por tests. No se afirma aceptación de esta versión hasta contar con resultados. Se mantiene cuadrícula exacta e inmutable mientras tenga referencias. Árbol de recursos, inserción directa desde hoja y auto-scroll durante arrastre siguen pendientes como mejoras de UX. Anclajes, offsets, edición de imágenes e historial corresponden a SL4. SL3 congelado.

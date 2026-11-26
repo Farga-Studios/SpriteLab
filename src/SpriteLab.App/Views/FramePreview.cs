@@ -17,6 +17,7 @@ public sealed class FramePreview : Control
     private CorePixelRect? _next;
     private double _opacity = 0.35;
     private bool _tinted = true;
+    public bool TintFailed { get; private set; }
     private Bitmap? _previousTint;
     private Bitmap? _nextTint;
     private CorePixelRect? _previousKey;
@@ -30,12 +31,9 @@ public sealed class FramePreview : Control
         _previousKey = _nextKey = null;
     }
 
-    // Read only the requested source rectangle into a 32-bit RGBA destination.
-    private static Bitmap Tint(Bitmap source, CorePixelRect cell, byte red, byte green, byte blue)
+    // Reuse one RGBA source conversion for both changed neighbors.
+    private static Bitmap Tint(WriteableBitmap rgba, CorePixelRect cell, byte red, byte green, byte blue)
     {
-        using var rgba = new WriteableBitmap(source.PixelSize, source.Dpi, PixelFormat.Rgba8888, AlphaFormat.Unpremul);
-        using (var buffer = rgba.Lock())
-            source.CopyPixels(buffer, AlphaFormat.Unpremul);
         var output = new WriteableBitmap(new Avalonia.PixelSize(cell.Width, cell.Height), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
         try
         {
@@ -112,6 +110,7 @@ public sealed class FramePreview : Control
     public void SetOnion(CorePixelRect? previous, CorePixelRect? next, double opacity, bool tinted = true)
     {
         _tinted = tinted;
+        TintFailed = false;
         _previous = previous;
         _next = next;
         _opacity = Math.Clamp(opacity, 0, 1);
@@ -119,18 +118,25 @@ public sealed class FramePreview : Control
         {
             try
             {
+                var needPixels = (_previousKey != previous && previous.HasValue) || (_nextKey != next && next.HasValue);
+                using var rgba = needPixels ? new WriteableBitmap(bitmap.PixelSize, bitmap.Dpi, PixelFormat.Rgba8888, AlphaFormat.Unpremul) : null;
+                if (rgba is not null)
+                {
+                    using var buffer = rgba.Lock();
+                    bitmap.CopyPixels(buffer, AlphaFormat.Unpremul);
+                }
                 if (_previousKey != previous)
                 {
                     _previousTint?.Dispose(); _previousTint = null; _previousKey = null;
-                    if (previous is { } p) { _previousTint = Tint(bitmap, p, 242, 92, 102); _previousKey = p; }
+                    if (previous is { } p) { _previousTint = Tint(rgba!, p, 242, 92, 102); _previousKey = p; }
                 }
                 if (_nextKey != next)
                 {
                     _nextTint?.Dispose(); _nextTint = null; _nextKey = null;
-                    if (next is { } n) { _nextTint = Tint(bitmap, n, 84, 218, 143); _nextKey = n; }
+                    if (next is { } n) { _nextTint = Tint(rgba!, n, 84, 218, 143); _nextKey = n; }
                 }
             }
-            catch (Exception) { ClearTints(); _tinted = false; }
+            catch (Exception) { ClearTints(); _tinted = false; TintFailed = true; }
         }
         else ClearTints();
         InvalidateVisual();

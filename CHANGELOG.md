@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1.8 — SL2 regression candidate
+- Synchronize action availability with sheet/clip state; keep existing clip when applying identical grid dimensions.
+- Show selected occurrence duration in timeline, wrap resource controls and trim long status/project labels.
+- Reuse RGBA conversion for both onion neighbors and disclose tint fallback in UI.
+- Record previous manual feedback and targeted retest checklist. No new SL3 work. CI and Windows retest pending.
+
 ## 0.2.1.7 — Onion skin and save feedback
 - Optional red/green alpha-preserving onion overlays, numerical opacity.
 - Save As to a new empty folder with independent project identity; never silently overwrite another project. Same folder uses normal revision protection.

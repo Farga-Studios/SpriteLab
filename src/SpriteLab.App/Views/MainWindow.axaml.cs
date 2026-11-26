@@ -134,7 +134,7 @@ public partial class MainWindow : Window
         TimelineInfo.Text = "Sin fotogramas";
         FramePreview.SetFrame(null, default);
         CellStrip.SetSheet(null, null);
-        PreviousButton.IsEnabled = NextButton.IsEnabled = false;
+        UpdatePlaybackControls();
     }
 
     private void OnApplyGrid(object? sender, RoutedEventArgs e)
@@ -155,7 +155,12 @@ public partial class MainWindow : Window
                 (_sheets[_active].CellWidth != width || _sheets[_active].CellHeight != height))
             {
                 RestoreGridFields();
-            StatusText.Text = "Quita los clips asociados antes de cambiar la cuadrícula.";
+                StatusText.Text = "Quita los clips asociados antes de cambiar la cuadrícula.";
+                return;
+            }
+            if (_grid is not null && _grid.Cell.Width == width && _grid.Cell.Height == height)
+            {
+                StatusText.Text = "La cuadrícula ya tiene esas dimensiones.";
                 return;
             }
             var candidate = new CellGrid(
@@ -196,8 +201,7 @@ public partial class MainWindow : Window
         DurationInfo.Text = "Duración: sin asignar";
         AnchorInfo.Text = "Anclaje: sin asignar";
         TimelineInfo.Text = $"Celda {index + 1} / {_grid.Count}";
-        PreviousButton.IsEnabled = index > 0;
-        NextButton.IsEnabled = index < _grid.Count - 1;
+        UpdatePlaybackControls();
     }
 
     private void OnPrevious(object? sender, RoutedEventArgs e)
@@ -774,6 +778,14 @@ public partial class MainWindow : Window
             PreviousButton.IsEnabled = available && cursor.Position > 0;
             NextButton.IsEnabled = available && cursor.Position < cursor.Count - 1;
         }
+        else
+        {
+            PreviousButton.IsEnabled = !_importing && _selected is int previous && previous > 0;
+            NextButton.IsEnabled = !_importing && _grid is not null && _selected is int next && next < _grid.Count - 1;
+        }
+        AssignTrackButton.IsEnabled = RemoveTrackButton.IsEnabled = !_importing && ClipList.SelectedItem is ViewerClip;
+        CreateClipButton.IsEnabled = !_importing && _grid is not null && _selected.HasValue;
+        RemoveClipButton.IsEnabled = !_importing && ClipList.SelectedItem is ViewerClip;
     }
 
     private void ShowPlaybackCell()
@@ -786,6 +798,7 @@ public partial class MainWindow : Window
         {
             var duration = track.DurationAt(cursor.Position);
             DurationInfo.Text = $"Duración: {duration:0.##} ms";
+            TimelineInfo.Text += $" · {duration:0.##} ms";
             DurationInput.Text = track.DurationsMs?[cursor.Position]?.ToString() ?? "";
 
         }
@@ -799,6 +812,7 @@ public partial class MainWindow : Window
         if (_playback is not { } cursor || cursor.IsPlaying || _grid is null)
         {
             FramePreview.SetOnion(null, null, 0);
+            OnionFeedback.Text = "";
             return;
         }
         var loop = LoopCheck.IsChecked == true;
@@ -806,6 +820,7 @@ public partial class MainWindow : Window
         var next = OnionNext.IsChecked == true ? cursor.Neighbor(1, loop) : null;
         FramePreview.SetOnion(previous is int a ? _grid.GetCell(a) : null,
             next is int b ? _grid.GetCell(b) : null, OnionOpacity.Value / 100.0, OnionTint.IsChecked == true);
+        OnionFeedback.Text = FramePreview.TintFailed ? "No se pudieron aplicar los tintes; se muestran los colores originales." : "";
     }
 
     private void OnPlay(object? sender, RoutedEventArgs e)
