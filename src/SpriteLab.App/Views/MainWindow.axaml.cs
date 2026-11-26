@@ -964,14 +964,14 @@ public partial class MainWindow : Window
         var grid = _grid;
         SetBusy(true);
         ClearDiagnostics();
-        DiagnosticText.Text = "Analizando alfa y bordes...";
+        DiagnosticText.Text = "Analizando transparencia, bordes y duplicados...";
         try
         {
             var pixels = ValidationPixels.Read(_bitmap);
             var result = await Task.Run(() => SheetValidation.Analyze(grid, pixels, _lifetime.Token), _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
             FindingList.ItemsSource = result.Findings;
-            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.CleanCells} sin avisos" +
+            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {result.CleanCells} sin avisos" +
                 (result.OmittedFindings > 0 ? $" · {result.OmittedFindings} avisos no listados" : "");
         }
         catch (Exception ex)

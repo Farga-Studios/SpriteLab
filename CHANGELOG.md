@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 — Exact duplicate cells
+- Compare nonempty cells using normalized transparent RGBA, hash lookup and exact collision verification. Reference the first matching cell in sheet order.
+- Report duplicates separately from edge warnings; clean count excludes cells with any warning. Empty cells and repeated animation occurrences are not duplicate findings.
+- Four additional Core tests. CI and manual verification pending.
+
 ## 0.2.2 — SL3 alpha and border diagnostics
 - Report exact touched cell edges and complete sheet counts even when the finding list is capped.
 - Distinguish possible clipping from confirmed errors; transparent cells remain review warnings.

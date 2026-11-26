@@ -91,4 +91,63 @@ public sealed class SheetValidationTests
         Assert.Equal(1, result.EmptyCells);
         Assert.Equal(0, result.EdgeCells);
     }
+
+    [Fact]
+    public void IdenticalVisibleCellsIgnoreHiddenRgbAndReferenceFirst()
+    {
+        var grid = new CellGrid(new PixelSize(6, 2), new PixelSize(2, 2));
+        var rgba = new byte[48];
+        for (var x = 0; x < 6; x += 2)
+        {
+            rgba[x * 4] = 80;
+            rgba[x * 4 + 3] = 255;
+            rgba[(x + 1) * 4] = (byte)x;
+        }
+        var result = SheetValidation.Analyze(grid, rgba);
+        var duplicates = result.Findings.Where(f => f.Code == "DUPLICATE").ToArray();
+        Assert.Equal(2, result.DuplicateCells);
+        Assert.Equal(3, result.EdgeCells);
+        Assert.Equal(0, result.CleanCells);
+        Assert.Equal(new int?[] { 1, 2 }, duplicates.Select(f => f.Cell).ToArray());
+        Assert.All(duplicates, f => Assert.Equal((int?)0, f.ReferenceCell));
+    }
+
+    [Fact]
+    public void ColorAlphaAndPositionDifferencesAreNotDuplicates()
+    {
+        var grid = new CellGrid(new PixelSize(8, 2), new PixelSize(2, 2));
+        var rgba = new byte[64];
+        rgba[0] = 1; rgba[3] = 255;
+        rgba[8] = 2; rgba[11] = 255;
+        rgba[16] = 1; rgba[19] = 254;
+        rgba[28] = 1; rgba[31] = 255;
+        Assert.Equal(0, SheetValidation.Analyze(grid, rgba).DuplicateCells);
+    }
+
+    [Fact]
+    public void EmptyCellsAreNotDuplicatesAndCleanCountIsDistinct()
+    {
+        var grid = new CellGrid(new PixelSize(12, 3), new PixelSize(3, 3));
+        var rgba = new byte[144];
+        rgba[(12 + 1) * 4 + 3] = 255;
+        rgba[(12 + 4) * 4 + 3] = 255;
+        var result = SheetValidation.Analyze(grid, rgba);
+        Assert.Equal(2, result.EmptyCells);
+        Assert.Equal(1, result.DuplicateCells);
+        Assert.Equal(1, result.CleanCells);
+        Assert.Equal(0, result.EdgeCells);
+    }
+
+    [Fact]
+    public void DuplicateCountsRemainCompleteAfterFindingLimit()
+    {
+        var grid = new CellGrid(new PixelSize(1002, 1), new PixelSize(1, 1));
+        var rgba = new byte[4008];
+        for (var i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
+        var result = SheetValidation.Analyze(grid, rgba);
+        Assert.Equal(1001, result.DuplicateCells);
+        Assert.Equal(1002, result.EdgeCells);
+        Assert.Equal(1003, result.OmittedFindings);
+        Assert.Equal(1001, result.Findings.Count);
+    }
 }

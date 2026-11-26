@@ -6,14 +6,15 @@ public enum CellEdges { None = 0, Top = 1, Right = 2, Bottom = 4, Left = 8 }
 public sealed record SheetFinding(string Code, int? Cell, string Message)
 {
     public CellEdges Edges { get; init; }
+    public int? ReferenceCell { get; init; }
     public override string ToString() => Cell is int cell
         ? $"Aviso · Celda {cell + 1}: {Message}" : $"Aviso · {Message}";
 }
 
 public sealed record SheetValidationResult(int TotalCells, int EmptyCells, int EdgeCells,
-    IReadOnlyList<SheetFinding> Findings, int OmittedFindings)
+    IReadOnlyList<SheetFinding> Findings, int OmittedFindings, int DuplicateCells = 0, int CleanCellCount = -1)
 {
-    public int CleanCells => TotalCells - EmptyCells - EdgeCells;
+    public int CleanCells => CleanCellCount >= 0 ? CleanCellCount : TotalCells - EmptyCells - EdgeCells;
 }
 
 public static class SheetValidation
@@ -24,7 +25,7 @@ public static class SheetValidation
     public static IReadOnlyList<SheetFinding> Scan(CellGrid grid, byte[] rgba, CancellationToken token = default) =>
         Analyze(grid, rgba, token).Findings;
 
-    // Tightly packed RGBA, straight or premultiplied alpha; only alpha is inspected.
+    // Tightly packed straight RGBA. Ignore RGB when alpha is zero.
     public static SheetValidationResult Analyze(CellGrid grid, byte[] rgba, CancellationToken token = default)
     {
         if (rgba.LongLength != (long)grid.Image.Width * grid.Image.Height * 4)
@@ -33,18 +34,25 @@ public static class SheetValidation
         var findings = new List<SheetFinding>();
         var empty = 0;
         var edge = 0;
+        var duplicates = 0;
+        var clean = 0;
+        var seen = new Dictionary<ulong, List<int>>();
         for (var i = 0; i < grid.Count; i++)
         {
             token.ThrowIfCancellationRequested();
             var cell = grid.GetCell(i);
             var visible = false;
+            ulong hash = 14695981039346656037UL;
             var edges = CellEdges.None;
             for (var y = 0; y < cell.Height; y++)
             {
                 token.ThrowIfCancellationRequested();
                 for (var x = 0; x < cell.Width; x++)
                 {
-                    var alpha = rgba[((cell.Y + y) * grid.Image.Width + cell.X + x) * 4 + 3];
+                    var offset = ((cell.Y + y) * grid.Image.Width + cell.X + x) * 4;
+                    var alpha = rgba[offset + 3];
+                    for (var channel = 0; channel < 4; channel++)
+                        hash = unchecked((hash ^ (alpha == 0 ? (byte)0 : rgba[offset + channel])) * 1099511628211UL);
                     if (alpha == 0) continue;
                     visible = true;
                     if (y == 0) edges |= CellEdges.Top;
@@ -65,11 +73,49 @@ public static class SheetValidation
                 if (findings.Count < FindingLimit)
                     findings.Add(new("EDGE", i, $"Píxeles visibles en {Describe(edges)}; posible recorte.") { Edges = edges });
             }
+            if (!visible) continue;
+            // A hash is only a candidate lookup; exact comparison prevents collision false positives.
+            if (!seen.TryGetValue(hash, out var candidates))
+                seen.Add(hash, candidates = new List<int>());
+            int? reference = null;
+            foreach (var candidate in candidates)
+            {
+                token.ThrowIfCancellationRequested();
+                if (SamePixels(grid, rgba, cell, grid.GetCell(candidate), token))
+                { reference = candidate; break; }
+            }
+            if (reference is int first)
+            {
+                duplicates++;
+                if (findings.Count < FindingLimit)
+                    findings.Add(new("DUPLICATE", i, $"Imagen idéntica a la celda {first + 1}; puede ser intencional.") { ReferenceCell = first });
+            }
+            else
+            {
+                candidates.Add(i);
+                if (edges == CellEdges.None) clean++;
+            }
         }
-        var omitted = empty + edge - findings.Count;
+        var omitted = empty + edge + duplicates - findings.Count;
         if (omitted > 0)
             findings.Add(new("LIMIT", null, $"Se omiten {omitted} avisos de la lista. Recuento completo."));
-        return new(grid.Count, empty, edge, findings.AsReadOnly(), omitted);
+        return new(grid.Count, empty, edge, findings.AsReadOnly(), omitted, duplicates, clean);
+    }
+
+    private static bool SamePixels(CellGrid grid, byte[] rgba, PixelRect a, PixelRect b, CancellationToken token)
+    {
+        for (var y = 0; y < a.Height; y++)
+        {
+            token.ThrowIfCancellationRequested();
+            for (var x = 0; x < a.Width; x++)
+            {
+                var left = ((a.Y + y) * grid.Image.Width + a.X + x) * 4;
+                var right = ((b.Y + y) * grid.Image.Width + b.X + x) * 4;
+                if (rgba[left + 3] != rgba[right + 3]) return false;
+                if (rgba[left + 3] != 0 && !rgba.AsSpan(left, 3).SequenceEqual(rgba.AsSpan(right, 3))) return false;
+            }
+        }
+        return true;
     }
 
     private static string Describe(CellEdges edges)
