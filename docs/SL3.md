@@ -25,3 +25,6 @@ Filtros por categoría, leyenda y marcas opcionales sobre hoja, independientes d
 
 ## 0.2.7 — Informes
 Exportar informe JSON (contrato versión 1) o texto UTF-8 desde el panel de diagnósticos. Instantánea de hoja activa al validar: versión, fecha UTC, nombres de proyecto/recurso, dimensiones, cuadrícula, totales por categoría, avisos retenidos y omitidos; referencias de celdas desde 1, sin rutas absolutas ni PNG. No depende del filtro visual. No incluye los detalles omitidos por límite; sí recuentos completos. Exportar incluso sin avisos, invalidar al cambiar proyecto/hoja/cuadrícula/secuencia. Selector de archivo con confirmación de sobrescritura y protección del nombre del manifiesto. Manual: ambos formatos, filtro activo, cancelación, informe limpio, invalidación, intento de sobrescribir manifiesto. CI pendiente.
+
+## 0.2.7.1 — Corrección de compilación
+CI #36 (0.2.6) falló en MainWindow.axaml.cs línea 989 por comillas escapadas dentro de una expresión interpolada (CS1056 y errores sintácticos derivados). Extraer el recuento a una variable local. Aplicar sobre 0.2.7 sin revertir informes. CI nuevo pendiente; no avanzar a 0.3.0 hasta verificar.

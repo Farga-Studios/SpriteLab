@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.7.1 — Diagnostic filter compilation fix
+- Remove invalid escaped quotes from interpolation introduced in 0.2.6; calculate filtered count separately. Retain report export from 0.2.7. CI pending.
+
 ## 0.2.7 — Validation reports
 - Export an unfiltered active-sheet diagnostic snapshot as JSON or UTF-8 text, including metadata, global totals, one-based cell references and explicit omitted count.
 - Export invalidated with diagnostics, no project edits; protect the project manifest from report overwrite. Three Core tests. CI and GUI acceptance pending.

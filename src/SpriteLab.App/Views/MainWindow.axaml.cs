@@ -990,7 +990,8 @@ public partial class MainWindow : Window
         var filtered = DiagnosticFilter.Apply(_allFindings, category);
         FindingList.ItemsSource = filtered;
         Preview.SetDiagnosticMarkers(DiagnosticOverlay.IsChecked == true ? DiagnosticFilter.Markers(filtered) : null);
-        DiagnosticText.Text = _diagnosticSummary + $" · {filtered.Count(f => f.Code != \"LIMIT\")} avisos visibles";
+        var visibleCount = filtered.Count(f => f.Code != "LIMIT");
+        DiagnosticText.Text = _diagnosticSummary + $" · {visibleCount} avisos visibles";
     }
 
     private async void OnValidate(object? sender, RoutedEventArgs e)
