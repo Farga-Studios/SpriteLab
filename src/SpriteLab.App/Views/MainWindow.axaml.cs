@@ -978,12 +978,15 @@ public partial class MainWindow : Window
         var grid = _grid;
         SetBusy(true);
         ClearDiagnostics();
-        DiagnosticText.Text = "Analizando transparencia, bordes, duplicados y alineación...";
+        DiagnosticText.Text = "Analizando hoja y animaciones...";
         try
         {
             var sheetId = _sheets[_active].Id;
-            var tracks = _clips.Where(c => c.SheetId == sheetId)
-                .SelectMany(c => c.EffectiveTracks.Select(t => new AlignmentTrack(c.Name, t.ToString(), t.Cells.ToArray()))).ToArray();
+            var clips = _clips.Where(c => c.SheetId == sheetId)
+                .Select(c => new ValidationClip(c.Name, c.EffectiveTracks.Select(t =>
+                    new ValidationTrack(t.Direction, t.Cells.ToArray(), t.Fps, t.DurationsMs?.ToArray())).ToArray())).ToArray();
+            var tracks = clips.SelectMany(c => c.Tracks.Select(t => new AlignmentTrack(c.Name,
+                t.Direction == "none" ? "Sin dirección" : t.Direction, t.Cells))).ToArray();
             var pixels = ValidationPixels.Read(_bitmap);
             var analysis = await Task.Run(() =>
             {
@@ -992,16 +995,19 @@ public partial class MainWindow : Window
                 var alignment = AlignmentValidation.Analyze(grid, sheet.Bounds, tracks,
                     SheetValidation.FindingLimit - baseFindings.Length, _lifetime.Token);
                 var list = baseFindings.Concat(alignment.Findings).ToList();
-                var omitted = sheet.OmittedFindings + alignment.OmittedFindings;
+                var clipResult = ClipValidation.Analyze(grid, sheet.Bounds, clips,
+                    SheetValidation.FindingLimit - list.Count, _lifetime.Token);
+                list.AddRange(clipResult.Findings);
+                var omitted = sheet.OmittedFindings + alignment.OmittedFindings + clipResult.OmittedFindings;
                 if (omitted > 0) list.Add(new SheetFinding("LIMIT", null, $"Se omiten {omitted} avisos; recuento completo."));
-                return (Sheet: sheet, Alignment: alignment, Findings: list, Omitted: omitted);
+                return (Sheet: sheet, Alignment: alignment, Clips: clipResult, Findings: list, Omitted: omitted);
             }, _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
             _validationResult = analysis.Sheet;
             UpdateVisibleBounds();
             FindingList.ItemsSource = analysis.Findings;
             var result = analysis.Sheet;
-            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación" +
+            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación · {analysis.Clips.TotalFindings} de animaciones" +
                 (analysis.Omitted > 0 ? $" · {analysis.Omitted} avisos no listados" : "");
         }
         catch (Exception ex)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5 — Animation consistency diagnostics
+- Review transparent occurrences, similar direction labels, unspecified directions in multi-track clips and defensive reference/timing checks.
+- Preserve free labels, unequal track lengths and deliberate repeated frames. Shared bounded diagnostic list. Five Core tests; CI and manual verification pending.
+
 ## 0.2.4 — Visible bounds and alignment review
 - Measure cell-local nontransparent bounding boxes and show dimensions/margins in the frame inspector after validation.
 - Compare consecutive nonempty occurrences within each direction: advisory center/base shift (20% of cell axis, minimum 2 px) and visible size change (30%, minimum 2 px).
