@@ -158,6 +158,7 @@
           <TabItem Header="Fotograma"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">
           <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
           <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
+          <TextBlock x:Name="VisibleBoundsInfo" Text="Área visible: valida la hoja" Classes="muted" TextWrapping="Wrap" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
           <TextBlock x:Name="AnchorInfo" Text="Anclaje: —" Classes="muted" />
           <TextBlock Text="Desplazamiento: —" Classes="muted" />

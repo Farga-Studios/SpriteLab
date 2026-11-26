@@ -14,6 +14,7 @@ public sealed record SheetFinding(string Code, int? Cell, string Message)
 public sealed record SheetValidationResult(int TotalCells, int EmptyCells, int EdgeCells,
     IReadOnlyList<SheetFinding> Findings, int OmittedFindings, int DuplicateCells = 0, int CleanCellCount = -1)
 {
+    public IReadOnlyDictionary<int, VisibleBounds> Bounds { get; init; } = new Dictionary<int, VisibleBounds>();
     public int CleanCells => CleanCellCount >= 0 ? CleanCellCount : TotalCells - EmptyCells - EdgeCells;
 }
 
@@ -37,6 +38,7 @@ public static class SheetValidation
         var duplicates = 0;
         var clean = 0;
         var seen = new Dictionary<ulong, List<int>>();
+        var bounds = new Dictionary<int, VisibleBounds>();
         for (var i = 0; i < grid.Count; i++)
         {
             token.ThrowIfCancellationRequested();
@@ -44,6 +46,7 @@ public static class SheetValidation
             var visible = false;
             ulong hash = 14695981039346656037UL;
             var edges = CellEdges.None;
+            int minX = cell.Width, minY = cell.Height, maxX = -1, maxY = -1;
             for (var y = 0; y < cell.Height; y++)
             {
                 token.ThrowIfCancellationRequested();
@@ -55,6 +58,8 @@ public static class SheetValidation
                         hash = unchecked((hash ^ (alpha == 0 ? (byte)0 : rgba[offset + channel])) * 1099511628211UL);
                     if (alpha == 0) continue;
                     visible = true;
+                    minX = Math.Min(minX, x); minY = Math.Min(minY, y);
+                    maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
                     if (y == 0) edges |= CellEdges.Top;
                     if (x == cell.Width - 1) edges |= CellEdges.Right;
                     if (y == cell.Height - 1) edges |= CellEdges.Bottom;
@@ -74,6 +79,7 @@ public static class SheetValidation
                     findings.Add(new("EDGE", i, $"Píxeles visibles en {Describe(edges)}; posible recorte.") { Edges = edges });
             }
             if (!visible) continue;
+            bounds.Add(i, new VisibleBounds(minX, minY, maxX - minX + 1, maxY - minY + 1));
             // A hash is only a candidate lookup; exact comparison prevents collision false positives.
             if (!seen.TryGetValue(hash, out var candidates))
                 seen.Add(hash, candidates = new List<int>());
@@ -99,7 +105,8 @@ public static class SheetValidation
         var omitted = empty + edge + duplicates - findings.Count;
         if (omitted > 0)
             findings.Add(new("LIMIT", null, $"Se omiten {omitted} avisos de la lista. Recuento completo."));
-        return new(grid.Count, empty, edge, findings.AsReadOnly(), omitted, duplicates, clean);
+        return new(grid.Count, empty, edge, findings.AsReadOnly(), omitted, duplicates, clean)
+        { Bounds = new System.Collections.ObjectModel.ReadOnlyDictionary<int, VisibleBounds>(bounds) };
     }
 
     private static bool SamePixels(CellGrid grid, byte[] rgba, PixelRect a, PixelRect b, CancellationToken token)

@@ -14,6 +14,7 @@ namespace SpriteLab.App.Views;
 public partial class MainWindow : Window
 {
     private Bitmap? _bitmap;
+    private SheetValidationResult? _validationResult;
     private readonly List<ViewerSheet> _sheets = new();
     private readonly List<ViewerClip> _clips = new();
     private bool _refreshingClips;
@@ -198,6 +199,7 @@ public partial class MainWindow : Window
         CellStrip.SetSelection(index);
         FrameInfo.Text = $"Celda {index + 1} · fila {index / _grid.Columns + 1}, columna {index % _grid.Columns + 1}";
         RectInfo.Text = $"Rectángulo: ({cell.X}, {cell.Y}) · {cell.Width} × {cell.Height}";
+        UpdateVisibleBounds();
         DurationInfo.Text = "Duración: sin asignar";
         AnchorInfo.Text = "Anclaje: sin asignar";
         TimelineInfo.Text = $"Celda {index + 1} / {_grid.Count}";
@@ -269,6 +271,7 @@ public partial class MainWindow : Window
     private void MarkDirty()
     {
         _dirty = true;
+        if (_validationResult is not null) ClearDiagnostics();
         ProjectText.Text = _projectName + " *";
         SaveIndicator.Text = "● Cambios sin guardar";
         SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#E5B760"));
@@ -952,8 +955,19 @@ public partial class MainWindow : Window
         if (!cursor.IsPlaying) PausePlayback();
     }
 
+    private void UpdateVisibleBounds()
+    {
+        if (_validationResult is null || _selected is not int cell || _grid is null)
+        { VisibleBoundsInfo.Text = "Área visible: valida la hoja"; return; }
+        if (!_validationResult.Bounds.TryGetValue(cell, out var b))
+        { VisibleBoundsInfo.Text = "Área visible: celda vacía"; return; }
+        VisibleBoundsInfo.Text = $"Área visible: {b.Width} × {b.Height} px · ({b.X}, {b.Y})\nMárgenes I/S/D/B: {b.X}/{b.Y}/{_grid.Cell.Width - b.X - b.Width}/{_grid.Cell.Height - b.Y - b.Height} px";
+    }
+
     private void ClearDiagnostics()
     {
+        _validationResult = null;
+        VisibleBoundsInfo.Text = "Área visible: valida la hoja";
         FindingList.ItemsSource = null;
         DiagnosticText.Text = "Validación no ejecutada.";
     }
@@ -964,15 +978,31 @@ public partial class MainWindow : Window
         var grid = _grid;
         SetBusy(true);
         ClearDiagnostics();
-        DiagnosticText.Text = "Analizando transparencia, bordes y duplicados...";
+        DiagnosticText.Text = "Analizando transparencia, bordes, duplicados y alineación...";
         try
         {
+            var sheetId = _sheets[_active].Id;
+            var tracks = _clips.Where(c => c.SheetId == sheetId)
+                .SelectMany(c => c.EffectiveTracks.Select(t => new AlignmentTrack(c.Name, t.ToString(), t.Cells.ToArray()))).ToArray();
             var pixels = ValidationPixels.Read(_bitmap);
-            var result = await Task.Run(() => SheetValidation.Analyze(grid, pixels, _lifetime.Token), _lifetime.Token);
+            var analysis = await Task.Run(() =>
+            {
+                var sheet = SheetValidation.Analyze(grid, pixels, _lifetime.Token);
+                var baseFindings = sheet.Findings.Where(f => f.Code != "LIMIT").ToArray();
+                var alignment = AlignmentValidation.Analyze(grid, sheet.Bounds, tracks,
+                    SheetValidation.FindingLimit - baseFindings.Length, _lifetime.Token);
+                var list = baseFindings.Concat(alignment.Findings).ToList();
+                var omitted = sheet.OmittedFindings + alignment.OmittedFindings;
+                if (omitted > 0) list.Add(new SheetFinding("LIMIT", null, $"Se omiten {omitted} avisos; recuento completo."));
+                return (Sheet: sheet, Alignment: alignment, Findings: list, Omitted: omitted);
+            }, _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
-            FindingList.ItemsSource = result.Findings;
-            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {result.CleanCells} sin avisos" +
-                (result.OmittedFindings > 0 ? $" · {result.OmittedFindings} avisos no listados" : "");
+            _validationResult = analysis.Sheet;
+            UpdateVisibleBounds();
+            FindingList.ItemsSource = analysis.Findings;
+            var result = analysis.Sheet;
+            DiagnosticText.Text = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación" +
+                (analysis.Omitted > 0 ? $" · {analysis.Omitted} avisos no listados" : "");
         }
         catch (Exception ex)
         {

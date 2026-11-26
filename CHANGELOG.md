@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4 — Visible bounds and alignment review
+- Measure cell-local nontransparent bounding boxes and show dimensions/margins in the frame inspector after validation.
+- Compare consecutive nonempty occurrences within each direction: advisory center/base shift (20% of cell axis, minimum 2 px) and visible size change (30%, minimum 2 px).
+- Share the bounded diagnostics list, retain complete counts and invalidate results when project changes. Four Core tests. CI and manual verification pending.
+
 ## 0.2.3 — Exact duplicate cells
 - Compare nonempty cells using normalized transparent RGBA, hash lookup and exact collision verification. Reference the first matching cell in sheet order.
 - Report duplicates separately from edge warnings; clean count excludes cells with any warning. Empty cells and repeated animation occurrences are not duplicate findings.

@@ -29,3 +29,5 @@ SL2 aceptada en 0.2.1.9: CI verde comunicado por el usuario, 46/47 comprobacione
 SL3 0.2.2: consolidate read-only empty/edge detectors, exact counts and bounded list. Next: duplicates after CI and targeted manual checks. UI redesign deferred; functional review after SL4 and aesthetic review during SL7 are proposed, not gates for SL3.
 
 SL3 0.2.3: exact in-sheet duplicate diagnostics; next alignment metrics. CI and manual validation pending.
+
+SL3 0.2.4: visible bounds and advisory track alignment/size checks; next clip/direction consistency. CI and manual validation pending.
