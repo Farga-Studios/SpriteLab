@@ -6,7 +6,7 @@ namespace SpriteLab.Infrastructure;
 // Grid changes and removal are blocked while referenced. Full Frame-ID mapping follows in SL2.
 public sealed record ViewerTrack(string Direction, int[] Cells, int? Fps = null, int?[]? DurationsMs = null)
 {
-    public override string ToString() => Direction;
+    public override string ToString() => Direction == "none" ? "Sin dirección" : Direction;
 
     public double DurationAt(int index) => PreviewTiming.Duration(Fps ?? PreviewTiming.DefaultFps, DurationsMs?[index]);
 }

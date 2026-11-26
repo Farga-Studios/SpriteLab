@@ -12,6 +12,7 @@
         <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." HotKey="Ctrl+O" Click="OnOpenProject" />
         <MenuItem x:Name="SaveProjectMenu" Header="Guardar proyecto..." HotKey="Ctrl+S" Click="OnSaveProject" />
         <MenuItem x:Name="SaveAsMenu" Header="Guardar como..." HotKey="Ctrl+Shift+S" Click="OnSaveAs" />
+        <MenuItem x:Name="RenameProjectMenu" Header="Renombrar proyecto..." Click="OnRenameProject" />
         <Separator />
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
@@ -59,7 +60,7 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="*" MinHeight="200" />
         <RowDefinition Height="5" />
-        <RowDefinition Height="340" MinHeight="220" MaxHeight="440" />
+        <RowDefinition Height="320" MinHeight="220" MaxHeight="440" />
         <RowDefinition Height="5" />
         <RowDefinition Height="100" MinHeight="90" MaxHeight="250" />
       </Grid.RowDefinitions>
@@ -154,7 +155,7 @@
           <Slider x:Name="OnionOpacity" Minimum="10" Maximum="80" Value="35" IsEnabled="False" />
           <TextBlock x:Name="OnionFeedback" TextWrapping="Wrap" Classes="muted" />
           </StackPanel></ScrollViewer></TabItem>
-          <TabItem Header="Frame"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">
+          <TabItem Header="Fotograma"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10" Margin="0,8,0,0">
           <TextBlock x:Name="FrameInfo" Text="Sin selección" Classes="muted" />
           <TextBlock x:Name="RectInfo" Text="Rectángulo: —" Classes="muted" />
           <TextBlock x:Name="DurationInfo" Text="Duración: —" Classes="muted" />
@@ -167,9 +168,9 @@
       <Border ClipToBounds="True" Grid.Column="2" Grid.Row="2" Background="#202630" Padding="12">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="5">
-            <TextBlock x:Name="AnimationHeading" Text="ANIMACIÓN · Sin clip" Classes="panelHeading" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="AnimationHeading" Text="ANIMACIÓN Y LÍNEA DE TIEMPO · Sin clip" Classes="panelHeading" TextTrimming="CharacterEllipsis" />
             <WrapPanel Orientation="Horizontal">
-              <ComboBox x:Name="TrackList" Width="120" Margin="0,0,6,4" SelectionChanged="OnTrackSelected" />
+              <ComboBox x:Name="TrackList" Width="145" Margin="0,0,6,4" SelectionChanged="OnTrackSelected" />
               <Button x:Name="AssignTrackButton" Content="Asignar fila..." Click="OnAssignTrack" Margin="0,0,6,4" />
               <Button x:Name="RemoveTrackButton" Content="Quitar dirección" Click="OnRemoveTrack" Margin="0,0,6,4" />
               <Button x:Name="EditSequenceButton" Content="Editar secuencia..." Click="OnEditSequence" IsEnabled="False" Margin="0,0,6,4" />
@@ -191,7 +192,7 @@
             <Border Background="#171B22" Padding="6" CornerRadius="4">
               <StackPanel Spacing="4">
                 <TextBlock x:Name="TimelineInfo" Text="Sin fotogramas" Classes="muted" />
-                <views:CellStrip x:Name="CellStrip" Height="56" />
+                <views:CellStrip x:Name="CellStrip" Height="76" />
                 <TextBlock Text="Arrastra las miniaturas para reordenar las visibles." Classes="muted" TextWrapping="Wrap" />
                 <WrapPanel Orientation="Horizontal">
                   <Button x:Name="AddFrameButton" Content="+ Añadir" Click="OnAddFrame" IsEnabled="False" Margin="0,0,4,4" />

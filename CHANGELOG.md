@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1.9 — Final SL2 usability review
+- Named project save dialog with automatic child folder creation; safe confirmed overwrite of valid existing SpriteLab projects with revision protection and manifest backup. Non-project occupied directories remain protected.
+- Rename project metadata without moving folder; timeline heading, per-frame number/time, Spanish inspector and implicit direction labels.
+- Destination validation tests; CI and targeted acceptance pending.
+
 ## 0.2.1.8 — SL2 regression candidate
 - Synchronize action availability with sheet/clip state; keep existing clip when applying identical grid dimensions.
 - Show selected occurrence duration in timeline, wrap resource controls and trim long status/project labels.

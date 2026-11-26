@@ -256,7 +256,7 @@ public partial class MainWindow : Window
         if (busy) PausePlayback();
         _importing = busy;
         ImportButton.IsEnabled = ImportMenu.IsEnabled = OpenProjectMenu.IsEnabled =
-            SaveProjectMenu.IsEnabled = SaveAsMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
+            SaveProjectMenu.IsEnabled = SaveAsMenu.IsEnabled = RenameProjectMenu.IsEnabled = ResourceList.IsEnabled = ClipList.IsEnabled = !busy;
         ApplyGridButton.IsEnabled = RestoreGridButton.IsEnabled = !busy && _bitmap is not null;
         DeselectClipButton.IsEnabled = !busy && ClipList.SelectedIndex >= 0;
         TrackList.IsEnabled = !busy;
@@ -490,7 +490,7 @@ public partial class MainWindow : Window
             RefreshTracks(clip);
             var track = clip.EffectiveTracks[0];
             SetPlayback(track);
-            StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
+            StatusText.Text = $"{clip.Name} · {track} · {track.Cells.Length} fotogramas";
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = ex.Message; }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -587,7 +587,7 @@ public partial class MainWindow : Window
             ClipList.SelectedItem is not ViewerClip clip || TrackList.SelectedItem is not ViewerTrack track ||
             _active < 0 || _sheets[_active].Id != clip.SheetId) return;
         SetPlayback(track);
-        StatusText.Text = $"{clip.Name} · {track.Direction} · {track.Cells.Length} fotogramas";
+        StatusText.Text = $"{clip.Name} · {track} · {track.Cells.Length} fotogramas";
     }
 
     private void EditTimeline(TimelineOperation operation, int position, int argument = 0)
@@ -717,7 +717,7 @@ public partial class MainWindow : Window
         WorkspaceGrid.ColumnDefinitions[2].Width = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
         WorkspaceGrid.ColumnDefinitions[4].Width = new Avalonia.Controls.GridLength(300);
         WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
-        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(340);
+        WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(320);
         WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(100);
         StatusText.Text = "Distribución restablecida";
     }
@@ -728,9 +728,9 @@ public partial class MainWindow : Window
         _playback = new PlaybackCursor(track.Cells);
         _playbackTrack = track;
         InspectorTabs.SelectedIndex = 1;
-        AnimationHeading.Text = $"ANIMACIÓN · {(ClipList.SelectedItem as ViewerClip)?.Name ?? track.Direction}";
+        AnimationHeading.Text = $"ANIMACIÓN Y LÍNEA DE TIEMPO · {(ClipList.SelectedItem as ViewerClip)?.Name ?? track.ToString()}";
         _previewClock = new PlaybackClock(_playback, Enumerable.Range(0, track.Cells.Length).Select(track.DurationAt));
-        CellStrip.SetSequence(track.Cells);
+        CellStrip.SetSequence(track.Cells, Enumerable.Range(0, track.Cells.Length).Select(track.DurationAt).ToArray());
         FpsInput.Text = (track.Fps ?? PreviewTiming.DefaultFps).ToString();
         ShowPlaybackCell();
     }
@@ -742,7 +742,7 @@ public partial class MainWindow : Window
         _previewClock = null;
         _playback = null;
         _playbackTrack = null;
-        AnimationHeading.Text = "ANIMACIÓN · Sin clip";
+        AnimationHeading.Text = "ANIMACIÓN Y LÍNEA DE TIEMPO · Sin clip";
         CellStrip.SetSequence(null);
         if (_selected is int cell) CellStrip.SetSelection(cell);
         UpdatePlaybackControls();
@@ -1046,21 +1046,119 @@ public partial class MainWindow : Window
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
+    private async Task<(string Folder, string Name)?> PickSaveDestination()
+    {
+        var name = new TextBox { Text = _projectName, MaxLength = 100 };
+        var parent = new TextBox { Text = _folder is null ? "" : Path.GetDirectoryName(_folder), IsReadOnly = true, Watermark = "Selecciona la ubicación" };
+        var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        var browse = new Button { Content = "Elegir carpeta…" };
+        var save = new Button { Content = "Guardar" };
+        var cancel = new Button { Content = "Cancelar" };
+        var dialog = new Window { Title = "Guardar proyecto", Width = 520, Height = 320, CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        void Refresh()
+        {
+            try
+            {
+                var folder = ProjectDestination.Resolve(parent.Text ?? "", name.Text ?? "");
+                preview.Text = "Carpeta del proyecto: " + folder;
+                save.IsEnabled = true;
+            }
+            catch (ArgumentException ex) { preview.Text = ex.Message; save.IsEnabled = false; }
+        }
+        name.TextChanged += (_, _) => Refresh();
+        browse.Click += async (_, _) =>
+        {
+            var selected = await dialog.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                { Title = "Selecciona la ubicación del proyecto", AllowMultiple = false });
+            if (selected.Count > 0 && selected[0].TryGetLocalPath() is string path)
+            { parent.Text = path; Refresh(); }
+        };
+        save.Click += (_, _) => dialog.Close((ProjectDestination.Resolve(parent.Text ?? "", name.Text ?? ""), name.Text!.Trim()));
+        cancel.Click += (_, _) => dialog.Close(null);
+        dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 10,
+            Children = { new TextBlock { Text = "Nombre del proyecto" }, name,
+                new TextBlock { Text = "Ubicación (carpeta contenedora)" }, parent, browse, preview,
+                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8, Children = { cancel, save } } } };
+        Refresh();
+        return await dialog.ShowDialog<(string Folder, string Name)?>(this);
+    }
+
+    private async Task<bool> ConfirmOverwrite(string folder)
+    {
+        var dialog = new Window { Title = "Confirmar sobrescritura", Width = 520, Height = 230,
+            CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var overwrite = new Button { Content = "Sobrescribir proyecto" };
+        var cancel = new Button { Content = "Cancelar" };
+        overwrite.Click += (_, _) => dialog.Close(true);
+        cancel.Click += (_, _) => dialog.Close(false);
+        dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 14,
+            Children = { new TextBlock { Text = "Ya existe un proyecto en esta ubicación:", FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = folder, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = "Se reemplazará el manifiesto y se conservará su copia .bak. No se eliminarán los PNG anteriores ni otros archivos.", TextWrapping = TextWrapping.Wrap },
+                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8, Children = { cancel, overwrite } } } };
+        return await dialog.ShowDialog<bool>(this);
+    }
+
+    private async void OnRenameProject(object? sender, RoutedEventArgs e)
+    {
+        if (_importing) return;
+        SetBusy(true);
+        try
+        {
+            var input = new TextBox { Text = _projectName, MaxLength = 100 };
+            var dialog = new Window { Title = "Renombrar proyecto", Width = 460, Height = 210, CanResize = false,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var ok = new Button { Content = "Renombrar" };
+            var cancel = new Button { Content = "Cancelar" };
+            var hint = new TextBlock { Text = "Cambia el nombre visible; la carpeta actual no se mueve.", TextWrapping = TextWrapping.Wrap };
+            ok.Click += (_, _) =>
+            {
+                try { dialog.Close(ProjectDestination.ValidateName(input.Text ?? "")); }
+                catch (ArgumentException ex) { hint.Text = ex.Message; }
+            };
+            cancel.Click += (_, _) => dialog.Close(null);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 12,
+                Children = { hint, input, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { cancel, ok } } } };
+            var value = await dialog.ShowDialog<string?>(this);
+            if (value is null || value == _projectName) return;
+            _projectName = value;
+            MarkDirty();
+            StatusText.Text = "Proyecto renombrado · Guarda para confirmar";
+        }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
     private async Task<bool> SaveProjectAsync(bool saveAs = false)
     {
         try
         {
-            var folder = saveAs || _folder is null
-                ? await PickFolder(saveAs ? "Guardar copia en una carpeta nueva o vacía" : "Selecciona una carpeta para guardar el proyecto")
-                : _folder;
+            var folder = _folder;
+            var name = _projectName;
+            if (saveAs || folder is null)
+            {
+                var destination = await PickSaveDestination();
+                if (destination is null || _lifetime.IsCancellationRequested) return false;
+                (folder, name) = destination.Value;
+            }
             if (folder is null || _lifetime.IsCancellationRequested) return false;
             var newDestination = _folder is null || !ViewerWorkspace.SameFolder(_folder, folder);
-            var name = newDestination ? new DirectoryInfo(folder).Name : _projectName;
             var id = newDestination && _folder is not null ? Guid.NewGuid() : _projectId;
-            if (saveAs && newDestination && Directory.Exists(folder) && Directory.EnumerateFileSystemEntries(folder).Any())
-                throw new IOException("Guardar como requiere una carpeta vacía. No se sobrescribirá otro proyecto.");
-            var project = new ViewerProject(id, name, _sheets.ToArray(), _clips.ToArray());
             var revision = newDestination ? null : _manifestHash;
+            if (newDestination && Directory.Exists(folder))
+            {
+                if (File.Exists(Path.Combine(folder, ProjectStore.ManifestName)))
+                {
+                    var existing = await ProjectStore.LoadAsync(folder, _lifetime.Token);
+                    if (!await ConfirmOverwrite(folder)) return false;
+                    revision = existing.Revision;
+                }
+                else if (Directory.EnumerateFileSystemEntries(folder).Any())
+                    throw new IOException("La carpeta contiene archivos pero no es un proyecto SpriteLab. Elige otra ubicación o nombre.");
+            }
+            var project = new ViewerProject(id, name, _sheets.ToArray(), _clips.ToArray());
             SaveIndicator.Text = "Guardando…";
             SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#AEBCCA"));
             var hash = await Task.Run(() => ViewerWorkspace.SaveAsync(folder, project, revision, _lifetime.Token));

@@ -27,3 +27,5 @@
 0.2.1.7: optional red/green onion tint with numeric opacity, Save As and visible save feedback. Save As copies original sources and animation metadata into an empty destination, assigns a new project identity when copying an existing project. Schema 5 unchanged. Tint generation is cached per neighboring cell; fallback to original colors on conversion failure. CI and manual verification pending.
 
 0.2.1.8: regression candidate after 0.2.1.3 manual feedback. Action enablement, unchanged-grid handling, long labels and onion fallback feedback reviewed. See SL2-ACCEPTANCE.md for retest. Full tree explorer, direct drag from sheet and automatic drag scrolling remain future UX improvements, not claimed implemented. SL3 frozen until acceptance.
+
+0.2.1.9: final usability review following 46/47 successful manual checks on 0.2.1.8 (CI green; rectangular grid pending). Named save, confirmed overwrite with .bak and retained sources, metadata rename, clearer timeline. No new SL3 work.

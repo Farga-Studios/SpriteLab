@@ -14,6 +14,7 @@ public sealed class CellStrip : Control
     private CellGrid? _grid;
     private int _selected;
     private int[]? _sequence;
+    private double[]? _durations;
     private int Count => _sequence?.Length ?? _grid?.Count ?? 0;
     public event Action<int>? OccurrenceSelected;
     public event Action<int, int>? OccurrenceMoved;
@@ -39,15 +40,17 @@ public sealed class CellStrip : Control
         InvalidateVisual();
     }
 
-    public void SetSequence(int[]? cells)
+    public void SetSequence(int[]? cells, double[]? durations = null)
     {
         ClearDrag();
         _sequence = cells;
+        _durations = durations;
         _selected = _first = 0;
         InvalidateVisual();
     }
     private int _first;
-    private const int Slot = 64;
+    private const int Slot = 84;
+    private static readonly IBrush LabelBrush = new SolidColorBrush(Color.Parse("#C5CFDA"));
     private static readonly IBrush Tile = new SolidColorBrush(Color.Parse("#303946"));
     private static readonly Pen Drop = new(new SolidColorBrush(Color.Parse("#6AC5FF")), 3);
     private static readonly Pen Active = new(new SolidColorBrush(Color.Parse("#FFC65C")), 2);
@@ -59,6 +62,7 @@ public sealed class CellStrip : Control
         _bitmap = bitmap;
         _grid = grid;
         _sequence = null;
+        _durations = null;
         _selected = _first = 0;
         InvalidateVisual();
     }
@@ -140,6 +144,12 @@ public sealed class CellStrip : Control
             var source = new Rect(cell.X * sx, cell.Y * sy, cell.Width * sx, cell.Height * sy);
             context.DrawImage(_bitmap, source, new Rect(slot.X + (slot.Width - w) / 2,
                 slot.Y + (slot.Height - h) / 2, w, h));
+            if (_sequence is not null && _durations is { } times && index < times.Length)
+            {
+                var label = new FormattedText($"{index + 1} · {times[index]:0.#} ms", System.Globalization.CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight, Typeface.Default, 10, LabelBrush);
+                context.DrawText(label, new Point(i * Slot + 3, 56));
+            }
         }
     }
 }

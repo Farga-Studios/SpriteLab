@@ -27,3 +27,6 @@ El usuario confirmó CI verde y realizó pruebas manuales. De 58 comprobaciones:
 
 ## CI y alcance
 Confirmar build Release, pruebas, auditoría, smoke test, portable Windows x64. Migraciones 1–4 a 5 cubiertas por tests. No se afirma aceptación de esta versión hasta contar con resultados. Se mantiene cuadrícula exacta e inmutable mientras tenga referencias. Árbol de recursos, inserción directa desde hoja y auto-scroll durante arrastre siguen pendientes como mejoras de UX. Anclajes, offsets, edición de imágenes e historial corresponden a SL4. SL3 congelado.
+
+## Revisión final 0.2.1.9
+0.2.1.8: CI verde confirmado por usuario, 46 correctas, 0 fallos, 1 pendiente (cuadrícula rectangular). Retest 0.2.1.9: guardar proyecto con nombre y carpeta automática; cancelar; sobrescribir proyecto válido solo tras confirmar y comprobar .bak; rechazar carpeta ajena ocupada; renombrar nombre visible y guardar/reabrir sin mover carpeta; verificar etiquetas Fotograma/Sin dirección y números/duraciones de miniaturas; cuadrícula rectangular válida. CI y aceptación pendientes. No cerrar SL2 todavía.
