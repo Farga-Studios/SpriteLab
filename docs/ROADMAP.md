@@ -78,3 +78,6 @@ Entrega 5 (0.6.5): localización reutilizable por la suite (nombre provisional S
 
 ## 0.5.9 — Delivery 3
 Profiles, preview, batch and native GIF export implemented. CI and manual validation pending. GIF preview shows RGBA source after baked offsets, not actual GIF quantization; all-directions preview plays first direction. Batch selected-frame mode uses selected cell for active sheet and first cell elsewhere. 0.6.0 verifies full export integrity and recovery.
+
+## 0.6.0 — Delivery 4
+SL6 acceptance candidate: integrity manifests, prepublication verification, explicit verification and non-destructive abandoned staging recovery. CI 0.5.9 not confirmed in chat; 0.6.0 CI/manual acceptance pending. No public release. SL7 follows after validation.

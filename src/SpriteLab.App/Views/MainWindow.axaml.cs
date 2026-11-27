@@ -172,6 +172,43 @@ public partial class MainWindow : Window
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
+    private async void OnVerifyExport(object? sender, RoutedEventArgs e)
+    {
+        if(_importing)return;
+        SetBusy(true);
+        try{
+            var folder=await PickFolder("Selecciona una exportación con integrity.json");
+            if(folder is null)return;
+            await Task.Run(()=>ExportIntegrity.VerifyAsync(folder,_lifetime.Token),_lifetime.Token);
+            StatusText.Text="Integridad verificada: todos los archivos coinciden.";
+        }catch(OperationCanceledException){}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text="Verificación fallida: "+ex.Message;}
+        finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
+    }
+
+    private async void OnRecoverExports(object? sender, RoutedEventArgs e)
+    {
+        if(_importing)return;
+        SetBusy(true);
+        try{
+            var folder=await PickFolder("Carpeta padre de exportaciones");
+            if(folder is null)return;
+            var candidates=ExportRecovery.Find(folder);
+            if(candidates.Length==0){StatusText.Text="No hay exportaciones incompletas reconocidas.";return;}
+            var dialog=new Window{Title="Recuperación",Width=560,Height=230,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+            var yes=new Button{Content="Apartar incompletas"};var no=new Button{Content="Cancelar"};
+            yes.Click+=(_,_)=>dialog.Close(true);no.Click+=(_,_)=>dialog.Close(false);
+            dialog.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={
+                new TextBlock{Text=$"Se detectaron {candidates.Length} carpetas incompletas. Se renombrarán las inactivas para revisión manual; no se borrará ningún archivo.",TextWrapping=TextWrapping.Wrap},
+                new WrapPanel{Orientation=Orientation.Horizontal,Children={yes,no}}}};
+            if(!await dialog.ShowDialog<bool>(this))return;
+            var count=await Task.Run(()=>candidates.Count(c=>ExportRecovery.TryQuarantine(folder,c)),_lifetime.Token);
+            StatusText.Text=$"Recuperación: {count} carpetas apartadas; {candidates.Length-count} sin cambios.";
+        }catch(OperationCanceledException){}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text="Recuperación fallida: "+ex.Message;}
+        finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
+    }
+
     private void InitializeCaption()
     {
         ToolbarIcons.Set(CaptionMinimize, "minus", "Minimizar");

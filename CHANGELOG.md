@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 — SL6 acceptance candidate
+- SHA-256 manifest and verification before publication; explicit verification command.
+- Incomplete-export markers and non-destructive recovery of abandoned staging directories.
+- Profile and animation validation, PNG option isolation; regression tests and acceptance checklist.
+
 ## 0.5.9 — Export profiles, batch and animated GIF
 - Save/load/delete named local export profiles; select active sheet or batch of eligible sheets.
 - Corrected raster preview and animated RGBA preview; GIF89a native encoding, scale/speed/background/repetition and clip/direction selection.

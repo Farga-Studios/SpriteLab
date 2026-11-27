@@ -13,7 +13,7 @@ public static class BatchExport
         if(sheets.Count is <1 or >64)throw new ArgumentException("Invalid batch.");
         var root=Path.GetFullPath(parent);if(!Directory.Exists(root))throw new DirectoryNotFoundException(root);
         var id=Guid.NewGuid().ToString("N");var stage=Path.Combine(root,".spritelab-batch-"+id);var final=Path.Combine(root,"SpriteLab-batch-"+id);
-        Directory.CreateDirectory(stage);int files=0,clipped=0,done=0;
+        using var marker=ExportRecovery.Begin(stage);int files=0,clipped=0,done=0;
         try
         {
             foreach(var sheet in sheets)
@@ -25,8 +25,8 @@ public static class BatchExport
                 Directory.Move(outcome.Folder,target);files=checked(files+outcome.Files);clipped=checked(clipped+outcome.ClippedVisiblePixels);
                 progress?.Report(++done*100/sheets.Count);
             }
-            token.ThrowIfCancellationRequested();Directory.Move(stage,final);return new(final,files,clipped);
+            token.ThrowIfCancellationRequested();await ExportIntegrity.WriteAsync(stage,token);await ExportIntegrity.VerifyAsync(stage,token);token.ThrowIfCancellationRequested();marker.Dispose();File.Delete(Path.Combine(stage,ExportRecovery.Marker));Directory.Move(stage,final);return new(final,files,clipped);
         }
-        finally{if(Directory.Exists(stage))Directory.Delete(stage,true);}
+        finally{marker.Dispose();if(Directory.Exists(stage))Directory.Delete(stage,true);}
     }
 }

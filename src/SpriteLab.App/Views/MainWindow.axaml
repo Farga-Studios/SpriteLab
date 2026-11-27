@@ -41,6 +41,9 @@
         <Separator />
         <MenuItem x:Name="ExportSpritesMenu" Header="Exportar sprites y animaciones…" Click="OnExportSprites" IsEnabled="False" />
         <Separator />
+        <MenuItem Header="Verificar exportación…" Click="OnVerifyExport" />
+        <MenuItem Header="Recuperar exportaciones incompletas…" Click="OnRecoverExports" />
+        <Separator />
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
       <MenuItem Header="_Edición">

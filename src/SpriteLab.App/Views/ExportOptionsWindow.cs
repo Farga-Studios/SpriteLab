@@ -43,6 +43,7 @@ internal static class ExportOptionsWindow
         var scales=new[]{1,2,3,4,8};
         ExportProfile Read()
         {
+            if(kind.SelectedIndex>=0&&kind.SelectedIndex!=4)return new ExportProfile(string.IsNullOrWhiteSpace(profileName.Text)?"Temporal":profileName.Text.Trim(),(SpriteExportKind)kind.SelectedIndex,new GifOptions(),batch.IsChecked==true);
             if(kind.SelectedIndex<0||scale.SelectedIndex<0||!int.TryParse(speed.Text,out var s)||
                 !int.TryParse(repeats.Text,out var r)||!int.TryParse(bg.Text,System.Globalization.NumberStyles.HexNumber,null,out var b))
                 throw new ArgumentException("Opciones GIF inválidas.");
@@ -109,7 +110,7 @@ internal static class ExportOptionsWindow
                 }
             }catch(Exception ex){if(!closed)status.Text=ex.Message;}finally{if(!closed)previewButton.IsEnabled=ok.IsEnabled=true;}
         };
-        ok.Click+=(_,_)=>{try{var p=Read();Guid? id=null;string? dir=null;
+        ok.Click+=(_,_)=>{try{var p=Read();p.Validate();Guid? id=null;string? dir=null;
             if(p.Kind==SpriteExportKind.Gif&&!p.AllSheets){if(clip.SelectedIndex<0)throw new ArgumentException("Selecciona clip.");id=local[clip.SelectedIndex].Id;
                 if(direction.SelectedIndex>0)dir=local[clip.SelectedIndex].EffectiveTracks[direction.SelectedIndex-1].Direction;}
             window.Close(new ExportChoice(p,id,dir));

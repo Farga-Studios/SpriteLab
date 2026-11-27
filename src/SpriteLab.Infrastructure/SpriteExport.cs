@@ -22,13 +22,15 @@ public static class SpriteExport
         FrameOffset.Validate(grid,offsets); FrameAnchor.Validate(grid,anchors);
         var offsetMap=offsets.ToDictionary(x=>x.Cell); var anchorMap=anchors.ToDictionary(x=>x.Cell);
         var relevant=clips.Where(c=>c.SheetId==sheet.Id).ToArray();
-        if(kind is SpriteExportKind.Animations or SpriteExportKind.Gif && relevant.Length==0) throw new ArgumentException("La hoja no tiene animaciones.");
+        if((kind is SpriteExportKind.Animations or SpriteExportKind.Gif) && relevant.Length==0) throw new ArgumentException("La hoja no tiene animaciones.");
+        if(kind is SpriteExportKind.Animations or SpriteExportKind.Gif)
+            ViewerClip.ValidateAll(relevant,[new SheetEntry(sheet.Id,sheet.Name,new string('0',64),grid.Image.Width,grid.Image.Height,grid.Cell.Width,grid.Cell.Height)]);
         var root=Path.GetFullPath(parent);
         if(!Directory.Exists(root)) throw new DirectoryNotFoundException(root);
         var id=Guid.NewGuid().ToString("N");
         var stage=Path.Combine(root,".spritelab-export-"+id);
         var final=Path.Combine(root,"SpriteLab-export-"+id);
-        Directory.CreateDirectory(stage);
+        using var marker=ExportRecovery.Begin(stage);
         var files=0; var clipped=0;
         try
         {
@@ -80,7 +82,7 @@ public static class SpriteExport
                 await Save("sheet.png",FrameRaster.RenderSheet(grid,rgba,offsets,token));
                 for(int cell=0;cell<grid.Count;cell++) { token.ThrowIfCancellationRequested(); metadata.Add(Metadata(cell,"sheet.png",true)); }
             }
-            if(kind==SpriteExportKind.Gif){token.ThrowIfCancellationRequested();Directory.Move(stage,final);return new(final,files,clipped);}
+            if(kind==SpriteExportKind.Gif){token.ThrowIfCancellationRequested();await ExportIntegrity.WriteAsync(stage,token);await ExportIntegrity.VerifyAsync(stage,token);token.ThrowIfCancellationRequested();marker.Dispose();File.Delete(Path.Combine(stage,ExportRecovery.Marker));Directory.Move(stage,final);return new(final,files,clipped);}
             var animations=kind==SpriteExportKind.Animations?relevant.Select(c=>new
             {
                 id=c.Id,name=c.Name,tracks=c.EffectiveTracks.Select(t=>new
@@ -96,9 +98,9 @@ public static class SpriteExport
                 await JsonSerializer.SerializeAsync(stream,document,new JsonSerializerOptions{WriteIndented=true},token);
             files++;
             token.ThrowIfCancellationRequested();
-            Directory.Move(stage,final);
+            await ExportIntegrity.WriteAsync(stage,token);await ExportIntegrity.VerifyAsync(stage,token);token.ThrowIfCancellationRequested();marker.Dispose();File.Delete(Path.Combine(stage,ExportRecovery.Marker));Directory.Move(stage,final);
             return new(final,files,clipped);
         }
-        finally { if(Directory.Exists(stage)) Directory.Delete(stage,true); }
+        finally { marker.Dispose(); if(Directory.Exists(stage)) Directory.Delete(stage,true); }
     }
 }

@@ -19,7 +19,7 @@ public static class ExportProfiles
         await using var stream=File.OpenRead(path);
         if(stream.Length>65536)throw new InvalidDataException("Profile file too large.");
         var items=await JsonSerializer.DeserializeAsync<ExportProfile[]>(stream,cancellationToken:token)??[];
-        if(items.Length>32)throw new InvalidDataException("Too many profiles.");
+        if(items.Length>32||items.Any(p=>p is null)||items.Select(p=>p.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=items.Length)throw new InvalidDataException("Invalid or duplicate profiles.");
         foreach(var p in items)p.Validate();
         return items;
     }
