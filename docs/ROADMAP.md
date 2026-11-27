@@ -71,3 +71,7 @@ Delivery 1: review processing lifecycle, preserve RGBA in PNG encoder, bound pro
 
 ## 0.5.5 — Delivery 2
 SL5 0.5.0 CI green reported by user, manual acceptance still unconfirmed. Proceed with SL6 at user request. Export core, baked offsets, individual PNGs, sheet and versioned animation JSON implemented; CI and manual validation pending. Delivery 3 adds profiles, preview, batch and extended integrity/recovery. See docs/SL6-EXPORT.md.
+
+## Requisitos adicionales para 1.0.0
+Entrega 3 (0.5.9): exportación GIF animado por clip/dirección, opción de exportar todas las direcciones, escala entera nearest-neighbor, tiempos individuales y velocidad, fondo transparente o sólido, repetición y vista previa. Documentar cuantización a 256 colores y transparencia binaria; validar límites de memoria y duración, cancelación e integridad. No modificar fuentes.
+Entrega 5 (0.6.5): localización reutilizable por la suite (nombre provisional Suite.Localization). Español e inglés completos antes de 1.0.0, recursos de traducción separados del código, claves estables, detección de cultura del sistema, selector persistente, inglés de respaldo, cambio en caliente cuando sea viable, pruebas de paridad de claves y placeholders. Traducir menús, ventanas, tooltips, errores y ayuda; no traducir nombres de contenido del usuario ni claves JSON ni identificadores persistentes. Validar textos largos y ambas culturas en Windows. Reutilizar el mecanismo en EntityLab, TileLab, DungeonLab y futuras herramientas.
