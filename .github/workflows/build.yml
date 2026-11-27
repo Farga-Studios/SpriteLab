@@ -24,10 +24,9 @@ jobs:
       - name: Build pinned updater candidate
         shell: pwsh
         run: |
-          dotnet pack .candidate-suite/src/Suite.Updater/Suite.Updater.csproj -c Release -o "$env:RUNNER_TEMP/suite-feed"
+          dotnet pack .candidate-suite/src/Suite.Updater/Suite.Updater.csproj -c Release -o ".candidate-feed"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet nuget add source "$env:RUNNER_TEMP/suite-feed" --name suite-candidate
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (!(Test-Path ".candidate-feed/FargaStudios.Suite.Updater.0.3.0-rc.1.nupkg")) { throw "Missing pinned candidate package" }
       - name: Read candidate version
         shell: pwsh
         run: |
