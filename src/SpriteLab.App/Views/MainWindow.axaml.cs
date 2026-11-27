@@ -2087,7 +2087,7 @@ public partial class MainWindow : Window
             if(update is null||_lifetime.IsCancellationRequested)return;
             if(!UpdateWindow.IsInstalled)throw new InvalidOperationException("Portable installation.");
             if(_dirty&&!await ConfirmDiscard())return;
-            await Suite.Updater.InstallerHandoff.LaunchAsync(update,UpdateWindow.StagingRoot,_lifetime.Token);
+            await UpdateWindow.LaunchTrackedAsync(update,_lifetime.Token);
             _allowClose=true;
             Close();
         }
