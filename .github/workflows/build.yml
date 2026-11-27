@@ -47,15 +47,12 @@ jobs:
       - name: Smoke test (non-interactive)
         run: dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore -- --smoke-test
       - name: Publish portable Windows x64 candidate
-        if: github.event_name != 'pull_request'
         run: dotnet publish src/SpriteLab.App/SpriteLab.App.csproj -c Release -r win-x64 --self-contained true -o portable
       - name: Smoke test published executable
-        if: github.event_name != 'pull_request'
         run: |
-          & ./portable/SpriteLab.App.exe --smoke-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $process = Start-Process -FilePath ./portable/SpriteLab.App.exe -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
       - name: Package candidate and checksum
-        if: github.event_name != 'pull_request'
         run: |
           Copy-Item docs/PORTABLE.md portable/LEEME.md
           Copy-Item docs/USER-GUIDE*.md portable/
@@ -69,7 +66,6 @@ jobs:
           Compress-Archive -Path portable/* -DestinationPath $zip
           (Get-FileHash $zip -Algorithm SHA256).Hash + "  $zip" | Set-Content "SpriteLab-$env:SPRITELAB_VERSION-win-x64.sha256"
       - name: Upload build artifact
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64
