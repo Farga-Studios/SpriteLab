@@ -20,7 +20,7 @@ internal static class ExportOptionsWindow
         var profiles=Array.Empty<ExportProfile>();
         string initial=UiText.T("Configura la exportación y revisa la vista previa.");
         try{profiles=await ExportProfiles.LoadAsync(ExportProfiles.DefaultPath,token);}
-        catch(Exception ex) when(ex is not OperationCanceledException){initial="No se pudieron cargar perfiles: "+ex.Message;}
+        catch(Exception ex) when(ex is not OperationCanceledException){initial=UiText.T("No se pudieron cargar perfiles: ")+ex.Message;}
         var window=new SuiteDialog {Title=UiText.T("Exportar sprites"),Width=850,Height=720,MinWidth=650,MinHeight=550,WindowStartupLocation=WindowStartupLocation.CenterOwner};
         var kind=new ComboBox{ItemsSource=new[]{UiText.T("Fotograma + JSON"),UiText.T("Sprites individuales + JSON"),UiText.T("Hoja + JSON"),UiText.T("Hoja y animaciones + JSON"),UiText.T("GIF animado")},SelectedIndex=0};
         var batch=new CheckBox{Content=UiText.T("Todas las hojas con cuadrícula (lote)")};
@@ -36,6 +36,7 @@ internal static class ExportOptionsWindow
         var bg=new TextBox{Text="202630",Watermark=UiText.T("RGB hexadecimal")};
         var status=new TextBlock{Text=initial,TextWrapping=TextWrapping.Wrap};
         var preview=new Image{Stretch=Stretch.Uniform,MaxHeight=260};
+        RenderOptions.SetBitmapInterpolationMode(preview,BitmapInterpolationMode.None);
         var previewButton=new Button{Content=UiText.T("Vista previa / reproducir")};
         var ok=new Button{Content=UiText.T("Continuar")};var cancel=new Button{Content=UiText.T("Cancelar")};
         var timer=new DispatcherTimer();Bitmap? shown=null;int frame=0;ViewerTrack? playing=null;bool closed=false;
@@ -65,8 +66,15 @@ internal static class ExportOptionsWindow
         }
         void ShowRaster(RasterFrame raster)
         {
-            var png=RgbaPng.Encode(raster.Width,raster.Height,raster.Rgba,token);
-            using var mem=new MemoryStream(png);var next=new Bitmap(mem);
+            token.ThrowIfCancellationRequested();
+            var next=new WriteableBitmap(new Avalonia.PixelSize(raster.Width,raster.Height),new Vector(96,96),Avalonia.Platform.PixelFormat.Rgba8888,Avalonia.Platform.AlphaFormat.Unpremul);
+            try
+            {
+                using var buffer=next.Lock();var stride=checked(raster.Width*4);
+                for(int y=0;y<raster.Height;y++)
+                    System.Runtime.InteropServices.Marshal.Copy(raster.Rgba,y*stride,IntPtr.Add(buffer.Address,y*buffer.RowBytes),stride);
+            }
+            catch{next.Dispose();throw;}
             preview.Source=next;shown?.Dispose();shown=next;
         }
         void Tick()
@@ -102,11 +110,11 @@ internal static class ExportOptionsWindow
                 var p=Read();
                 if(p.Kind==SpriteExportKind.Gif){if(clip.SelectedIndex<0)throw new ArgumentException(UiText.T("La hoja activa no tiene clips."));
                     var tracks=local[clip.SelectedIndex].EffectiveTracks;playing=tracks[Math.Max(0,direction.SelectedIndex-1)];frame=0;Tick();if(playing is not null)timer.Start();
-                    status.Text="Vista previa de la dirección seleccionada (RGBA; GIF cuantiza color y transparencia).";
+                    status.Text=UiText.T("Vista previa de la dirección seleccionada (RGBA; GIF cuantiza color y transparencia).");
                 }else{
                     var raster=await Task.Run(()=>p.Kind==SpriteExportKind.SelectedFrame?FrameRaster.Render(grid,rgba,selected,offsets.GetValueOrDefault(selected)??FrameOffset.Zero(selected),token):
                         FrameRaster.RenderSheet(grid,rgba,sheet.Offsets??[],token),token);
-                    if(closed)return;ShowRaster(raster);status.Text=$"Vista previa · {raster.ClippedVisiblePixels} píxeles visibles recortados.";
+                    if(closed)return;ShowRaster(raster);status.Text=(UiText.IsEnglish ? $"Preview · {raster.ClippedVisiblePixels} visible pixels clipped." : $"Vista previa · {raster.ClippedVisiblePixels} píxeles visibles recortados.");
                 }
             }catch(Exception ex){if(!closed)status.Text=ex.Message;}finally{if(!closed)previewButton.IsEnabled=ok.IsEnabled=true;}
         };

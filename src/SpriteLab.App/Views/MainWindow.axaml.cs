@@ -22,7 +22,7 @@ public partial class MainWindow : Window
     private SheetValidationResult? _validationResult;
     private ValidationReport? _validationReport;
     private SheetFinding[] _allFindings = [];
-    private string _diagnosticSummary = "Validación no ejecutada.";
+    private string _diagnosticSummary = UiText.T("Validación no ejecutada.");
     private readonly List<ViewerSheet> _sheets = new();
     private readonly List<ViewerClip> _clips = new();
     private bool _refreshingClips;
@@ -76,7 +76,7 @@ public partial class MainWindow : Window
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = UiText.T("Ajustar");
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL6 exportación";
+        VersionText.Text = (UiText.IsEnglish ? $"SpriteLab {GetVersion()} · SL7 polish" : $"SpriteLab {GetVersion()} · SL6 exportación");
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -112,10 +112,10 @@ public partial class MainWindow : Window
             ShowSheet(_sheets.Count - 1, candidate);
             candidate = null;
             RefreshResources(); RefreshClips(); MarkDirty();
-            StatusText.Text = $"Recurso nuevo · {result.ChangedPixels} píxeles modificados · Original intacto";
+            StatusText.Text = (UiText.IsEnglish ? $"New resource · {result.ChangedPixels} pixels changed · Original intact" : $"Recurso nuevo · {result.ChangedPixels} píxeles modificados · Original intacto");
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo procesar: {ex.Message}"; }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = (UiText.IsEnglish ? $"Processing failed: {ex.Message}" : $"No se pudo procesar: {ex.Message}"); }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
@@ -129,7 +129,7 @@ public partial class MainWindow : Window
             var rgba=ValidationPixels.Read(bitmap);
             var choice=await ExportOptionsWindow.ShowAsync(this,sheet,grid,rgba,selected,clips,_lifetime.Token);
             if(choice is null||_lifetime.IsCancellationRequested)return;
-            var folder=await PickFolder("Seleccionar carpeta de exportación");
+            var folder=await PickFolder(UiText.T("Seleccionar carpeta de exportación"));
             if(folder is null||_lifetime.IsCancellationRequested)return;
             using var job=CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             var progress=new ProgressBar{Minimum=0,Maximum=100,IsIndeterminate=!choice.Profile.AllSheets,Height=12};
@@ -160,16 +160,16 @@ public partial class MainWindow : Window
             if(error is OperationCanceledException){StatusText.Text=UiText.T("Exportación cancelada.");return;}
             if(error is not null)throw error;
             if(outcome is null||_lifetime.IsCancellationRequested)return;
-            StatusText.Text=$"Exportados {outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles recortados · {outcome.Folder}";
+            StatusText.Text=(UiText.IsEnglish ? $"Exported {outcome.Files} files · {outcome.ClippedVisiblePixels} clipped pixels · {outcome.Folder}" : $"Exportados {outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles recortados · {outcome.Folder}");
             var done=new SuiteDialog {Title=UiText.T("Exportación completada"),Width=570,Height=210,WindowStartupLocation=WindowStartupLocation.CenterOwner};
             var close=new Button{Content=UiText.T("Aceptar")};close.Click+=(_,_)=>done.Close();
             done.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={
-                new TextBlock{Text=$"{outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles visibles recortados.",TextWrapping=TextWrapping.Wrap},
+                new TextBlock{Text=(UiText.IsEnglish ? $"{outcome.Files} files · {outcome.ClippedVisiblePixels} visible pixels clipped." : $"{outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles visibles recortados."),TextWrapping=TextWrapping.Wrap},
                 new TextBlock{Text=outcome.Folder,TextWrapping=TextWrapping.Wrap},close}};
             await done.ShowDialog(this);
         }
         catch(OperationCanceledException){}
-        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text=$"No se pudo exportar: {ex.Message}";}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text=(UiText.IsEnglish ? $"Export failed: {ex.Message}" : $"No se pudo exportar: {ex.Message}");}
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
@@ -178,12 +178,12 @@ public partial class MainWindow : Window
         if(_importing)return;
         SetBusy(true);
         try{
-            var folder=await PickFolder("Selecciona una exportación con integrity.json");
+            var folder=await PickFolder(UiText.T("Selecciona una exportación con integrity.json"));
             if(folder is null)return;
             await Task.Run(()=>ExportIntegrity.VerifyAsync(folder,_lifetime.Token),_lifetime.Token);
             StatusText.Text=UiText.T("Integridad verificada: todos los archivos coinciden.");
         }catch(OperationCanceledException){}
-        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text="Verificación fallida: "+ex.Message;}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text=UiText.T("Verificación fallida: ")+ex.Message;}
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
@@ -192,7 +192,7 @@ public partial class MainWindow : Window
         if(_importing)return;
         SetBusy(true);
         try{
-            var folder=await PickFolder("Carpeta padre de exportaciones");
+            var folder=await PickFolder(UiText.T("Carpeta padre de exportaciones"));
             if(folder is null)return;
             var candidates=ExportRecovery.Find(folder);
             if(candidates.Length==0){StatusText.Text=UiText.T("No hay exportaciones incompletas reconocidas.");return;}
@@ -204,9 +204,9 @@ public partial class MainWindow : Window
                 new WrapPanel{Orientation=Orientation.Horizontal,Children={yes,no}}}};
             if(!await dialog.ShowDialog<bool>(this))return;
             var count=await Task.Run(()=>candidates.Count(c=>ExportRecovery.TryQuarantine(folder,c)),_lifetime.Token);
-            StatusText.Text=$"Recuperación: {count} carpetas apartadas; {candidates.Length-count} sin cambios.";
+            StatusText.Text=(UiText.IsEnglish ? $"Recovery: {count} folders quarantined; {candidates.Length-count} unchanged." : $"Recuperación: {count} carpetas apartadas; {candidates.Length-count} sin cambios.");
         }catch(OperationCanceledException){}
-        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text="Recuperación fallida: "+ex.Message;}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text=UiText.T("Recuperación fallida: ")+ex.Message;}
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
@@ -216,7 +216,7 @@ public partial class MainWindow : Window
         SetBusy(true);
         try
         {
-            var options=new[]{UiText.T("Idioma del sistema"),"Español","English"};
+            var options=new[]{UiText.T("Idioma del sistema"),UiText.T("Español"),UiText.T("English")};
             var language=new ComboBox{ItemsSource=options,SelectedIndex=UiText.Preference=="es"?1:UiText.Preference=="en"?2:0};
             var dialog=new SuiteDialog{Title=UiText.T("Preferencias"),Width=480,Height=210,CanResize=false};
             var save=new Button{Content=UiText.T("Guardar"),Classes={"primary"}};
@@ -274,12 +274,12 @@ public partial class MainWindow : Window
         ToolbarIcons.Set(AddFrameButton, "plus", UiText.T("Añadir fotograma"));
         ToolbarIcons.Set(DuplicateFrameButton, "copy", "Duplicar fotograma");
         ToolbarIcons.Set(RemoveFrameButton, "trash", "Quitar fotograma");
-        ToolbarIcons.Set(MoveFrameLeftButton, "left", "Mover fotograma a la izquierda");
-        ToolbarIcons.Set(MoveFrameRightButton, "right", "Mover fotograma a la derecha");
+        ToolbarIcons.Set(MoveFrameLeftButton, "left", UiText.T("Mover fotograma a la izquierda"));
+        ToolbarIcons.Set(MoveFrameRightButton, "right", UiText.T("Mover fotograma a la derecha"));
         ToolbarIcons.Set(EditSequenceButton, "edit", UiText.T("Editar secuencia"));
         ToolbarIcons.Set(AssignTrackButton, "plus", "Asignar fila a dirección");
-        ToolbarIcons.Set(RemoveTrackButton, "trash", "Quitar dirección");
-        ToolbarIcons.Set(ApplyTimingButton, "check", "Aplicar tiempo");
+        ToolbarIcons.Set(RemoveTrackButton, "trash", UiText.T("Quitar dirección"));
+        ToolbarIcons.Set(ApplyTimingButton, "check", UiText.T("Aplicar tiempo"));
         ToolbarIcons.Set(ValidateButton, "check", UiText.T("Validar hoja"));
         ToolbarIcons.Set(ExportReportButton, "export", UiText.T("Exportar informe"));
         ToolbarIcons.Set(ZoomOutButton, "zoom-out", UiText.T("Reducir zoom"));
@@ -332,7 +332,7 @@ public partial class MainWindow : Window
         {
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Importar hoja PNG",
+                Title = UiText.T("Importar hoja PNG"),
                 AllowMultiple = false,
                 FileTypeFilter = [new FilePickerFileType("PNG") { Patterns = ["*.png"] }]
             });
@@ -364,7 +364,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             if (!token.IsCancellationRequested)
-                StatusText.Text = $"No se pudo importar el PNG: {ex.Message}";
+                StatusText.Text = (UiText.IsEnglish ? $"PNG import failed: {ex.Message}" : $"No se pudo importar el PNG: {ex.Message}");
         }
         finally
         {
@@ -387,11 +387,11 @@ public partial class MainWindow : Window
         RefreshFrameEdit();
         Preview.SetGrid(null);
         GridInfo.Text = UiText.T("Sin cuadrícula");
-        FrameInfo.Text = "Sin selección";
-        RectInfo.Text = "Rectángulo: —";
-        DurationInfo.Text = "Duración: —";
-        AnchorInfo.Text = "Anclaje: —";
-        TimelineInfo.Text = "Sin fotogramas";
+        FrameInfo.Text = UiText.T("Sin selección");
+        RectInfo.Text = UiText.T("Rectángulo: —");
+        DurationInfo.Text = UiText.T("Duración: —");
+        AnchorInfo.Text = UiText.T("Anclaje: —");
+        TimelineInfo.Text = UiText.T("Sin fotogramas");
         FramePreview.SetFrame(null, default);
         CellStrip.SetSheet(null, null);
         UpdatePlaybackControls();
@@ -409,7 +409,7 @@ public partial class MainWindow : Window
             var pixels = ValidationPixels.Read(bitmap);
             var suggestions = await Task.Run(() => GridSuggestions.Analyze(image, pixels, _lifetime.Token), _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
-            if (suggestions.Count == 0) { StatusText.Text = "No hay suficientes píxeles visibles para sugerir una cuadrícula."; return; }
+            if (suggestions.Count == 0) { StatusText.Text = UiText.T("No hay suficientes píxeles visibles para sugerir una cuadrícula."); return; }
             var list = new ListBox { ItemsSource = suggestions, SelectedIndex = 0 };
             var preview = new SheetPreview { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             preview.SetImage(bitmap);
@@ -432,7 +432,7 @@ public partial class MainWindow : Window
                 if (list.SelectedItem is GridSuggestion s)
                 {
                     preview.SetGrid(new CellGrid(image, new PixelSize(s.Width, s.Height)));
-                    detail.Text = $"Celda: {s.Width} × {s.Height} px · {s.Columns * s.Rows} celdas";
+                    detail.Text = (UiText.IsEnglish ? $"Cell: {s.Width} × {s.Height} px · {s.Columns * s.Rows} cells" : $"Celda: {s.Width} × {s.Height} px · {s.Columns * s.Rows} celdas");
                 }
             }
             list.SelectionChanged += (_, _) => UpdatePreview();
@@ -476,7 +476,7 @@ public partial class MainWindow : Window
             chosen = await dialog.ShowDialog<GridSuggestion?>(this);
             preview.SetImage(null);
         }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo sugerir cuadrícula: {ex.Message}"; }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = (UiText.IsEnglish ? $"Grid suggestion failed: {ex.Message}" : $"No se pudo sugerir cuadrícula: {ex.Message}"); }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
         if (chosen is null || _lifetime.IsCancellationRequested) return;
         CellWidth.Text = chosen.Width.ToString();
@@ -502,7 +502,7 @@ public partial class MainWindow : Window
                 (_sheets[_active].CellWidth != width || _sheets[_active].CellHeight != height))
             {
                 RestoreGridFields();
-                StatusText.Text = "Quita los clips y restablece los desplazamientos y anclajes antes de cambiar la cuadrícula.";
+                StatusText.Text = UiText.T("Quita los clips y restablece los desplazamientos y anclajes antes de cambiar la cuadrícula.");
                 return;
             }
             if (_grid is not null && _grid.Cell.Width == width && _grid.Cell.Height == height)
@@ -524,7 +524,7 @@ public partial class MainWindow : Window
             Preview.SetGrid(candidate);
             CellStrip.SetSheet(_bitmap, candidate);
             RefreshClips();
-            GridInfo.Text = $"{candidate.Columns} columnas × {candidate.Rows} filas · {candidate.Count} celdas";
+            GridInfo.Text = (UiText.IsEnglish ? $"{candidate.Columns} columns × {candidate.Rows} rows · {candidate.Count} cells" : $"{candidate.Columns} columnas × {candidate.Rows} filas · {candidate.Count} celdas");
             SelectCell(0);
             ValidateMenu.IsEnabled = ValidateButton.IsEnabled = true;
             StatusText.Text = UiText.T("Cuadrícula aplicada · Sin modificar el PNG");
@@ -544,13 +544,13 @@ public partial class MainWindow : Window
         var cell = _grid.GetCell(index);
         FramePreview.SetFrame(_bitmap, cell);
         CellStrip.SetSelection(index);
-        FrameInfo.Text = $"Celda {index + 1} · fila {index / _grid.Columns + 1}, columna {index % _grid.Columns + 1}";
-        RectInfo.Text = $"Rectángulo: ({cell.X}, {cell.Y}) · {cell.Width} × {cell.Height}";
+        FrameInfo.Text = (UiText.IsEnglish ? $"Cell {index + 1} · row {index / _grid.Columns + 1}, column {index % _grid.Columns + 1}" : $"Celda {index + 1} · fila {index / _grid.Columns + 1}, columna {index % _grid.Columns + 1}");
+        RectInfo.Text = (UiText.IsEnglish ? $"Rectangle: ({cell.X}, {cell.Y}) · {cell.Width} × {cell.Height}" : $"Rectángulo: ({cell.X}, {cell.Y}) · {cell.Width} × {cell.Height}");
         UpdateVisibleBounds();
-        DurationInfo.Text = "Duración: sin asignar";
-        AnchorInfo.Text = "Anclaje: sin asignar";
+        DurationInfo.Text = UiText.T("Duración: sin asignar");
+        AnchorInfo.Text = UiText.T("Anclaje: sin asignar");
         RefreshFrameEdit();
-        TimelineInfo.Text = $"Celda {index + 1} / {_grid.Count}";
+        TimelineInfo.Text = (UiText.IsEnglish ? $"Cell {index + 1} / {_grid.Count}" : $"Celda {index + 1} / {_grid.Count}");
         UpdatePlaybackControls();
     }
 
@@ -614,7 +614,7 @@ public partial class MainWindow : Window
         if (_importing || _active < 0 || _grid is null || _playback?.IsPlaying == true || !_editHistory.CanUndo) return;
         var label = _editHistory.UndoLabel;
         RestoreEditorState(_editHistory.Undo(CaptureEditorState()));
-        StatusText.Text = $"Deshecho: {label}";
+        StatusText.Text = (UiText.IsEnglish ? $"Undone: {label}" : $"Deshecho: {label}");
     }
 
     private void OnRedo(object? sender, RoutedEventArgs e)
@@ -622,7 +622,7 @@ public partial class MainWindow : Window
         if (_importing || _active < 0 || _grid is null || _playback?.IsPlaying == true || !_editHistory.CanRedo) return;
         var label = _editHistory.RedoLabel;
         RestoreEditorState(_editHistory.Redo(CaptureEditorState()));
-        StatusText.Text = $"Rehecho: {label}";
+        StatusText.Text = (UiText.IsEnglish ? $"Redone: {label}" : $"Rehecho: {label}");
     }
 
     private FrameOffset GetOffset(int cell) =>
@@ -635,11 +635,11 @@ public partial class MainWindow : Window
         OffsetX.Text = offset.X.ToString();
         OffsetY.Text = offset.Y.ToString();
         FramePreview.SetOffset(offset.X, offset.Y);
-        OffsetInfo.Text = _selected.HasValue ? $"Desplazamiento: {offset.X}, {offset.Y} px" : "Desplazamiento: —";
+        OffsetInfo.Text = _selected.HasValue ? $"Desplazamiento: {offset.X}, {offset.Y} px" : UiText.T("Desplazamiento: —");
         var anchor = _selected is int c ? GetAnchor(c) : null;
         AnchorX.Text = (anchor?.X ?? 0).ToString();
         AnchorY.Text = (anchor?.Y ?? 0).ToString();
-        AnchorInfo.Text = anchor is null ? "Anclaje: sin asignar" : $"Anclaje: {anchor.X}, {anchor.Y} px";
+        AnchorInfo.Text = anchor is null ? UiText.T("Anclaje: sin asignar") : $"Anclaje: {anchor.X}, {anchor.Y} px";
         FramePreview.SetAnchor(anchor);
     }
 
@@ -657,7 +657,7 @@ public partial class MainWindow : Window
             MarkDirty();
             RefreshFrameEdit();
             UpdateOnion();
-            StatusText.Text = $"Desplazamiento de celda {cell + 1}: {x}, {y} px · PNG intacto";
+            StatusText.Text = (UiText.IsEnglish ? $"Cell {cell + 1} offset: {x}, {y} px · PNG intact" : $"Desplazamiento de celda {cell + 1}: {x}, {y} px · PNG intacto");
         }
         catch (ArgumentException ex) { RefreshFrameEdit(); StatusText.Text = ex.Message; }
     }
@@ -715,7 +715,7 @@ public partial class MainWindow : Window
             RecordEditorChange(clear ? "Quitar anclajes" : "Asignar anclajes");
             _sheets[_active] = sheet with { Anchors = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
-            StatusText.Text = $"Anclajes actualizados en {cells.Length} celdas.";
+            StatusText.Text = (UiText.IsEnglish ? $"Anchors updated in {cells.Length} cells." : $"Anclajes actualizados en {cells.Length} celdas.");
         }
         catch (ArgumentException ex) { StatusText.Text = ex.Message; }
     }
@@ -736,7 +736,7 @@ public partial class MainWindow : Window
             RecordEditorChange("Desplazamientos de selección");
             _sheets[_active] = sheet with { Offsets = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
-            StatusText.Text = $"Desplazamientos actualizados en {cells.Length} celdas.";
+            StatusText.Text = (UiText.IsEnglish ? $"Offsets updated in {cells.Length} cells." : $"Desplazamientos actualizados en {cells.Length} celdas.");
         }
         catch (ArgumentException ex) { RefreshFrameEdit(); StatusText.Text = ex.Message; }
         catch (OverflowException) { RefreshFrameEdit(); StatusText.Text = UiText.T("Desplazamiento fuera de rango."); }
@@ -792,7 +792,7 @@ public partial class MainWindow : Window
                 };
             });
         }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo alinear: {ex.Message}"; }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = (UiText.IsEnglish ? $"Alignment failed: {ex.Message}" : $"No se pudo alinear: {ex.Message}"); }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
         if (result is null || _lifetime.IsCancellationRequested || _active < 0 || _sheets[_active].Id != sheetId) return;
         if (!result.SequenceEqual(sheet.Offsets ?? []))
@@ -801,13 +801,13 @@ public partial class MainWindow : Window
             _sheets[_active] = sheet with { Offsets = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
         }
-        StatusText.Text = $"Alineación: {cells.Length - skipped} celdas procesadas, {skipped} omitidas.";
+        StatusText.Text = (UiText.IsEnglish ? $"Alignment: {cells.Length - skipped} cells processed, {skipped} skipped." : $"Alineación: {cells.Length - skipped} celdas procesadas, {skipped} omitidas.");
     }
 
     private void OnApplyOffset(object? sender, RoutedEventArgs e)
     {
         if (int.TryParse(OffsetX.Text, out var x) && int.TryParse(OffsetY.Text, out var y)) EditOffsets((c, _) => new FrameOffset(c, x, y));
-        else { RefreshFrameEdit(); StatusText.Text = "Introduce coordenadas enteras en píxeles."; }
+        else { RefreshFrameEdit(); StatusText.Text = UiText.T("Introduce coordenadas enteras en píxeles."); }
     }
 
     private void OnResetOffset(object? sender, RoutedEventArgs e) => EditOffsets((c, _) => FrameOffset.Zero(c));
@@ -818,7 +818,7 @@ public partial class MainWindow : Window
     {
         if (!int.TryParse(CustomGuideX.Text, out var x) || !int.TryParse(CustomGuideY.Text, out var y) ||
             Math.Abs((long)x) > 8192 || Math.Abs((long)y) > 8192)
-        { StatusText.Text = "Introduce coordenadas de guía entre -8192 y 8192."; return; }
+        { StatusText.Text = UiText.T("Introduce coordenadas de guía entre -8192 y 8192."); return; }
         FramePreview.SetGuides(new EditorGuides(CenterGuide.IsChecked == true, GroundGuide.IsChecked == true,
             BoundsGuide.IsChecked == true, CustomGuide.IsChecked == true, x, y));
     }
@@ -892,7 +892,7 @@ public partial class MainWindow : Window
         UpdateHistoryControls();
         if (_validationResult is not null) ClearDiagnostics();
         ProjectText.Text = _projectName + " *";
-        SaveIndicator.Text = "● Cambios sin guardar";
+        SaveIndicator.Text = UiText.T("● Cambios sin guardar");
         SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#E5B760"));
     }
 
@@ -903,7 +903,7 @@ public partial class MainWindow : Window
         {
             ResourceList.ItemsSource = _sheets.Select(s => s.Name).ToArray();
             ResourceList.SelectedIndex = _active;
-            ResourceText.Text = $"{_sheets.Count} recursos";
+            ResourceText.Text = (UiText.IsEnglish ? $"{_sheets.Count} resources" : $"{_sheets.Count} recursos");
             RenameResourceButton.IsEnabled = RemoveResourceButton.IsEnabled = !_importing && _active >= 0;
         }
         finally { _refreshing = false; }
@@ -924,8 +924,8 @@ public partial class MainWindow : Window
         EmptyViewer.IsVisible = false;
         ImageViewer.IsVisible = true;
         var sheet = _sheets[index];
-        ResourceText.Text = $"{_sheets.Count} recursos";
-        ResolutionText.Text = $"Resolución: {bitmap.PixelSize.Width} × {bitmap.PixelSize.Height}";
+        ResourceText.Text = (UiText.IsEnglish ? $"{_sheets.Count} resources" : $"{_sheets.Count} recursos");
+        ResolutionText.Text = (UiText.IsEnglish ? $"Resolution: {bitmap.PixelSize.Width} × {bitmap.PixelSize.Height}" : $"Resolución: {bitmap.PixelSize.Width} × {bitmap.PixelSize.Height}");
         ViewerInfo.Text = $"{bitmap.PixelSize.Width} × {bitmap.PixelSize.Height} px";
         ApplyGridButton.IsEnabled = GridMenu.IsEnabled = true;
         if (sheet.CellWidth is int w && sheet.CellHeight is int h)
@@ -935,7 +935,7 @@ public partial class MainWindow : Window
             _grid = new CellGrid(new PixelSize(bitmap.PixelSize.Width, bitmap.PixelSize.Height), new PixelSize(w, h));
             Preview.SetGrid(_grid);
             CellStrip.SetSheet(_bitmap, _grid);
-            GridInfo.Text = $"{_grid.Columns} columnas × {_grid.Rows} filas · {_grid.Count} celdas";
+            GridInfo.Text = (UiText.IsEnglish ? $"{_grid.Columns} columns × {_grid.Rows} rows · {_grid.Count} cells" : $"{_grid.Columns} columnas × {_grid.Rows} filas · {_grid.Count} celdas");
             SelectCell(0);
         }
         else { CellWidth.Text = CellHeight.Text = "48"; InspectorTabs.SelectedIndex = 0; }
@@ -1000,7 +1000,7 @@ public partial class MainWindow : Window
             remove.Click += (_, _) => dialog.Close(true);
             cancel.Click += (_, _) => dialog.Close(false);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
-                Children = { new TextBlock { Text = "¿Quitar el recurso del proyecto? El PNG original y las copias guardadas no se borrarán.",
+                Children = { new TextBlock { Text = UiText.T("¿Quitar el recurso del proyecto? El PNG original y las copias guardadas no se borrarán."),
                     TextWrapping = TextWrapping.Wrap },
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                         Children = { cancel, remove } } } };
@@ -1034,7 +1034,7 @@ public partial class MainWindow : Window
             MarkDirty();
             StatusText.Text = UiText.T("Recurso quitado · Archivos fuente intactos");
         }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo quitar: {ex.Message}"; }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = (UiText.IsEnglish ? $"Remove failed: {ex.Message}" : $"No se pudo quitar: {ex.Message}"); }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
@@ -1069,7 +1069,7 @@ public partial class MainWindow : Window
             ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
             cancel.Click += (_, _) => dialog.Close(null);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
-                Children = { new TextBlock { Text = $"Fila {row + 1}: {_grid.Columns} fotogramas" }, input,
+                Children = { new TextBlock { Text = (UiText.IsEnglish ? $"Row {row + 1}: {_grid.Columns} frames" : $"Fila {row + 1}: {_grid.Columns} fotogramas") }, input,
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                         Children = { cancel, ok } } } };
             var name = await dialog.ShowDialog<string?>(this);
@@ -1115,7 +1115,7 @@ public partial class MainWindow : Window
             RefreshTracks(clip);
             var track = clip.EffectiveTracks[0];
             SetPlayback(track);
-            StatusText.Text = $"{clip.Name} · {track} · {track.Cells.Length} fotogramas";
+            StatusText.Text = (UiText.IsEnglish ? $"{clip.Name} · {track} · {track.Cells.Length} frames" : $"{clip.Name} · {track} · {track.Cells.Length} fotogramas");
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = ex.Message; }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -1171,8 +1171,8 @@ public partial class MainWindow : Window
             ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
             cancel.Click += (_, _) => dialog.Close(null);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
-                Children = { new TextBlock { Text = $"Fila {row + 1} · {columns} fotogramas" },
-                    new TextBlock { Text = "Etiqueta libre (front, left, right, back...). Una etiqueta existente sustituye su pista.", TextWrapping = TextWrapping.Wrap },
+                Children = { new TextBlock { Text = (UiText.IsEnglish ? $"Row {row + 1} · {columns} frames" : $"Fila {row + 1} · {columns} fotogramas") },
+                    new TextBlock { Text = UiText.T("Etiqueta libre (front, left, right, back...). Una etiqueta existente sustituye su pista."), TextWrapping = TextWrapping.Wrap },
                     input, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                         Children = { cancel, ok } } } };
             var name = await dialog.ShowDialog<string?>(this);
@@ -1189,7 +1189,7 @@ public partial class MainWindow : Window
             }
             else tracks[index] = track;
             ReplaceClip(clip, tracks.ToArray(), index);
-            StatusText.Text = $"{clip.Name} · Dirección {name} asignada";
+            StatusText.Text = (UiText.IsEnglish ? $"{clip.Name} · Direction {name} assigned" : $"{clip.Name} · Dirección {name} asignada");
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
@@ -1213,7 +1213,7 @@ public partial class MainWindow : Window
             ClipList.SelectedItem is not ViewerClip clip || TrackList.SelectedItem is not ViewerTrack track ||
             _active < 0 || _sheets[_active].Id != clip.SheetId) return;
         SetPlayback(track);
-        StatusText.Text = $"{clip.Name} · {track} · {track.Cells.Length} fotogramas";
+        StatusText.Text = (UiText.IsEnglish ? $"{clip.Name} · {track} · {track.Cells.Length} frames" : $"{clip.Name} · {track} · {track.Cells.Length} fotogramas");
     }
 
     private void EditTimeline(TimelineOperation operation, int position, int argument = 0)
@@ -1278,7 +1278,7 @@ public partial class MainWindow : Window
         ok.Click += (_, _) =>
         {
             if (int.TryParse(input.Text, out var cell) && cell >= 1 && cell <= count) dialog.Close((int?)(cell - 1));
-            else hint.Text = $"Introduce una celda entre 1 y {count}.";
+            else hint.Text = (UiText.IsEnglish ? $"Enter a cell between 1 and {count}." : $"Introduce una celda entre 1 y {count}.");
         };
         cancel.Click += (_, _) => dialog.Close(null);
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
@@ -1304,7 +1304,7 @@ public partial class MainWindow : Window
         ok.Click += (_, _) =>
         {
             if (int.TryParse(input.Text, out var cell) && cell >= 1 && cell <= count) dialog.Close((int?)(cell - 1));
-            else hint.Text = $"Introduce una celda entre 1 y {count}.";
+            else hint.Text = (UiText.IsEnglish ? $"Enter a cell between 1 and {count}." : $"Introduce una celda entre 1 y {count}.");
         };
         cancel.Click += (_, _) => dialog.Close(null);
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
@@ -1398,7 +1398,7 @@ public partial class MainWindow : Window
         _previewClock = null;
         _playback = null;
         _playbackTrack = null;
-        AnimationHeading.Text = "ANIMACIÓN Y LÍNEA DE TIEMPO · Sin clip";
+        AnimationHeading.Text = UiText.T("ANIMACIÓN Y LÍNEA DE TIEMPO · Sin clip");
         CellStrip.SetSequence(null);
         if (_selected is int cell) CellStrip.SetSelection(cell);
         UpdatePlaybackControls();
@@ -1462,11 +1462,11 @@ public partial class MainWindow : Window
         if (_playback is not { } cursor) return;
         SelectCell(cursor.Cell);
         CellStrip.SetSelection(cursor.Position);
-        TimelineInfo.Text = $"Fotograma {cursor.Position + 1} / {cursor.Count} · Celda {cursor.Cell + 1}";
+        TimelineInfo.Text = (UiText.IsEnglish ? $"Frame {cursor.Position + 1} / {cursor.Count} · Cell {cursor.Cell + 1}" : $"Fotograma {cursor.Position + 1} / {cursor.Count} · Celda {cursor.Cell + 1}");
         if (_playbackTrack is { } track)
         {
             var duration = track.DurationAt(cursor.Position);
-            DurationInfo.Text = $"Duración: {duration:0.##} ms";
+            DurationInfo.Text = (UiText.IsEnglish ? $"Duration: {duration:0.##} ms" : $"Duración: {duration:0.##} ms");
             TimelineInfo.Text += $" · {duration:0.##} ms";
             DurationInput.Text = track.DurationsMs?[cursor.Position]?.ToString() ?? "";
 
@@ -1561,7 +1561,7 @@ public partial class MainWindow : Window
                 WindowStartupLocation = WindowStartupLocation.CenterOwner };
             var ok = new Button { Classes = { "primary" }, Content = UiText.T("Aplicar") };
             var cancel = new Button { Content = UiText.T("Cancelar") };
-            var hint = new TextBlock { Text = "Números de celda (desde 1), separados por comas. Puedes repetir, quitar o cambiar el orden. Los tiempos siguen a cada aparición conservada.",
+            var hint = new TextBlock { Text = UiText.T("Números de celda (desde 1), separados por comas. Puedes repetir, quitar o cambiar el orden. Los tiempos siguen a cada aparición conservada."),
                 TextWrapping = TextWrapping.Wrap };
             ok.Click += (_, _) =>
             {
@@ -1596,7 +1596,7 @@ public partial class MainWindow : Window
         if (!string.IsNullOrWhiteSpace(DurationInput.Text))
         {
             if (!int.TryParse(DurationInput.Text, out var ms) || ms is < 1 or > PreviewTiming.MaxDurationMs)
-            { StatusText.Text = "Duración entre 1 y 60000 ms, o vacía para usar FPS."; return; }
+            { StatusText.Text = UiText.T("Duración entre 1 y 60000 ms, o vacía para usar FPS."); return; }
             duration = ms;
         }
         var tracks = clip.EffectiveTracks.ToArray();
@@ -1626,9 +1626,9 @@ public partial class MainWindow : Window
     private void UpdateVisibleBounds()
     {
         if (_validationResult is null || _selected is not int cell || _grid is null)
-        { VisibleBoundsInfo.Text = "Área visible: valida la hoja"; return; }
+        { VisibleBoundsInfo.Text = UiText.T("Área visible: valida la hoja"); return; }
         if (!_validationResult.Bounds.TryGetValue(cell, out var b))
-        { VisibleBoundsInfo.Text = "Área visible: celda vacía"; return; }
+        { VisibleBoundsInfo.Text = UiText.T("Área visible: celda vacía"); return; }
         VisibleBoundsInfo.Text = $"Área visible: {b.Width} × {b.Height} px · ({b.X}, {b.Y})\nMárgenes I/S/D/B: {b.X}/{b.Y}/{_grid.Cell.Width - b.X - b.Width}/{_grid.Cell.Height - b.Y - b.Height} px";
     }
 
@@ -1637,9 +1637,9 @@ public partial class MainWindow : Window
         _validationResult = null;
         _validationReport = null;
         ExportReportButton.IsEnabled = false;
-        VisibleBoundsInfo.Text = "Área visible: valida la hoja";
+        VisibleBoundsInfo.Text = UiText.T("Área visible: valida la hoja");
         _allFindings = [];
-        _diagnosticSummary = "Validación no ejecutada.";
+        _diagnosticSummary = UiText.T("Validación no ejecutada.");
         FindingList.ItemsSource = null;
         Preview.SetDiagnosticMarkers(null);
         DiagnosticText.Text = _diagnosticSummary;
@@ -1662,7 +1662,7 @@ public partial class MainWindow : Window
         var grid = _grid;
         SetBusy(true);
         ClearDiagnostics();
-        DiagnosticText.Text = "Analizando hoja y animaciones...";
+        DiagnosticText.Text = UiText.T("Analizando hoja y animaciones...");
         try
         {
             SheetValidation.CheckGridLimit(grid);
@@ -1704,7 +1704,7 @@ public partial class MainWindow : Window
             if (!_lifetime.IsCancellationRequested)
             {
                 ClearDiagnostics();
-                DiagnosticText.Text = $"Validación incompleta: {ex.Message}";
+                DiagnosticText.Text = (UiText.IsEnglish ? $"Validation incomplete: {ex.Message}" : $"Validación incompleta: {ex.Message}");
             }
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -1731,20 +1731,20 @@ public partial class MainWindow : Window
             string content;
             if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase)) content = report.ToJson();
             else if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)) content = report.ToPlainText();
-            else { StatusText.Text = "Selecciona una extensión .json o .txt."; return; }
+            else { StatusText.Text = UiText.T("Selecciona una extensión .json o .txt."); return; }
             // Never allow a report to overwrite the project's persistence manifest.
             if (string.Equals(file.Name, ProjectStore.ManifestName, StringComparison.OrdinalIgnoreCase))
-            { StatusText.Text = "No se puede sobrescribir el manifiesto del proyecto."; return; }
+            { StatusText.Text = UiText.T("No se puede sobrescribir el manifiesto del proyecto."); return; }
             await using var stream = await file.OpenWriteAsync();
             stream.SetLength(0);
             var bytes = System.Text.Encoding.UTF8.GetBytes(content);
             await stream.WriteAsync(bytes, _lifetime.Token);
             await stream.FlushAsync(_lifetime.Token);
-            StatusText.Text = $"Informe exportado · {file.Name}";
+            StatusText.Text = (UiText.IsEnglish ? $"Report exported · {file.Name}" : $"Informe exportado · {file.Name}");
         }
         catch (Exception ex)
         {
-            if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo exportar el informe: {ex.Message}";
+            if (!_lifetime.IsCancellationRequested) StatusText.Text = (UiText.IsEnglish ? $"Report export failed: {ex.Message}" : $"No se pudo exportar el informe: {ex.Message}");
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
@@ -1783,7 +1783,7 @@ public partial class MainWindow : Window
             if (!_lifetime.IsCancellationRequested)
             {
                 RefreshResources();
-                StatusText.Text = $"No se pudo abrir el recurso: {ex.Message}";
+                StatusText.Text = (UiText.IsEnglish ? $"Resource open failed: {ex.Message}" : $"No se pudo abrir el recurso: {ex.Message}");
             }
         }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -1816,7 +1816,7 @@ public partial class MainWindow : Window
     private async Task<(string Folder, string Name)?> PickSaveDestination()
     {
         var name = new TextBox { Text = _projectName, MaxLength = 100 };
-        var parent = new TextBox { Text = _folder is null ? "" : Path.GetDirectoryName(_folder), IsReadOnly = true, Watermark = "Selecciona la ubicación" };
+        var parent = new TextBox { Text = _folder is null ? "" : Path.GetDirectoryName(_folder), IsReadOnly = true, Watermark = UiText.T("Selecciona la ubicación") };
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
         var browse = new Button { Content = UiText.T("Elegir carpeta…") };
         var save = new Button { Classes = { "primary" }, Content = UiText.T("Guardar") };
@@ -1828,7 +1828,7 @@ public partial class MainWindow : Window
             try
             {
                 var folder = ProjectDestination.Resolve(parent.Text ?? "", name.Text ?? "");
-                preview.Text = "Carpeta del proyecto: " + folder;
+                preview.Text = UiText.T("Carpeta del proyecto: ") + folder;
                 save.IsEnabled = true;
             }
             catch (ArgumentException ex) { preview.Text = ex.Message; save.IsEnabled = false; }
@@ -1837,7 +1837,7 @@ public partial class MainWindow : Window
         browse.Click += async (_, _) =>
         {
             var selected = await dialog.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-                { Title = "Selecciona la ubicación del proyecto", AllowMultiple = false });
+                { Title = UiText.T("Selecciona la ubicación del proyecto"), AllowMultiple = false });
             if (selected.Count > 0 && selected[0].TryGetLocalPath() is string path)
             { parent.Text = path; Refresh(); }
         };
@@ -1861,9 +1861,9 @@ public partial class MainWindow : Window
         overwrite.Click += (_, _) => dialog.Close(true);
         cancel.Click += (_, _) => dialog.Close(false);
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 14,
-            Children = { new TextBlock { Text = "Ya existe un proyecto en esta ubicación:", FontWeight = FontWeight.SemiBold },
+            Children = { new TextBlock { Text = UiText.T("Ya existe un proyecto en esta ubicación:"), FontWeight = FontWeight.SemiBold },
                 new TextBlock { Text = folder, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = "Se reemplazará el manifiesto y se conservará su copia .bak. No se eliminarán los PNG anteriores ni otros archivos.", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = UiText.T("Se reemplazará el manifiesto y se conservará su copia .bak. No se eliminarán los PNG anteriores ni otros archivos."), TextWrapping = TextWrapping.Wrap },
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
                     Spacing = 8, Children = { cancel, overwrite } } } };
         return await dialog.ShowDialog<bool>(this);
@@ -1880,7 +1880,7 @@ public partial class MainWindow : Window
                 WindowStartupLocation = WindowStartupLocation.CenterOwner };
             var ok = new Button { Classes = { "primary" }, Content = UiText.T("Renombrar") };
             var cancel = new Button { Content = UiText.T("Cancelar") };
-            var hint = new TextBlock { Text = "Cambia el nombre visible; la carpeta actual no se mueve.", TextWrapping = TextWrapping.Wrap };
+            var hint = new TextBlock { Text = UiText.T("Cambia el nombre visible; la carpeta actual no se mueve."), TextWrapping = TextWrapping.Wrap };
             ok.Click += (_, _) =>
             {
                 try { dialog.Close(ProjectDestination.ValidateName(input.Text ?? "")); }
@@ -1926,7 +1926,7 @@ public partial class MainWindow : Window
                     throw new IOException("La carpeta contiene archivos pero no es un proyecto SpriteLab. Elige otra ubicación o nombre.");
             }
             var project = new ViewerProject(id, name, _sheets.ToArray(), _clips.ToArray());
-            SaveIndicator.Text = "Guardando…";
+            SaveIndicator.Text = UiText.T("Guardando…");
             SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#AEBCCA"));
             var hash = await Task.Run(() => ViewerWorkspace.SaveAsync(folder, project, revision, _lifetime.Token));
             if (_lifetime.IsCancellationRequested) return false;
@@ -1936,17 +1936,17 @@ public partial class MainWindow : Window
             _manifestHash = hash;
             _dirty = false;
             ProjectText.Text = name;
-            SaveIndicator.Text = $"✓ Guardado a las {DateTime.Now:HH:mm:ss}";
+            SaveIndicator.Text = (UiText.IsEnglish ? $"✓ Saved at {DateTime.Now:HH:mm:ss}" : $"✓ Guardado a las {DateTime.Now:HH:mm:ss}");
             SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#79C9A0"));
-            StatusText.Text = $"Proyecto guardado · {folder}";
+            StatusText.Text = (UiText.IsEnglish ? $"Project saved · {folder}" : $"Proyecto guardado · {folder}");
             return true;
         }
         catch (Exception ex)
         {
             if (!_lifetime.IsCancellationRequested)
             {
-                StatusText.Text = $"No se pudo guardar: {ex.Message}";
-                SaveIndicator.Text = "Error al guardar";
+                StatusText.Text = (UiText.IsEnglish ? $"Save failed: {ex.Message}" : $"No se pudo guardar: {ex.Message}");
+                SaveIndicator.Text = UiText.T("Error al guardar");
                 SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#F08B8B"));
             }
             return false;
@@ -1993,7 +1993,7 @@ public partial class MainWindow : Window
             _manifestHash = loaded.ManifestHash;
             _dirty = false;
             ProjectText.Text = _projectName;
-            SaveIndicator.Text = "✓ Proyecto abierto";
+            SaveIndicator.Text = UiText.T("✓ Proyecto abierto");
             SaveIndicator.Foreground = new SolidColorBrush(Color.Parse("#79C9A0"));
             if (first is not null) { ShowSheet(0, first); first = null; }
             else
@@ -2015,7 +2015,7 @@ public partial class MainWindow : Window
             RefreshResources();
             StatusText.Text = UiText.T("Proyecto abierto");
         }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo abrir: {ex.Message}"; }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = (UiText.IsEnglish ? $"Open failed: {ex.Message}" : $"No se pudo abrir: {ex.Message}"); }
         finally { first?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
@@ -2036,7 +2036,7 @@ public partial class MainWindow : Window
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16,
             Children = { new TextBlock { Text = UiText.T("¿Quieres guardar los cambios del proyecto?"),
                 FontSize = 16, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = "Si continúas sin guardar, perderás los cambios pendientes.",
+                new TextBlock { Text = UiText.T("Si continúas sin guardar, perderás los cambios pendientes."),
                     TextWrapping = TextWrapping.Wrap }, buttons } };
         var result = await dialog.ShowDialog<int>(this);
         return result == 2 || (result == 1 && await SaveProjectAsync());
@@ -2076,8 +2076,8 @@ public partial class MainWindow : Window
             Children =
             {
                 new TextBlock { Text = $"SpriteLab {GetVersion()}", FontSize = 22 },
-                new TextBlock { Text = "Herramienta independiente para sprites 2D.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
-                new TextBlock { Text = "SL2 · Clips, direcciones, reproducción y comparación de poses.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = UiText.T("Herramienta independiente para sprites 2D."), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = UiText.T("SL2 · Clips, direcciones, reproducción y comparación de poses."), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 close
             }
         };

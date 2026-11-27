@@ -21,7 +21,7 @@ internal sealed class SuiteDialog : Window
         var body=Content as Control;
         Content=null;
         var close=new Button{Classes={"captionButton","captionClose"}};
-        ToolbarIcons.Set(close,"close",UiText.T("Cerrar"));close.Click+=(_,_)=>Close();
+        ToolbarIcons.Set(close,"close",UiText.T("Cerrar"));close.MinHeight=36;close.MinWidth=46;close.Click+=(_,_)=>Close();
         var caption=new Border{Background=Brushes.Transparent,Padding=new Thickness(12,0),Child=new TextBlock{
             Text=Title,FontWeight=FontWeight.SemiBold,VerticalAlignment=VerticalAlignment.Center,TextTrimming=TextTrimming.CharacterEllipsis}};
         caption.PointerPressed+=(_,e)=>{if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed){BeginMoveDrag(e);e.Handled=true;}};

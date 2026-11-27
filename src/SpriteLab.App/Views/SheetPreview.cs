@@ -62,6 +62,23 @@ public sealed class SheetPreview : Control
     private static readonly IBrush LightTile = new SolidColorBrush(Color.Parse("#46505D"));
     private static readonly IBrush DarkTile = new SolidColorBrush(Color.Parse("#343C48"));
 
+    private static readonly IBrush Checker = CreateChecker();
+    private static IBrush CreateChecker()
+    {
+        // DrawingBrush tiles the checkerboard without enumerating every pixel.
+        var tiles = new DrawingGroup();
+        tiles.Children.Add(new GeometryDrawing { Brush = LightTile, Geometry = new RectangleGeometry(new Rect(0, 0, 16, 16)) });
+        tiles.Children.Add(new GeometryDrawing { Brush = DarkTile, Geometry = new RectangleGeometry(new Rect(8, 0, 8, 8)) });
+        tiles.Children.Add(new GeometryDrawing { Brush = DarkTile, Geometry = new RectangleGeometry(new Rect(0, 8, 8, 8)) });
+        return new DrawingBrush
+        {
+            Drawing = tiles,
+            TileMode = TileMode.Tile,
+            DestinationRect = new RelativeRect(0, 0, 16, 16, RelativeUnit.Absolute),
+            Stretch = Stretch.None
+        };
+    }
+
     public void SetImage(Bitmap? bitmap)
     {
         _bitmap = bitmap;
@@ -81,18 +98,7 @@ public sealed class SheetPreview : Control
     {
         base.Render(context);
         if (_bitmap is null) return;
-        // DrawingBrush tiles the checkerboard without enumerating every pixel.
-        var tiles = new DrawingGroup();
-        tiles.Children.Add(new GeometryDrawing { Brush = LightTile, Geometry = new RectangleGeometry(new Rect(0, 0, 16, 16)) });
-        tiles.Children.Add(new GeometryDrawing { Brush = DarkTile, Geometry = new RectangleGeometry(new Rect(8, 0, 8, 8)) });
-        tiles.Children.Add(new GeometryDrawing { Brush = DarkTile, Geometry = new RectangleGeometry(new Rect(0, 8, 8, 8)) });
-        var checker = new DrawingBrush
-        {
-            Drawing = tiles,
-            TileMode = TileMode.Tile,
-            DestinationRect = new RelativeRect(0, 0, 16, 16, RelativeUnit.Absolute),
-            Stretch = Stretch.None
-        };
+        var checker = Checker;
         var target = new Rect(0, 0, Width, Height);
         context.DrawRectangle(checker, null, target);
         using (context.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None }))

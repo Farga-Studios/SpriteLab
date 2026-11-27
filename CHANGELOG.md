@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2 — Preview and translation refinement
+- Reuse checkerboard drawing and upload preview RGBA directly to bitmap rather than PNG round-trip.
+- Extend English catalog across timeline, validation, grid and dialogs; translate common dynamic status messages.
+- Remaining diagnostics, accessibility and visual acceptance pending.
+
 ## 0.6.1 — SL7 visual foundation (delivery 5, first increment)
 - Shared caption and dialog shell with hover/pressed close states, consistent dark palette and Escape dismissal.
 - Initial Spanish/English resource catalog and persistent language preference, applied on restart.
