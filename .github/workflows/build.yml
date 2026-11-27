@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: Farga-Studios/DevelopmentSuite
-          ref: f80f54366c61af2c3caf944ea935d638ae8d406e
+          ref: 6a885a742c0a3bf26b11fc5167a182eb6ea11f7d
           path: .candidate-suite
           persist-credentials: false
       - name: Build pinned updater candidate
@@ -26,7 +26,7 @@ jobs:
         run: |
           dotnet pack .candidate-suite/src/Suite.Updater/Suite.Updater.csproj -c Release -o ".candidate-feed"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (!(Test-Path ".candidate-feed/FargaStudios.Suite.Updater.0.3.0-rc.1.nupkg")) { throw "Missing pinned candidate package" }
+          if (!(Test-Path ".candidate-feed/FargaStudios.Suite.Updater.0.3.0-rc.2.nupkg")) { throw "Missing pinned candidate package" }
       - name: Read candidate version
         shell: pwsh
         run: |
