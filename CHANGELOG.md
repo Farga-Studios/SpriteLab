@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3 — Native image processing foundation
+- Replace optional Python integration with dependency-free C# RGBA processing.
+- Pure per-cell transparent RGB cleanup, alpha threshold and horizontal/vertical mirroring, with validation, cancellation and progress contracts.
+- Remove Python configuration UI, implementation and tests; existing projects remain unchanged. Old local preferences are left untouched.
+- Add core regression tests. Processing UI and derived resource import follow in 0.4.4–0.4.6.
+
 ## 0.4.2 — Optional Python configuration
 - Tools > Configure Python: choose executable, verify Python 3, save per-user settings independently of projects.
 - Cancel and timeout support; missing interpreter does not block core editor.

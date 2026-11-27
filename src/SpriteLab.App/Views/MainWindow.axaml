@@ -56,8 +56,7 @@
       </MenuItem>
       <MenuItem Header="_Herramientas">
         <MenuItem x:Name="ValidateMenu" Header="Validar hoja" IsEnabled="False" Click="OnValidate" />
-        <MenuItem Header="Configurar Python…" Click="OnConfigurePython" />
-        <MenuItem Header="Sprite Pipeline" IsEnabled="False" />
+        <MenuItem x:Name="ProcessingMenu" Header="Procesamiento de imágenes…" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="Ay_uda">
         <MenuItem Header="Acerca de SpriteLab" Click="OnAbout" />
