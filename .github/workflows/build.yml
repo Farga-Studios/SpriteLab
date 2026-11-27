@@ -20,7 +20,10 @@ jobs:
         run: |
           [xml]$props = Get-Content Directory.Build.props -Raw
           $version = [string]$props.Project.PropertyGroup.Version
-          if ($version -notmatch '^\d+\.\d+\.\d+        run: dotnet --info
+          if ($version -notmatch '^\d+\.\d+\.\d+$' -or ([version]$version).ToString(3) -cne $version) { throw 'Invalid candidate version' }
+          "SPRITELAB_VERSION=$version" >> $env:GITHUB_ENV
+      - name: SDK
+        run: dotnet --info
       - name: Restore and audit direct and transitive packages
         run: dotnet restore SpriteLab.slnx --no-http-cache -p:NuGetAudit=true -p:NuGetAuditMode=all -p:WarningsAsErrors=NU1903%3BNU1904
       - name: List vulnerable dependencies
@@ -53,53 +56,6 @@ jobs:
           $zip = "SpriteLab-$env:SPRITELAB_VERSION-win-x64.zip"
           Compress-Archive -Path portable/* -DestinationPath $zip
           (Get-FileHash $zip -Algorithm SHA256).Hash + "  $zip" | Set-Content "SpriteLab-$env:SPRITELAB_VERSION-win-x64.sha256"
-      - name: Upload build artifact
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64
-          path: |
-            SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64.zip
-            SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64.sha256
-            dist/*.exe
-            dist/*.sha256
-          retention-days: 14
-          if-no-files-found: error
- -or ([version]$version).ToString(3) -cne $version) { throw 'Invalid candidate version' }
-          "SPRITELAB_VERSION=$version" >> $env:GITHUB_ENV
-      - name: SDK
-        run: dotnet --info
-      - name: Restore and audit direct and transitive packages
-        run: dotnet restore SpriteLab.slnx --no-http-cache -p:NuGetAudit=true -p:NuGetAuditMode=all -p:WarningsAsErrors=NU1903%3BNU1904
-      - name: List vulnerable dependencies
-        run: dotnet list SpriteLab.slnx package --vulnerable --include-transitive --no-restore
-      - name: Build
-        run: dotnet build SpriteLab.slnx -c Release --no-restore
-      - name: Unit tests
-        run: dotnet test SpriteLab.slnx -c Release --no-build --no-restore
-      - name: Smoke test (non-interactive)
-        run: dotnet run --project src/SpriteLab.App -c Release --no-build --no-restore -- --smoke-test
-      - name: Publish portable Windows x64 candidate
-        if: github.event_name != 'pull_request'
-        run: dotnet publish src/SpriteLab.App/SpriteLab.App.csproj -c Release -r win-x64 --self-contained true -o portable
-      - name: Smoke test published executable
-        if: github.event_name != 'pull_request'
-        run: |
-          & ./portable/SpriteLab.App.exe --smoke-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Package candidate and checksum
-        if: github.event_name != 'pull_request'
-        run: |
-          Copy-Item docs/PORTABLE.md portable/LEEME.md
-          Copy-Item docs/USER-GUIDE*.md portable/
-          New-Item -ItemType Directory -Force dist | Out-Null
-          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
-          if (!(Test-Path $iscc)) { throw 'Inno Setup 6 not found on runner' }
-          & $iscc /DAppVersion=0.6.8 installer/SpriteLab.iss
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Get-ChildItem dist/*.exe | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash + '  ' + $_.Name | Set-Content ($_.FullName + '.sha256') }
-          Compress-Archive -Path portable/* -DestinationPath SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64.zip
-          (Get-FileHash SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64.zip -Algorithm SHA256).Hash + '  SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64.zip' | Set-Content SpriteLab-${{ env.SPRITELAB_VERSION }}-win-x64.sha256
       - name: Upload build artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
