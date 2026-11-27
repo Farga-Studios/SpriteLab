@@ -99,3 +99,6 @@ User guides ES/EN, installer definition, private Windows x64 packaging. Installe
 
 ## 0.6.8 — Updater foundation
 Signed manifest verification with pinned RSA public key, bounded downloads and SHA-256, nonblocking startup notification and bilingual manual update window. No key configured yet; fails closed. User manually launches verified installer; automatic handoff/restart and rollback not implemented or accepted. Public distribution repository creation requires user. No release published. Delivery 6 remains open until signing and update lifecycle validation.
+
+## Organization integration
+Sealsworn/DevelopmentSuite private shared foundation 0.1.0; public DevelopmentSuite-Downloads uses per-product tags and signed channel indexes. Suite.Updater extracted as initial source snapshot, SpriteLab retains synchronized local implementation until versioned package integration is validated. No public release or key configured. Automatic handoff and rollback still pending.

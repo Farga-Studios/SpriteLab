@@ -8,3 +8,5 @@ Features: PNG import, grid, projects, animation timing, onion skin, nondestructi
 [Manual ES](docs/USER-GUIDE.md) · [User guide EN](docs/USER-GUIDE.en.md) · [Portable](docs/PORTABLE.md) · [Build](docs/BUILD.md) · [Roadmap](docs/ROADMAP.md) · [Changelog](CHANGELOG.md)
 
 License not yet selected.
+
+Shared foundation: [DevelopmentSuite](https://github.com/Sealsworn/DevelopmentSuite). Official distribution: [DevelopmentSuite-Downloads](https://github.com/Sealsworn/DevelopmentSuite-Downloads).

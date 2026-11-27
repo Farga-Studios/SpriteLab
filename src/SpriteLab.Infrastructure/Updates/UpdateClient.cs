@@ -33,6 +33,12 @@ public sealed class UpdateClient(HttpClient http, Uri manifestUri, string public
         Validate(m);
         return System.Version.Parse(m.Version)>installed?m:null;
     }
+    private Uri PackageUri(UpdateManifest m)
+    {
+        var slug=product.ToLowerInvariant();
+        if(!slug.All(c=>char.IsAsciiLetterOrDigit(c)||c=='-'))throw new InvalidDataException("Invalid product slug.");
+        return new Uri($"https://github.com/Sealsworn/DevelopmentSuite-Downloads/releases/download/{slug}-v{m.Version}/{m.FileName}");
+    }
     private void Validate(UpdateManifest m)
     {
         if(m.Product!=product||m.Channel!=channel||!System.Version.TryParse(m.Version,out var version)||
@@ -51,7 +57,7 @@ public sealed class UpdateClient(HttpClient http, Uri manifestUri, string public
         var path=Path.Combine(root,Guid.NewGuid().ToString("N")+"-"+m.FileName);
         try
         {
-            using var response=await http.GetAsync(new Uri(manifestUri,m.FileName),HttpCompletionOption.ResponseHeadersRead,token);
+            using var response=await http.GetAsync(PackageUri(m),HttpCompletionOption.ResponseHeadersRead,token);
             response.EnsureSuccessStatusCode();
             await using var input=await response.Content.ReadAsStreamAsync(token);
             using var hash=IncrementalHash.CreateHash(HashAlgorithmName.SHA256);

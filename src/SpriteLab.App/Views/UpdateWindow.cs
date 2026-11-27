@@ -17,7 +17,7 @@ internal static class UpdateWindow
             using var reader=new StreamReader(stream);return reader.ReadToEnd();
         }
     }
-    private static UpdateClient Client()=>new(Http,new Uri("https://github.com/ManubeX/SpriteLab-Downloads/releases/latest/download/update.json"),PublicKey,"SpriteLab","stable");
+    private static UpdateClient Client()=>new(Http,new Uri("https://raw.githubusercontent.com/Sealsworn/DevelopmentSuite-Downloads/main/channels/spritelab/stable/update.json"),PublicKey,"SpriteLab","stable");
     private static Version Installed
     {
         get{var v=typeof(UpdateWindow).Assembly.GetName().Version??new Version(0,0,0);return new Version(v.Major,v.Minor,Math.Max(0,v.Build));}
