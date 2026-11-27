@@ -30,6 +30,12 @@ internal static class UpdateWindow
         return service.Assess(Installed);
     }
 
+    public static void ConfirmStartupHealth(Guid transactionId)
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.ConfirmHealthy(transactionId, Installed);
+    }
+
     public static async Task LaunchTrackedAsync(PreparedUpdate update, CancellationToken token)
     {
         if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
