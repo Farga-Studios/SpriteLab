@@ -9,12 +9,14 @@ internal sealed class UpdateRecoveryService : IDisposable
     private readonly UpdateJournal journal;
     private readonly UpdateRecovery recovery;
     private readonly VerifiedPackageStore packages;
+    private readonly InstallerExitEvidence evidence;
 
     public UpdateRecoveryService(string root, string publicKey)
     {
         session = UpdateSessionLock.Acquire(root);
         try
         {
+            evidence = new InstallerExitEvidence(root);
             journal = new UpdateJournal(root, "SpriteLab");
             recovery = new UpdateRecovery(journal);
             packages = new VerifiedPackageStore(Path.Combine(root, "packages"), publicKey, "SpriteLab", "stable");
@@ -36,7 +38,16 @@ internal sealed class UpdateRecoveryService : IDisposable
 
     public UpdateTransaction MarkHandoff(Guid id) => journal.Advance(id, UpdatePhase.HandoffStarted);
 
-    public UpdateTransaction ConfirmHealthy(Guid id, Version running) => recovery.ConfirmHealthy(id, running);
+    private void RequireCompletion(Guid id)
+    {
+        if (!evidence.HasCompletion(id)) throw new InvalidOperationException("No verified installation completion receipt. Manual recovery required.");
+    }
+
+    public UpdateTransaction ConfirmHealthy(Guid id, Version running)
+    {
+        RequireCompletion(id);
+        return recovery.ConfirmHealthy(id, running);
+    }
 
     public UpdateTransaction CancelPrepared(Guid id, Version running) => recovery.CancelPrepared(id, running);
 
@@ -44,17 +55,22 @@ internal sealed class UpdateRecoveryService : IDisposable
         => recovery.ResolveInterrupted(id, running, installerExited, previousHealthy, true);
 
     public UpdateTransaction ConfirmRollbackHealthy(Guid id, Version running)
-        => recovery.ConfirmRollbackHealthy(id, running);
+    {
+        RequireCompletion(id);
+        return recovery.ConfirmRollbackHealthy(id, running);
+    }
 
     public UpdateTransaction RequireRecovery(Guid id) => recovery.RequireRecovery(id);
 
     public async Task RollbackAsync(Guid id, Version running, string stagingRoot, bool dataCompatible, CancellationToken token)
     {
+        RequireCompletion(id);
+        recovery.RequireRecovery(id);
         var manager = new RollbackManager(recovery, packages);
         var update = await manager.PrepareAsync(id, running, true, dataCompatible, stagingRoot, token);
         token.ThrowIfCancellationRequested();
         recovery.MarkRollbackStarted(id, running);
-        await InstallerHandoff.LaunchAsync(update, stagingRoot, token);
+        await InstallerHandoff.LaunchAsync(update, stagingRoot, token, transactionId: id);
     }
 
     public void Dispose() => session.Dispose();
