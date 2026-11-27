@@ -24,6 +24,20 @@ internal static class UpdateWindow
     }
     public static async Task<UpdateManifest?> CheckAsync(CancellationToken token)=>await Client().CheckAsync(Installed,token);
     public static string StagingRoot=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"SpriteLab","Updates");
+    public static async Task LaunchTrackedAsync(PreparedUpdate update, CancellationToken token)
+    {
+        if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        var assessment = service.Assess(Installed);
+        if (assessment.Status is not (RecoveryStatus.NoTransaction or RecoveryStatus.Healthy or RecoveryStatus.Aborted or RecoveryStatus.RolledBack))
+            throw new InvalidOperationException("An unresolved update requires recovery.");
+        await service.RetainAsync(Client(), update, token);
+        token.ThrowIfCancellationRequested();
+        var transaction = service.Begin(Installed, update);
+        service.MarkHandoff(transaction.Id);
+        await InstallerHandoff.LaunchAsync(update, StagingRoot, token);
+    }
+
     public static bool IsInstalled=>InstallerHandoff.IsInstalled(AppContext.BaseDirectory,"{B637E3EE-3A57-474F-9F87-C70E3F12AE3B}");
     public static async Task<PreparedUpdate?> ShowAsync(Window owner,CancellationToken token,UpdateManifest? known=null)
     {
