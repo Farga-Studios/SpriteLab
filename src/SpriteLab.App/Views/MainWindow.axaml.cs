@@ -52,6 +52,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeToolbarIcons();
+        InitializeCaption();
         _editorReady = true;
         OnApplyGuides(this, new RoutedEventArgs());
         FramePreview.OffsetCommitted += ApplyFrameOffset;
@@ -77,6 +78,35 @@ public partial class MainWindow : Window
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
+
+    private void InitializeCaption()
+    {
+        ToolbarIcons.Set(CaptionMinimize, "minus", "Minimizar");
+        ToolbarIcons.Set(CaptionClose, "close", "Cerrar");
+        UpdateCaption();
+        PropertyChanged += (_, e) => { if (e.Property == WindowStateProperty) UpdateCaption(); };
+    }
+
+    private void UpdateCaption()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        ToolbarIcons.Set(CaptionMaximize, maximized ? "restore-window" : "maximize-window",
+            maximized ? "Restaurar ventana" : "Maximizar");
+    }
+
+    private void OnCaptionPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        if (e.ClickCount == 2) ToggleMaximized();
+        else BeginMoveDrag(e);
+        e.Handled = true;
+    }
+
+    private void ToggleMaximized() => WindowState =
+        WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    private void OnCaptionMinimize(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void OnCaptionMaximize(object? sender, RoutedEventArgs e) => ToggleMaximized();
+    private void OnCaptionClose(object? sender, RoutedEventArgs e) => Close();
 
     private void InitializeToolbarIcons()
     {

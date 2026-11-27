@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 — Integrated title bar and optional adapter foundation
+- Main window caption integrated with menu, icon and dark palette, native resize border retained; minimize, maximize/restore, close, drag and double-click.
+- Initial optional Python probe isolated in Infrastructure. No pipeline command assumed or invoked; contract verification pending.
+- SL4 0.4.0 CI green reported by user; manual acceptance pending. New CI and visual checks pending.
+
 ## 0.4.0 — SL4 acceptance candidate
 - Harden initialization-time editor events, drag cancellation and timeline bounds checks.
 - Reset batch selection at sheet/grid boundaries and synchronize initial guide settings.

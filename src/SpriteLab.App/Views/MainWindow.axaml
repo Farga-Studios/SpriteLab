@@ -4,9 +4,34 @@
         x:Class="SpriteLab.App.Views.MainWindow"
         Title="SpriteLab" Icon="avares://SpriteLab.App/Assets/SpriteLab.png" Width="1280" Height="800"
         MinWidth="1040" MinHeight="760"
-        Background="#171B22">
+        SystemDecorations="BorderOnly" Background="#171B22">
+  <Window.Styles>
+    <Style Selector="Button.captionButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.captionButton:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#394352" />
+    </Style>
+    <Style Selector="Button.captionClose:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#C42B36" />
+    </Style>
+  </Window.Styles>
   <Grid RowDefinitions="Auto,Auto,*,Auto">
-    <Menu Grid.Row="0" Background="#242A34">
+    <Grid Grid.Row="0" Background="#242A34" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" Height="36">
+      <Border Background="Transparent" Padding="10,0" PointerPressed="OnCaptionPressed">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Image Source="avares://SpriteLab.App/Assets/SpriteLab.png" Width="20" Height="20" />
+          <TextBlock Text="SpriteLab" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+      <Menu Grid.Column="1" Background="Transparent" VerticalAlignment="Center">
       <MenuItem Header="_Archivo">
         <MenuItem x:Name="ImportMenu" Header="Importar PNG..." Click="OnImport" />
         <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." HotKey="Ctrl+O" Click="OnOpenProject" />
@@ -36,7 +61,12 @@
       <MenuItem Header="Ay_uda">
         <MenuItem Header="Acerca de SpriteLab" Click="OnAbout" />
       </MenuItem>
-    </Menu>
+      </Menu>
+      <Border Grid.Column="2" Background="Transparent" PointerPressed="OnCaptionPressed" />
+      <Button Grid.Column="3" x:Name="CaptionMinimize" Click="OnCaptionMinimize" Classes="captionButton" Content="−" />
+      <Button Grid.Column="4" x:Name="CaptionMaximize" Click="OnCaptionMaximize" Classes="captionButton" Content="□" />
+      <Button Grid.Column="5" x:Name="CaptionClose" Click="OnCaptionClose" Classes="captionButton captionClose" Content="×" />
+    </Grid>
     <Border Grid.Row="1" Background="#202630" Padding="14,10">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="12">
