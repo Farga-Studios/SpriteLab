@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5 — Export foundation (delivery 2)
+- Export selected frame, all individual frames, corrected sheet, or sheet with animations and JSON.
+- Bake offsets per fixed-size cell, count visible clipped pixels; anchors exported in corrected local coordinates.
+- Preserve animation occurrence order, direction and duration. New output directory, staged writes, no source overwrite.
+- Regression tests; profiles, preview, batch and extended recovery follow in delivery 3.
+
 ## 0.5.0 — SL5 acceptance candidate
 - Preserve exact RGBA on derived PNG encoding, independent of platform bitmap premultiplication.
 - Encode in background with cancellation, bounded progress callbacks, reset stale preview, context-sensitive input controls.

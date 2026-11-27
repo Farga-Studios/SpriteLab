@@ -39,6 +39,8 @@
         <MenuItem x:Name="SaveAsMenu" Header="Guardar como..." HotKey="Ctrl+Shift+S" Click="OnSaveAs" />
         <MenuItem x:Name="RenameProjectMenu" Header="Renombrar proyecto..." Click="OnRenameProject" />
         <Separator />
+        <MenuItem x:Name="ExportSpritesMenu" Header="Exportar sprites y animaciones…" Click="OnExportSprites" IsEnabled="False" />
+        <Separator />
         <MenuItem Header="Salir" Click="OnExit" />
       </MenuItem>
       <MenuItem Header="_Edición">

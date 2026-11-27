@@ -75,7 +75,7 @@ public partial class MainWindow : Window
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = "Ajustar";
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL5 procesamiento";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL6 exportación";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -116,6 +116,52 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo procesar: {ex.Message}"; }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+    }
+
+    private async void OnExportSprites(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0 || _grid is null || _bitmap is null) return;
+        var grid = _grid; var sheet = _sheets[_active]; var bitmap = _bitmap;
+        var selected = _selected ?? 0; var clips = _clips.ToArray();
+        SetBusy(true);
+        try
+        {
+            var choice = new ComboBox { ItemsSource = new[] { "Fotograma seleccionado + JSON", "Sprites individuales + JSON",
+                "Hoja corregida + JSON", "Hoja y animaciones + JSON" }, SelectedIndex = 0 };
+            var ok = new Button { Content = "Continuar" }; var cancel = new Button { Content = "Cancelar" };
+            var dialog = new Window { Title = "Exportar sprites", Width = 530, Height = 250,
+                CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            ok.Click += (_, _) => dialog.Close(choice.SelectedIndex);
+            cancel.Click += (_, _) => dialog.Close(-1);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12, Children =
+            {
+                new TextBlock { Text = sheet.Name + " · Selecciona el formato", TextWrapping = TextWrapping.Wrap },
+                choice, new TextBlock { Text = "Los desplazamientos se aplican al PNG. Los píxeles fuera de su celda se recortan. Se crea una carpeta nueva; el original no cambia.", TextWrapping = TextWrapping.Wrap },
+                new WrapPanel { Orientation = Orientation.Horizontal, Children = { ok,cancel } }
+            }};
+            var mode = await dialog.ShowDialog<int?>(this);
+            if (mode is null or < 0 or > 3 || _lifetime.IsCancellationRequested) return;
+            var folder = await PickFolder("Seleccionar carpeta de exportación");
+            if (folder is null || _lifetime.IsCancellationRequested) return;
+            StatusText.Text = "Exportando sprites…";
+            var rgba = ValidationPixels.Read(bitmap);
+            var outcome = await Task.Run(() => SpriteExport.WriteAsync(folder,sheet,grid,rgba,clips,(SpriteExportKind)mode.Value,selected,_lifetime.Token),_lifetime.Token);
+            if (_lifetime.IsCancellationRequested) return;
+            StatusText.Text = $"Exportados {outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles visibles recortados · {outcome.Folder}";
+            var done = new Window { Title = "Exportación completada", Width = 570, Height = 210,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var close = new Button { Content = "Aceptar" }; close.Click += (_, _) => done.Close();
+            done.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12, Children =
+            {
+                new TextBlock { Text = $"Exportación completada: {outcome.Files} archivos.", FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = outcome.Folder, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"Píxeles visibles recortados: {outcome.ClippedVisiblePixels}.", TextWrapping = TextWrapping.Wrap }, close
+            }};
+            await done.ShowDialog(this);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo exportar: {ex.Message}"; }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
     private void InitializeCaption()
@@ -1315,6 +1361,7 @@ public partial class MainWindow : Window
         UpdateHistoryControls();
         ReplaceFrameButton.IsEnabled = editing;
         ProcessingMenu.IsEnabled = !_importing && _grid is not null && _bitmap is not null && _playback?.IsPlaying != true;
+        ExportSpritesMenu.IsEnabled = ProcessingMenu.IsEnabled;
         var playing = _playback?.IsPlaying == true;
         FrameEditPanel.IsEnabled = !_importing && !playing && _grid is not null && _selected.HasValue;
         FramePreview.CanMoveSprite = FrameEditPanel.IsEnabled && MoveSpriteCheck.IsChecked == true;

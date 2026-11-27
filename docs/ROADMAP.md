@@ -68,3 +68,6 @@ TileLab: editor de tilesets y salas especiales, compatibilidad TMJ inicial y val
 
 ## 0.5.0 — SL5 acceptance candidate
 Delivery 1: review processing lifecycle, preserve RGBA in PNG encoder, bound progress notifications and add regression tests. CI and manual acceptance pending. Do not mark SL5 accepted or start SL6 without acceptance decision. Distribution repository proposal remains separate; no repository visibility changed.
+
+## 0.5.5 — Delivery 2
+SL5 0.5.0 CI green reported by user, manual acceptance still unconfirmed. Proceed with SL6 at user request. Export core, baked offsets, individual PNGs, sheet and versioned animation JSON implemented; CI and manual validation pending. Delivery 3 adds profiles, preview, batch and extended integrity/recovery. See docs/SL6-EXPORT.md.
