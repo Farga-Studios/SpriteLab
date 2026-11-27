@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.8 — Update foundation
+- Authenticated manifest and bounded checksum-verified installer download; startup and manual check.
+- Pending pinned public key, distribution setup, automatic installation/restart and rollback acceptance.
+
 ## 0.6.7 — User documentation and Windows distribution
 - Spanish and English user guides.
 - Per-user Inno Setup installer with optional desktop shortcut, existing icon and bilingual wizard.

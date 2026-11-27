@@ -96,3 +96,6 @@ Keyboard shortcuts and help, focus states, dialog default action, persisted lang
 
 ## 0.6.7 — Delivery 6 first increment
 User guides ES/EN, installer definition, private Windows x64 packaging. Installer and CI not yet verified. Updater, authenticated release signing, distribution repo and update acceptance remain open.
+
+## 0.6.8 — Updater foundation
+Signed manifest verification with pinned RSA public key, bounded downloads and SHA-256, nonblocking startup notification and bilingual manual update window. No key configured yet; fails closed. User manually launches verified installer; automatic handoff/restart and rollback not implemented or accepted. Public distribution repository creation requires user. No release published. Delivery 6 remains open until signing and update lifecycle validation.

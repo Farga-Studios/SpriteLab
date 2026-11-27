@@ -77,6 +77,7 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = UiText.T("Ajustar");
         VersionText.Text = (UiText.IsEnglish ? $"SpriteLab {GetVersion()} · SL7 polish" : $"SpriteLab {GetVersion()} · SL7 acabado");
+        Opened += async (_, _) => { try { var update=await UpdateWindow.CheckAsync(_lifetime.Token); if(update is not null&&!_lifetime.IsCancellationRequested&&!_importing) StatusText.Text=UiText.T("Nueva versión: ")+update.Version+" · "+UiText.T("Actualizaciones"); } catch(Exception) { /* Offline or invalid metadata never blocks startup. */ } };
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -2074,6 +2075,14 @@ public partial class MainWindow : Window
         var close=new Button{Content=UiText.T("Cerrar"),Classes={"primary"},HorizontalAlignment=HorizontalAlignment.Right};
         close.Click+=(_,_)=>dialog.Close();rows.Children.Add(close);dialog.Content=new ScrollViewer{Content=rows};
         await dialog.ShowDialog(this);
+    }
+
+    private async void OnUpdates(object? sender,RoutedEventArgs e)
+    {
+        if(_importing)return;
+        SetBusy(true);
+        try{await UpdateWindow.ShowAsync(this,_lifetime.Token);}
+        finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
     private async void OnAbout(object? sender, RoutedEventArgs e)

@@ -334,5 +334,15 @@
   "Fotograma anterior / siguiente": "Previous / next frame",
   "Cerrar diálogo": "Close dialog",
   "Navegar por los controles": "Navigate controls",
-  "Editor de sprites, animaciones, procesamiento y exportación PNG, JSON y GIF.": "Sprite editor, animation, processing and PNG, JSON and GIF export."
+  "Editor de sprites, animaciones, procesamiento y exportación PNG, JSON y GIF.": "Sprite editor, animation, processing and PNG, JSON and GIF export.",
+  "Actualizaciones": "Updates",
+  "Buscando actualizaciones…": "Checking for updates…",
+  "Descargar instalador": "Download installer",
+  "Actualizador pendiente de configurar la clave pública.": "Updater public key is not configured.",
+  "No hay actualizaciones disponibles.": "No updates available.",
+  "Nueva versión: ": "New version: ",
+  "No se pudo comprobar la actualización: ": "Update check failed: ",
+  "Descargando actualización…": "Downloading update…",
+  "Instalador verificado. Guarda tus proyectos, cierra SpriteLab y ejecuta el archivo: ": "Installer verified. Save your projects, close SpriteLab and run this file: ",
+  "No se pudo descargar la actualización: ": "Update download failed: "
 }

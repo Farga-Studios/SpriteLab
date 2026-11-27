@@ -12,4 +12,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.18" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.18" />
   </ItemGroup>
+  <ItemGroup Condition="Exists('Updates/PublicKey.pem')">
+    <EmbeddedResource Include="Updates/PublicKey.pem" LogicalName="SpriteLab.UpdatePublicKey.pem" />
+  </ItemGroup>
 </Project>

@@ -49,6 +49,8 @@
         <MenuItem x:Name="ProcessingMenu" Header="Procesamiento de imágenes…" Click="OnProcessImages" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="Ay_uda">
+        <MenuItem Header="Actualizaciones" Click="OnUpdates" />
+        <Separator />
         <MenuItem Header="Atajos de teclado…" Click="OnShortcuts" />
         <Separator />
         <MenuItem Header="Acerca de SpriteLab" Click="OnAbout" />
