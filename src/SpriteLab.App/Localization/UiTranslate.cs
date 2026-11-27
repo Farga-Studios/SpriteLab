@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
+using Avalonia.Automation;
 
 namespace SpriteLab.App.Views;
 internal static class UiTranslate
@@ -9,6 +10,9 @@ internal static class UiTranslate
         if(!UiText.IsEnglish)return;
         foreach(var node in root.GetLogicalDescendants().OfType<Control>().ToArray())
         {
+            if(ToolTip.GetTip(node) is string tip) ToolTip.SetTip(node,UiText.T(tip));
+            var name=AutomationProperties.GetName(node);
+            if(!string.IsNullOrEmpty(name)) AutomationProperties.SetName(node,UiText.T(name));
             switch(node)
             {
                 case MenuItem menu when menu.Header is string h:menu.Header=UiText.T(h);break;

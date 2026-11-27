@@ -321,5 +321,18 @@
   "Selecciona una operación.": "Select an operation.",
   " Sin cambios que incorporar.": " No changes to import.",
   " Puedes incorporar una copia nueva.": " You can import a new copy.",
-  "Rango: 1,3-5,8 · Umbral: 0–255 (solo alfa). Se procesa la imagen fuente sin offsets ni anclajes.": "Range: 1,3-5,8 · Threshold: 0–255 (alpha only). Source image is processed without offsets or anchors."
+  "Rango: 1,3-5,8 · Umbral: 0–255 (solo alfa). Se procesa la imagen fuente sin offsets ni anclajes.": "Range: 1,3-5,8 · Threshold: 0–255 (alpha only). Source image is processed without offsets or anchors.",
+  "Duplicar fotograma": "Duplicate frame",
+  "Quitar fotograma": "Remove frame",
+  "Atajos de teclado…": "Keyboard shortcuts…",
+  "Atajos de teclado": "Keyboard shortcuts",
+  "Abrir proyecto": "Open project",
+  "Guardar como": "Save as",
+  "Exportar sprites y animaciones": "Export sprites and animations",
+  "Importar PNG": "Import PNG",
+  "Reproducir / pausar": "Play / pause",
+  "Fotograma anterior / siguiente": "Previous / next frame",
+  "Cerrar diálogo": "Close dialog",
+  "Navegar por los controles": "Navigate controls",
+  "Editor de sprites, animaciones, procesamiento y exportación PNG, JSON y GIF.": "Sprite editor, animation, processing and PNG, JSON and GIF export."
 }

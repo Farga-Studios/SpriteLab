@@ -76,7 +76,7 @@ public partial class MainWindow : Window
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = UiText.T("Ajustar");
-        VersionText.Text = (UiText.IsEnglish ? $"SpriteLab {GetVersion()} · SL7 polish" : $"SpriteLab {GetVersion()} · SL6 exportación");
+        VersionText.Text = (UiText.IsEnglish ? $"SpriteLab {GetVersion()} · SL7 polish" : $"SpriteLab {GetVersion()} · SL7 acabado");
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -272,8 +272,8 @@ public partial class MainWindow : Window
         ToolbarIcons.Set(RedoButton, "redo", UiText.T("Rehacer (Ctrl+Y)"));
         ToolbarIcons.Set(ReplaceFrameButton, "replace", UiText.T("Reemplazar fotograma"));
         ToolbarIcons.Set(AddFrameButton, "plus", UiText.T("Añadir fotograma"));
-        ToolbarIcons.Set(DuplicateFrameButton, "copy", "Duplicar fotograma");
-        ToolbarIcons.Set(RemoveFrameButton, "trash", "Quitar fotograma");
+        ToolbarIcons.Set(DuplicateFrameButton, "copy", UiText.T("Duplicar fotograma"));
+        ToolbarIcons.Set(RemoveFrameButton, "trash", UiText.T("Quitar fotograma"));
         ToolbarIcons.Set(MoveFrameLeftButton, "left", UiText.T("Mover fotograma a la izquierda"));
         ToolbarIcons.Set(MoveFrameRightButton, "right", UiText.T("Mover fotograma a la derecha"));
         ToolbarIcons.Set(EditSequenceButton, "edit", UiText.T("Editar secuencia"));
@@ -2058,6 +2058,24 @@ public partial class MainWindow : Window
 
     private void OnExit(object? sender, RoutedEventArgs e) => Close();
 
+    private async void OnShortcuts(object? sender,RoutedEventArgs e)
+    {
+        var dialog=new SuiteDialog{Title=UiText.T("Atajos de teclado"),Width=560,Height=440,CanResize=true};
+        var rows=new StackPanel{Spacing=8,Margin=new Avalonia.Thickness(20)};
+        foreach(var (key,label) in new (string,string)[]{
+            ("Ctrl+I","Importar PNG"),("Ctrl+O","Abrir proyecto"),("Ctrl+S","Guardar"),("Ctrl+Shift+S","Guardar como"),
+            ("Ctrl+E","Exportar sprites y animaciones"),("F8","Validar hoja"),("Ctrl+Z","Deshacer"),("Ctrl+Y","Rehacer"),
+            ("Space","Reproducir / pausar"),("← / →","Fotograma anterior / siguiente"),("Tab / Shift+Tab","Navegar por los controles"),("Esc","Cerrar diálogo")})
+        {
+            var row=new Grid{ColumnDefinitions=new ColumnDefinitions("150,*"),ColumnSpacing=12};
+            row.Children.Add(new TextBlock{Text=key,Foreground=UiPalette.Accent,FontWeight=FontWeight.SemiBold});
+            var text=new TextBlock{Text=UiText.T(label),TextWrapping=TextWrapping.Wrap};Grid.SetColumn(text,1);row.Children.Add(text);rows.Children.Add(row);
+        }
+        var close=new Button{Content=UiText.T("Cerrar"),Classes={"primary"},HorizontalAlignment=HorizontalAlignment.Right};
+        close.Click+=(_,_)=>dialog.Close();rows.Children.Add(close);dialog.Content=new ScrollViewer{Content=rows};
+        await dialog.ShowDialog(this);
+    }
+
     private async void OnAbout(object? sender, RoutedEventArgs e)
     {
         var dialog = new SuiteDialog {
@@ -2077,7 +2095,7 @@ public partial class MainWindow : Window
             {
                 new TextBlock { Text = $"SpriteLab {GetVersion()}", FontSize = 22 },
                 new TextBlock { Text = UiText.T("Herramienta independiente para sprites 2D."), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
-                new TextBlock { Text = UiText.T("SL2 · Clips, direcciones, reproducción y comparación de poses."), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = UiText.T("Editor de sprites, animaciones, procesamiento y exportación PNG, JSON y GIF."), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 close
             }
         };

@@ -90,3 +90,6 @@ Reduced preview allocations and expanded English UI coverage. No measured benchm
 
 ## 0.6.3 — Localization pass
 English diagnostic and report output plus remaining reviewed editor strings. Full runtime language verification, low-level exception messages, accessibility and logo review remain open. CI pending.
+
+## 0.6.5 — Delivery 5 acceptance candidate (0.6.4–0.6.5)
+Keyboard shortcuts and help, focus states, dialog default action, persisted language from earlier increments. Source logo preserved; redesign not performed. CI and manual bilingual UI, DPI, accessibility and performance validation remain pending; do not claim complete translation or accepted SL7. See docs/SL7-ACCEPTANCE.md.

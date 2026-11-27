@@ -16,13 +16,13 @@
       </Border>
       <Menu Grid.Column="1" Background="Transparent" VerticalAlignment="Center">
       <MenuItem Header="_Archivo">
-        <MenuItem x:Name="ImportMenu" Header="Importar PNG..." Click="OnImport" />
+        <MenuItem x:Name="ImportMenu" Header="Importar PNG..." HotKey="Ctrl+I" Click="OnImport" />
         <MenuItem x:Name="OpenProjectMenu" Header="Abrir proyecto..." HotKey="Ctrl+O" Click="OnOpenProject" />
         <MenuItem x:Name="SaveProjectMenu" Header="Guardar proyecto..." HotKey="Ctrl+S" Click="OnSaveProject" />
         <MenuItem x:Name="SaveAsMenu" Header="Guardar como..." HotKey="Ctrl+Shift+S" Click="OnSaveAs" />
         <MenuItem x:Name="RenameProjectMenu" Header="Renombrar proyecto..." Click="OnRenameProject" />
         <Separator />
-        <MenuItem x:Name="ExportSpritesMenu" Header="Exportar sprites y animaciones…" Click="OnExportSprites" IsEnabled="False" />
+        <MenuItem x:Name="ExportSpritesMenu" Header="Exportar sprites y animaciones…" HotKey="Ctrl+E" Click="OnExportSprites" IsEnabled="False" />
         <Separator />
         <MenuItem Header="Verificar exportación…" Click="OnVerifyExport" />
         <MenuItem Header="Recuperar exportaciones incompletas…" Click="OnRecoverExports" />
@@ -45,10 +45,12 @@
         <MenuItem x:Name="PlayMenu" Header="Reproducir (Espacio)" IsEnabled="False" Click="OnPlay" />
       </MenuItem>
       <MenuItem Header="_Herramientas">
-        <MenuItem x:Name="ValidateMenu" Header="Validar hoja" IsEnabled="False" Click="OnValidate" />
+        <MenuItem x:Name="ValidateMenu" Header="Validar hoja" HotKey="F8" IsEnabled="False" Click="OnValidate" />
         <MenuItem x:Name="ProcessingMenu" Header="Procesamiento de imágenes…" Click="OnProcessImages" IsEnabled="False" />
       </MenuItem>
       <MenuItem Header="Ay_uda">
+        <MenuItem Header="Atajos de teclado…" Click="OnShortcuts" />
+        <Separator />
         <MenuItem Header="Acerca de SpriteLab" Click="OnAbout" />
       </MenuItem>
       </Menu>

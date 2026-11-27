@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.5 — SL7 polish acceptance candidate
+- Keyboard shortcut reference, import/export/validation shortcuts, visible keyboard focus and dialog default actions.
+- Localized tooltip and automation names, updated About text; preserve original logo.
+- Delivery 5 candidate pending CI, Windows UI/translation audit and performance checks.
+
 ## 0.6.3 — Localized diagnostics and reports
 - Extend English translations to diagnostic messages, reports and remaining reviewed editor/processing messages.
 - Preserve diagnostic codes, user content and export schema. Add language regression tests.
