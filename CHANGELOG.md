@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.9 — Export profiles, batch and animated GIF
+- Save/load/delete named local export profiles; select active sheet or batch of eligible sheets.
+- Corrected raster preview and animated RGBA preview; GIF89a native encoding, scale/speed/background/repetition and clip/direction selection.
+- Staged batch publication, cancellation dialog, bounded GIF work and duration. CI and manual verification pending.
+
 ## 0.5.5 — Export foundation (delivery 2)
 - Export selected frame, all individual frames, corrected sheet, or sheet with animations and JSON.
 - Bake offsets per fixed-size cell, count visible clipped pixels; anchors exported in corrected local coordinates.

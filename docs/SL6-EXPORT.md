@@ -13,3 +13,6 @@ Archivo > Exportar sprites y animaciones. Requiere hoja y cuadrícula activa. Se
 9. Cancelar diálogo/carpeta: no crear salida. Simular destino sin permisos: error visible.
 10. Guardar y reabrir proyecto; repetir exportación. Verificar que originales no cambiaron.
 CI y pruebas Windows pendientes. La vista previa de recorte antes de exportar, cancelación dedicada, perfiles y lotes se completarán en entrega 3.
+
+## 0.5.9
+Named profiles stored locally; batch includes sheets with a grid (GIF/animation requires clips). Batch writes to unique staging directory and publishes only after success; cancellation cleans staging on normal exit. GIF exports one file per requested direction, fixed canvas, nearest neighbor scale 1/2/3/4/8, speed 25–400%, repeat 0=infinite (NETSCAPE count), alpha <128 transparent or solid RGB compositing. Palette exact up to 255 opaque colors per frame; fallback fixed RGB palette; 10ms minimum delay, cumulative rounding. Limits 4096 frames, 100M scaled pixels per GIF, 4096 axis, 4M pixels/frame, 1h. Preview is corrected RGBA not quantized output; first direction when all selected. Test external GIF viewer (timing, transparency, repeated frames), batch cancellation, profile persistence and clipping before acceptance. Hard crash recovery and deeper verification remain 0.6.0.

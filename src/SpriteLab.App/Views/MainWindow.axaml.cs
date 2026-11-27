@@ -121,47 +121,55 @@ public partial class MainWindow : Window
     private async void OnExportSprites(object? sender, RoutedEventArgs e)
     {
         if (_importing || _active < 0 || _grid is null || _bitmap is null) return;
-        var grid = _grid; var sheet = _sheets[_active]; var bitmap = _bitmap;
-        var selected = _selected ?? 0; var clips = _clips.ToArray();
+        var grid=_grid;var sheet=_sheets[_active];var bitmap=_bitmap;var selected=_selected??0;var clips=_clips.ToArray();
         SetBusy(true);
         try
         {
-            var choice = new ComboBox { ItemsSource = new[] { "Fotograma seleccionado + JSON", "Sprites individuales + JSON",
-                "Hoja corregida + JSON", "Hoja y animaciones + JSON" }, SelectedIndex = 0 };
-            var ok = new Button { Content = "Continuar" }; var cancel = new Button { Content = "Cancelar" };
-            var dialog = new Window { Title = "Exportar sprites", Width = 530, Height = 250,
-                CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            ok.Click += (_, _) => dialog.Close(choice.SelectedIndex);
-            cancel.Click += (_, _) => dialog.Close(-1);
-            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12, Children =
-            {
-                new TextBlock { Text = sheet.Name + " · Selecciona el formato", TextWrapping = TextWrapping.Wrap },
-                choice, new TextBlock { Text = "Los desplazamientos se aplican al PNG. Los píxeles fuera de su celda se recortan. Se crea una carpeta nueva; el original no cambia.", TextWrapping = TextWrapping.Wrap },
-                new WrapPanel { Orientation = Orientation.Horizontal, Children = { ok,cancel } }
-            }};
-            var mode = await dialog.ShowDialog<int?>(this);
-            if (mode is null or < 0 or > 3 || _lifetime.IsCancellationRequested) return;
-            var folder = await PickFolder("Seleccionar carpeta de exportación");
-            if (folder is null || _lifetime.IsCancellationRequested) return;
-            StatusText.Text = "Exportando sprites…";
-            var rgba = ValidationPixels.Read(bitmap);
-            var outcome = await Task.Run(() => SpriteExport.WriteAsync(folder,sheet,grid,rgba,clips,(SpriteExportKind)mode.Value,selected,_lifetime.Token),_lifetime.Token);
-            if (_lifetime.IsCancellationRequested) return;
-            StatusText.Text = $"Exportados {outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles visibles recortados · {outcome.Folder}";
-            var done = new Window { Title = "Exportación completada", Width = 570, Height = 210,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var close = new Button { Content = "Aceptar" }; close.Click += (_, _) => done.Close();
-            done.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12, Children =
-            {
-                new TextBlock { Text = $"Exportación completada: {outcome.Files} archivos.", FontWeight = FontWeight.SemiBold },
-                new TextBlock { Text = outcome.Folder, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"Píxeles visibles recortados: {outcome.ClippedVisiblePixels}.", TextWrapping = TextWrapping.Wrap }, close
-            }};
+            var rgba=ValidationPixels.Read(bitmap);
+            var choice=await ExportOptionsWindow.ShowAsync(this,sheet,grid,rgba,selected,clips,_lifetime.Token);
+            if(choice is null||_lifetime.IsCancellationRequested)return;
+            var folder=await PickFolder("Seleccionar carpeta de exportación");
+            if(folder is null||_lifetime.IsCancellationRequested)return;
+            using var job=CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            var progress=new ProgressBar{Minimum=0,Maximum=100,IsIndeterminate=!choice.Profile.AllSheets,Height=12};
+            var status=new TextBlock{Text="Exportando…",TextWrapping=TextWrapping.Wrap};
+            var cancel=new Button{Content="Cancelar"};cancel.Click+=(_,_)=>{job.Cancel();cancel.IsEnabled=false;status.Text="Cancelando…";};
+            var dialog=new Window{Title="Exportación",Width=460,Height=180,CanResize=false,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+            dialog.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={status,progress,cancel}};
+            bool finished=false;dialog.Closing+=(_,args)=>{if(!finished){args.Cancel=true;job.Cancel();}};
+            var sheets=_sheets.Where(s=>s.CellWidth.HasValue&&s.CellHeight.HasValue&&
+                (choice.Profile.Kind is not (SpriteExportKind.Gif or SpriteExportKind.Animations)||clips.Any(c=>c.SheetId==s.Id))).ToArray();
+            ExportOutcome? outcome=null;Exception? error=null;
+            dialog.Opened+=async(_,_)=>{
+                try{
+                    var reporter=new Progress<int>(v=>progress.Value=v);
+                    outcome=await Task.Run(async()=>{
+                        if(!choice.Profile.AllSheets)return await SpriteExport.WriteAsync(folder,sheet,grid,rgba,clips,choice.Profile.Kind,selected,job.Token,choice.Profile.Gif,choice.Clip,choice.Direction);
+                        return await BatchExport.WriteAsync(folder,sheets,s=>{
+                            job.Token.ThrowIfCancellationRequested();
+                            if(s.Id==sheet.Id)return new ExportInput(s,grid,rgba,selected);
+                            using var image=Decode(s.Png);
+                            var g=new CellGrid(new PixelSize(image.PixelSize.Width,image.PixelSize.Height),new PixelSize(s.CellWidth!.Value,s.CellHeight!.Value));
+                            return new ExportInput(s,g,ValidationPixels.Read(image));
+                        },clips,choice.Profile,reporter,job.Token);
+                    },job.Token);
+                }catch(Exception ex){error=ex;}finally{finished=true;dialog.Close();}
+            };
+            await dialog.ShowDialog(this);
+            if(error is OperationCanceledException){StatusText.Text="Exportación cancelada.";return;}
+            if(error is not null)throw error;
+            if(outcome is null||_lifetime.IsCancellationRequested)return;
+            StatusText.Text=$"Exportados {outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles recortados · {outcome.Folder}";
+            var done=new Window{Title="Exportación completada",Width=570,Height=210,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+            var close=new Button{Content="Aceptar"};close.Click+=(_,_)=>done.Close();
+            done.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={
+                new TextBlock{Text=$"{outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles visibles recortados.",TextWrapping=TextWrapping.Wrap},
+                new TextBlock{Text=outcome.Folder,TextWrapping=TextWrapping.Wrap},close}};
             await done.ShowDialog(this);
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo exportar: {ex.Message}"; }
-        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
+        catch(OperationCanceledException){}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text=$"No se pudo exportar: {ex.Message}";}
+        finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
     private void InitializeCaption()
