@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.6 — Native processing workflow (0.4.4–0.4.6)
+- Original/result previews with cell, row, whole-sheet and custom range scopes; four native operations.
+- Background processing, progress, cancellation, error reporting, stale-result invalidation.
+- Import processed PNG as independent new resource with preserved grid; source untouched. No automatic transfer of clips, offsets or anchors.
+- SL5 acceptance pending CI and manual tests.
+
 ## 0.4.3 — Native image processing foundation
 - Replace optional Python integration with dependency-free C# RGBA processing.
 - Pure per-cell transparent RGB cleanup, alpha threshold and horizontal/vertical mirroring, with validation, cancellation and progress contracts.

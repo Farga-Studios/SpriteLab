@@ -56,3 +56,6 @@ SL3 functional acceptance reported by user for 0.3.0.1. 0.3.0.2 usability pass: 
 
 ## SL5 — replanteamiento aprobado
 0.4.2 CI verde comunicado por el usuario. 0.4.3 sustituye la integración Python por procesamiento nativo C#. 0.4.4 herramientas y vista previa; 0.4.5 progreso/cancelación/errores; 0.4.6 incorporación de resultados como recursos derivados; 0.5.0 aceptación. No alterar fuentes originales. CI nuevo pendiente.
+
+## 0.4.6 — Native processing workflow
+0.4.4–0.4.6 implemented together. Tools > Procesamiento de imágenes. Compare source/result, cancel processing, import a separate PNG resource. No Python dependencies. CI/manual acceptance pending; SL5 0.5.0 follows.

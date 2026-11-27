@@ -8,6 +8,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using SpriteLab.Infrastructure;
 using SpriteLab.Core;
+using SpriteLab.Core.Processing;
 
 namespace SpriteLab.App.Views;
 
@@ -77,6 +78,44 @@ public partial class MainWindow : Window
         VersionText.Text = $"SpriteLab {GetVersion()} · SL4 editor";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
+    }
+
+    private async void OnProcessImages(object? sender, RoutedEventArgs e)
+    {
+        if (_importing || _active < 0 || _bitmap is null || _grid is null || _playback?.IsPlaying == true) return;
+        var sheet = _sheets[_active];
+        var grid = _grid;
+        var selected = _selected ?? 0;
+        var bitmap = _bitmap;
+        SetBusy(true);
+        Bitmap? candidate = null;
+        try
+        {
+            if (_sheets.Count >= 64) throw new InvalidDataException("Límite de recursos alcanzado.");
+            var pixels = ValidationPixels.Read(bitmap);
+            var result = await ProcessingWindow.RunAsync(this, grid, pixels, selected, sheet.Name, _lifetime.Token);
+            if (result is null || _lifetime.IsCancellationRequested) return;
+            var bytes = result.Png;
+            if (_sheets.Sum(s => (long)s.Png.Length) + bytes.Length > 256L * 1024 * 1024)
+                throw new InvalidDataException("Límite de recursos del proyecto alcanzado.");
+            using (var stream = new MemoryStream(bytes, writable: false))
+                bytes = await PngSource.ReadAsync(stream, _lifetime.Token);
+            candidate = await Task.Run(() => Decode(bytes), _lifetime.Token);
+            if (_lifetime.IsCancellationRequested) return;
+            var stem = Path.GetFileNameWithoutExtension(sheet.Name);
+            if (stem.Length > 140) stem = stem[..140];
+            var name = stem + "_procesado.png";
+            for (var n = 2; _sheets.Any(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)); n++)
+                name = stem + $"_procesado_{n}.png";
+            _sheets.Add(new ViewerSheet(Guid.NewGuid(), name, bytes, grid.Cell.Width, grid.Cell.Height));
+            ShowSheet(_sheets.Count - 1, candidate);
+            candidate = null;
+            RefreshResources(); RefreshClips(); MarkDirty();
+            StatusText.Text = $"Recurso nuevo · {result.ChangedPixels} píxeles modificados · Original intacto";
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo procesar: {ex.Message}"; }
+        finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
     private void InitializeCaption()
@@ -1275,6 +1314,7 @@ public partial class MainWindow : Window
         OnionPrevious.IsEnabled = OnionNext.IsEnabled = OnionOpacity.IsEnabled = OnionTint.IsEnabled = available && _playback?.IsPlaying != true;
         UpdateHistoryControls();
         ReplaceFrameButton.IsEnabled = editing;
+        ProcessingMenu.IsEnabled = !_importing && _grid is not null && _bitmap is not null && _playback?.IsPlaying != true;
         var playing = _playback?.IsPlaying == true;
         FrameEditPanel.IsEnabled = !_importing && !playing && _grid is not null && _selected.HasValue;
         FramePreview.CanMoveSprite = FrameEditPanel.IsEnabled && MoveSpriteCheck.IsChecked == true;
