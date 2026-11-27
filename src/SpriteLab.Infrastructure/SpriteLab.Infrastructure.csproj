@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="FargaStudios.Suite.Updater" Version="0.2.1" />
+    <PackageReference Include="FargaStudios.Suite.Updater" Version="0.3.0-rc.1" />
     <ProjectReference Include="../SpriteLab.Core/SpriteLab.Core.csproj" />
   </ItemGroup>
 </Project>
