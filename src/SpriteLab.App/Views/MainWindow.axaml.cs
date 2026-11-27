@@ -2081,7 +2081,18 @@ public partial class MainWindow : Window
     {
         if(_importing)return;
         SetBusy(true);
-        try{await UpdateWindow.ShowAsync(this,_lifetime.Token);}
+        try
+        {
+            var update=await UpdateWindow.ShowAsync(this,_lifetime.Token);
+            if(update is null||_lifetime.IsCancellationRequested)return;
+            if(!UpdateWindow.IsInstalled)throw new InvalidOperationException("Portable installation.");
+            if(_dirty&&!await ConfirmDiscard())return;
+            await Suite.Updater.InstallerHandoff.LaunchAsync(update,UpdateWindow.StagingRoot,_lifetime.Token);
+            _allowClose=true;
+            Close();
+        }
+        catch(OperationCanceledException){}
+        catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text=UiText.T("No se pudo iniciar la actualización: ")+ex.Message;}
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 

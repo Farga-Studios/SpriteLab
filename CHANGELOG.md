@@ -303,3 +303,7 @@
 - Record eight proposed architecture decisions and the implementation roadmap.
 - Establish the independent desktop-tool scope.
 - No application code or build verification yet.
+
+### 0.6.8 organization integration follow-up
+- Explicit installer handoff after pending project confirmation; installed/portable distinction and parent-process wait.
+- No automatic rollback or signed release published.

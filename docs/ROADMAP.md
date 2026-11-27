@@ -102,3 +102,6 @@ Signed manifest verification with pinned RSA public key, bounded downloads and S
 
 ## Organization integration
 Sealsworn/DevelopmentSuite private shared foundation 0.1.0; public DevelopmentSuite-Downloads uses per-product tags and signed channel indexes. Suite.Updater extracted as initial source snapshot, SpriteLab retains synchronized local implementation until versioned package integration is validated. No public release or key configured. Automatic handoff and rollback still pending.
+
+## Update lifecycle candidate
+Explicit verified installer handoff, project save/discard/cancel, per-user install detection, parent wait, interactive restart option. Portable updater is informational. Pinned key, automatic rollback, signed release baseline and CI/manual tests remain open.

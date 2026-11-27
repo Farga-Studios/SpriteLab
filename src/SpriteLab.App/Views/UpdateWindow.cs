@@ -23,7 +23,9 @@ internal static class UpdateWindow
         get{var v=typeof(UpdateWindow).Assembly.GetName().Version??new Version(0,0,0);return new Version(v.Major,v.Minor,Math.Max(0,v.Build));}
     }
     public static async Task<UpdateManifest?> CheckAsync(CancellationToken token)=>await Client().CheckAsync(Installed,token);
-    public static async Task ShowAsync(Window owner,CancellationToken token,UpdateManifest? known=null)
+    public static string StagingRoot=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"SpriteLab","Updates");
+    public static bool IsInstalled=>InstallerHandoff.IsInstalled(AppContext.BaseDirectory,"{B637E3EE-3A57-474F-9F87-C70E3F12AE3B}");
+    public static async Task<PreparedUpdate?> ShowAsync(Window owner,CancellationToken token,UpdateManifest? known=null)
     {
         using var lifetime=CancellationTokenSource.CreateLinkedTokenSource(token);
         var dialog=new SuiteDialog{Title=UiText.T("Actualizaciones"),Width=620,Height=430,CanResize=true};
@@ -32,6 +34,9 @@ internal static class UpdateWindow
         var progress=new ProgressBar{Minimum=0,Maximum=100,Height=10};
         var download=new Button{Content=UiText.T("Descargar instalador"),Classes={"primary"},IsEnabled=false};
         var close=new Button{Content=UiText.T("Cerrar")};
+        var install=new Button{Content=UiText.T("Instalar actualización"),IsEnabled=false,Classes={"primary"}};
+        PreparedUpdate? prepared=null;
+        install.Click+=(_,_)=>{if(prepared is not null)dialog.Close(prepared);};
         var client=Client();UpdateManifest? manifest=known;bool closed=false;
         close.Click+=(_,_)=>dialog.Close();
         dialog.Closed+=(_,_)=>{closed=true;lifetime.Cancel();};
@@ -41,22 +46,25 @@ internal static class UpdateWindow
                 manifest??=await client.CheckAsync(Installed,lifetime.Token);
                 if(closed)return;
                 if(manifest is null){status.Text=UiText.T("No hay actualizaciones disponibles.");return;}
-                status.Text=UiText.T("Nueva versión: ")+manifest.Version;notes.Text=manifest.Notes;download.IsEnabled=true;
+                status.Text=UiText.T("Nueva versión: ")+manifest.Version;notes.Text=manifest.Notes;download.IsEnabled=IsInstalled;
+                if(!IsInstalled)status.Text+=" · "+UiText.T("Versión portátil: descarga el ZIP de la nueva versión desde el repositorio oficial. No se instalará automáticamente.");
             }catch(OperationCanceledException){}catch(Exception ex){if(!closed)status.Text=UiText.T("No se pudo comprobar la actualización: ")+ex.Message;}
         };
         download.Click+=async(_,_)=>{
-            if(manifest is null)return;download.IsEnabled=false;
+            if(manifest is null)return;download.IsEnabled=false;install.IsEnabled=false;prepared=null;
             try{
                 status.Text=UiText.T("Descargando actualización…");
-                var path=await client.DownloadAsync(manifest,Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"SpriteLab","Updates"),new Progress<int>(v=>progress.Value=v),lifetime.Token);
+                var path=await client.DownloadAsync(manifest,StagingRoot,new Progress<int>(v=>progress.Value=v),lifetime.Token);
                 if(closed)return;
-                status.Text=UiText.T("Instalador verificado. Guarda tus proyectos, cierra SpriteLab y ejecuta el archivo: ")+path;
-                // Manual launch until close/restart and rollback have been validated.
+                prepared=new PreparedUpdate(manifest,path);
+                install.IsEnabled=IsInstalled;
+                status.Text=IsInstalled?UiText.T("Instalador verificado. Instalar cerrará SpriteLab después de confirmar los cambios pendientes."):
+                    UiText.T("Versión portátil: descarga el ZIP de la nueva versión desde el repositorio oficial. No se instalará automáticamente.");
             }catch(OperationCanceledException){}catch(Exception ex){if(!closed)status.Text=UiText.T("No se pudo descargar la actualización: ")+ex.Message;}
             finally{if(!closed)download.IsEnabled=true;}
         };
-        var body=new StackPanel{Spacing=12,Margin=new Avalonia.Thickness(20),Children={status,notes,progress,new WrapPanel{Orientation=Orientation.Horizontal,Children={download,close}}}};
+        var body=new StackPanel{Spacing=12,Margin=new Avalonia.Thickness(20),Children={status,notes,progress,new WrapPanel{Orientation=Orientation.Horizontal,Children={download,install,close}}}};
         dialog.Content=new ScrollViewer{Content=body};
-        await dialog.ShowDialog(owner);
+        return await dialog.ShowDialog<PreparedUpdate?>(owner);
     }
 }

@@ -344,5 +344,9 @@
   "No se pudo comprobar la actualización: ": "Update check failed: ",
   "Descargando actualización…": "Downloading update…",
   "Instalador verificado. Guarda tus proyectos, cierra SpriteLab y ejecuta el archivo: ": "Installer verified. Save your projects, close SpriteLab and run this file: ",
-  "No se pudo descargar la actualización: ": "Update download failed: "
+  "No se pudo descargar la actualización: ": "Update download failed: ",
+  "Instalar actualización": "Install update",
+  "Instalador verificado. Instalar cerrará SpriteLab después de confirmar los cambios pendientes.": "Installer verified. Installing will close SpriteLab after confirming unsaved changes.",
+  "Versión portátil: descarga el ZIP de la nueva versión desde el repositorio oficial. No se instalará automáticamente.": "Portable version: download the new ZIP from the official repository. It will not install automatically.",
+  "No se pudo iniciar la actualización: ": "Could not start update: "
 }
