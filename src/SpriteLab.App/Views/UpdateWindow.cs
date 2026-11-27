@@ -46,7 +46,6 @@ internal static class UpdateWindow
     {
         if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
         using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
-        service.RequireRecovery(transactionId);
         await service.RollbackAsync(transactionId, Installed, StagingRoot, dataCompatible, token);
     }
 
@@ -67,7 +66,7 @@ internal static class UpdateWindow
         token.ThrowIfCancellationRequested();
         var transaction = service.Begin(Installed, update);
         service.MarkHandoff(transaction.Id);
-        await InstallerHandoff.LaunchAsync(update, StagingRoot, token);
+        await InstallerHandoff.LaunchAsync(update, StagingRoot, token, transactionId: transaction.Id);
     }
 
     public static bool IsInstalled=>InstallerHandoff.IsInstalled(AppContext.BaseDirectory,"{B637E3EE-3A57-474F-9F87-C70E3F12AE3B}");
