@@ -424,3 +424,9 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Signing keys must remain outside the repository.
+*.pem
+!src/SpriteLab.App/Updates/PublicKey.pem
+*.key
+*.p12
