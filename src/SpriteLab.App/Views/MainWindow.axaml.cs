@@ -77,7 +77,33 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = UiText.T("Ajustar");
         VersionText.Text = (UiText.IsEnglish ? $"SpriteLab {GetVersion()} · SL7 polish" : $"SpriteLab {GetVersion()} · SL7 acabado");
-        Opened += async (_, _) => { try { var update=await UpdateWindow.CheckAsync(_lifetime.Token); if(update is not null&&!_lifetime.IsCancellationRequested&&!_importing) StatusText.Text=UiText.T("Nueva versión: ")+update.Version+" · "+UiText.T("Actualizaciones"); } catch(Exception) { /* Offline or invalid metadata never blocks startup. */ } };
+        Opened += async (_, _) =>
+        {
+            try
+            {
+                if (UpdateWindow.IsInstalled)
+                {
+                    var assessment = UpdateWindow.AssessStartup();
+                    if (assessment.Status is not (Suite.Updater.RecoveryStatus.NoTransaction or Suite.Updater.RecoveryStatus.Healthy or Suite.Updater.RecoveryStatus.Aborted or Suite.Updater.RecoveryStatus.RolledBack))
+                    {
+                        StatusText.Text = UiText.IsEnglish ? "An update requires verification or recovery." : "Una actualización requiere verificación o recuperación.";
+                        return;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                StatusText.Text = UiText.IsEnglish ? "Update recovery state unavailable." : "Estado de recuperación no disponible.";
+                return;
+            }
+            try
+            {
+                var update = await UpdateWindow.CheckAsync(_lifetime.Token);
+                if (update is not null && !_lifetime.IsCancellationRequested && !_importing)
+                    StatusText.Text = UiText.T("Nueva versión: ") + update.Version + " · " + UiText.T("Actualizaciones");
+            }
+            catch (Exception) { /* Offline or invalid metadata never blocks startup. */ }
+        };
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
