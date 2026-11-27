@@ -30,6 +30,26 @@ internal static class UpdateWindow
         return service.Assess(Installed);
     }
 
+    public static void CancelPrepared(Guid transactionId)
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.CancelPrepared(transactionId, Installed);
+    }
+
+    public static void ConfirmRollbackHealth(Guid transactionId)
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.ConfirmRollbackHealthy(transactionId, Installed);
+    }
+
+    public static async Task RollbackAsync(Guid transactionId, bool dataCompatible, CancellationToken token)
+    {
+        if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.RequireRecovery(transactionId);
+        await service.RollbackAsync(transactionId, Installed, StagingRoot, dataCompatible, token);
+    }
+
     public static void ConfirmStartupHealth(Guid transactionId)
     {
         using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
