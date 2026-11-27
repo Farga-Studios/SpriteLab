@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  packages: read
 jobs:
   build:
     runs-on: windows-latest
@@ -15,6 +16,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      - name: Configure private NuGet authentication
+        shell: pwsh
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $env:NuGetPackageSourceCredentials_Farga = "Username=$env:GITHUB_ACTOR;Password=$env:NUGET_AUTH_TOKEN;ValidAuthenticationTypes=Basic"
+          "NuGetPackageSourceCredentials_Farga=$env:NuGetPackageSourceCredentials_Farga" >> $env:GITHUB_ENV
       - name: SDK
         run: dotnet --info
       - name: Restore and audit direct and transitive packages
