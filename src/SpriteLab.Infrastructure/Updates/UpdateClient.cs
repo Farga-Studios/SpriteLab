@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace Suite.Updater;
 
 public sealed record UpdateManifest(string Product,string Channel,string Version,string FileName,long Bytes,string Sha256,string Notes);
-public sealed class UpdateClient(HttpClient http, Uri manifestUri, string publicKeyPem, string product, string channel)
+public sealed class UpdateClient(HttpClient http, Uri manifestUri, string publicKeyPem, string product, string channel, string repositoryOwner="Farga-Studios", string? repositoryName=null)
 {
     private static readonly JsonSerializerOptions Json=new(){PropertyNamingPolicy=JsonNamingPolicy.SnakeCaseLower,UnmappedMemberHandling=JsonUnmappedMemberHandling.Disallow};
     public bool Configured=>!string.IsNullOrWhiteSpace(publicKeyPem);
@@ -35,9 +35,10 @@ public sealed class UpdateClient(HttpClient http, Uri manifestUri, string public
     }
     private Uri PackageUri(UpdateManifest m)
     {
-        var slug=product.ToLowerInvariant();
-        if(!slug.All(c=>char.IsAsciiLetterOrDigit(c)||c=='-'))throw new InvalidDataException("Invalid product slug.");
-        return new Uri($"https://github.com/Sealsworn/DevelopmentSuite-Downloads/releases/download/{slug}-v{m.Version}/{m.FileName}");
+        var repository=repositoryName??product;
+        static bool ValidSegment(string value)=>!string.IsNullOrEmpty(value)&&value.All(c=>char.IsAsciiLetterOrDigit(c)||c=='-'||c=='_');
+        if(!ValidSegment(repositoryOwner)||!ValidSegment(repository))throw new InvalidDataException("Invalid repository configuration.");
+        return new Uri($"https://github.com/{repositoryOwner}/{repository}/releases/download/v{m.Version}/{m.FileName}");
     }
     private void Validate(UpdateManifest m)
     {

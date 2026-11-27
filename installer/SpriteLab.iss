@@ -8,7 +8,8 @@
 AppId={{B637E3EE-3A57-474F-9F87-C70E3F12AE3B}
 AppName=SpriteLab
 AppVersion={#AppVersion}
-AppPublisher=SEALSWORN
+AppPublisher=Farga Studios
+AppPublisherURL=https://github.com/Farga-Studios/SpriteLab
 DefaultDirName={localappdata}\Programs\SpriteLab
 DefaultGroupName=SpriteLab
 PrivilegesRequired=lowest

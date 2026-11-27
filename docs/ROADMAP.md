@@ -105,3 +105,6 @@ Sealsworn/DevelopmentSuite private shared foundation 0.1.0; public DevelopmentSu
 
 ## Update lifecycle candidate
 Explicit verified installer handoff, project save/discard/cancel, per-user install detection, parent wait, interactive restart option. Portable updater is informational. Pinned key, automatic rollback, signed release baseline and CI/manual tests remain open.
+
+## Farga Studios migration
+SpriteLab and DevelopmentSuite moved to Farga-Studios. Future public releases use SpriteLab's own repository, vX.Y.Z tags and signed channels/stable/update.json metadata. The central downloads repository is legacy and must not be removed until compatibility checks are complete. No public release, signing key or CI acceptance is implied by this change.
