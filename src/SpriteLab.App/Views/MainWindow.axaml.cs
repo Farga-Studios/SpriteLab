@@ -84,6 +84,11 @@ public partial class MainWindow : Window
                 if (UpdateWindow.IsInstalled)
                 {
                     var assessment = UpdateWindow.AssessStartup();
+                    if (assessment.Status == Suite.Updater.RecoveryStatus.HealthCheckRequired && assessment.Transaction is not null)
+                    {
+                        StatusText.Text = UiText.IsEnglish ? "Test the application, then open Updates to confirm its health." : "Prueba la aplicación y abre Actualizaciones para confirmar su funcionamiento.";
+                        return;
+                    }
                     if (assessment.Status is not (Suite.Updater.RecoveryStatus.NoTransaction or Suite.Updater.RecoveryStatus.Healthy or Suite.Updater.RecoveryStatus.Aborted or Suite.Updater.RecoveryStatus.RolledBack))
                     {
                         StatusText.Text = UiText.IsEnglish ? "An update requires verification or recovery." : "Una actualización requiere verificación o recuperación.";
@@ -2109,6 +2114,27 @@ public partial class MainWindow : Window
         SetBusy(true);
         try
         {
+            if (UpdateWindow.IsInstalled)
+            {
+                var assessment = UpdateWindow.AssessStartup();
+                if (assessment.Status == Suite.Updater.RecoveryStatus.HealthCheckRequired && assessment.Transaction is not null)
+                {
+                    var dialog = new SuiteDialog { Title = UiText.IsEnglish ? "Verify update" : "Verificar actualización", Width = 520, Height = 250, CanResize = false };
+                    var confirm = new Button { Content = UiText.IsEnglish ? "Confirm working version" : "Confirmar funcionamiento", Classes = { "primary" } };
+                    var later = new Button { Content = UiText.IsEnglish ? "Later" : "Más tarde" };
+                    confirm.Click += (_, _) => dialog.Close(true);
+                    later.Click += (_, _) => dialog.Close(false);
+                    dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16, Children = {
+                        new TextBlock { Text = UiText.IsEnglish ? "Confirm only after the installer has finished and you have tested opening, editing and exporting a sample project successfully." : "Confirma solo cuando el instalador haya terminado y hayas probado correctamente la apertura, edición y exportación de un proyecto de prueba.", TextWrapping = TextWrapping.Wrap },
+                        new WrapPanel { Children = { later, confirm } } } };
+                    if (await dialog.ShowDialog<bool>(this))
+                    {
+                        UpdateWindow.ConfirmStartupHealth(assessment.Transaction.Id);
+                        StatusText.Text = UiText.IsEnglish ? "Update confirmed." : "Actualización confirmada.";
+                    }
+                    return;
+                }
+            }
             var update=await UpdateWindow.ShowAsync(this,_lifetime.Token);
             if(update is null||_lifetime.IsCancellationRequested)return;
             if(!UpdateWindow.IsInstalled)throw new InvalidOperationException("Portable installation.");
