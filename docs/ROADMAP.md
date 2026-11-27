@@ -50,3 +50,6 @@ SL3 functional acceptance reported by user for 0.3.0.1. 0.3.0.2 usability pass: 
 
 ## 0.4.1 — SL5 foundation and custom window chrome
 0.4.0 CI green reported by user; manual acceptance remains pending. At user request, integrate main caption and begin optional adapter architecture. See docs/SL5-ADAPTER.md. 0.4.2 Python settings and 0.4.3 actual contract integration remain pending. Retest window drag/double click, maximize/restore, minimize, resize edges, menu access, Alt+F4 and close with dirty project on Windows. No new CI verified yet.
+
+## 0.4.2
+0.4.1 accepted by user (todo ok). Python configuration implemented and testable. 0.4.3 remains blocked by unverified Pipeline CLI contract; no repository or code search match found. CI and manual verification pending.

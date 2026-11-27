@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2 — Optional Python configuration
+- Tools > Configure Python: choose executable, verify Python 3, save per-user settings independently of projects.
+- Cancel and timeout support; missing interpreter does not block core editor.
+- Settings round-trip and missing executable tests. Actual Pipeline CLI integration pending contract verification.
+
 ## 0.4.1 — Integrated title bar and optional adapter foundation
 - Main window caption integrated with menu, icon and dark palette, native resize border retained; minimize, maximize/restore, close, drag and double-click.
 - Initial optional Python probe isolated in Infrastructure. No pipeline command assumed or invoked; contract verification pending.

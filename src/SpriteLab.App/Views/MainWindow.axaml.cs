@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using SpriteLab.Infrastructure;
+using SpriteLab.Infrastructure.Pipeline;
 using SpriteLab.Core;
 
 namespace SpriteLab.App.Views;
@@ -77,6 +78,72 @@ public partial class MainWindow : Window
         VersionText.Text = $"SpriteLab {GetVersion()} · SL4 editor";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
+    }
+
+    private async void OnConfigurePython(object? sender, RoutedEventArgs e)
+    {
+        if (_importing) return;
+        SetBusy(true);
+        try
+        {
+            var settings = new PythonSettings();
+            var message = "Python es opcional. Introduce python o la ruta completa a python.exe.";
+            try { settings = await PythonSettings.LoadAsync(PythonSettings.DefaultPath, _lifetime.Token); }
+            catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException)
+            { message = $"No se pudo leer la configuración: {ex.Message}"; }
+            var input = new TextBox { Text = settings.Executable, Watermark = "python o ruta a python.exe" };
+            var hint = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap };
+            var test = new Button { Content = "Comprobar" };
+            var save = new Button { Content = "Guardar", IsEnabled = false };
+            var cancel = new Button { Content = "Cancelar" };
+            var dialog = new Window { Title = "Configurar Python", Width = 560, Height = 280,
+                Background = UiPalette.Window, Foreground = UiPalette.Text,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            using var dialogLifetime = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            string? verified = null;
+            dialog.Closed += (_, _) => dialogLifetime.Cancel();
+            input.TextChanged += (_, _) => { verified = null; save.IsEnabled = false; };
+            test.Click += async (_, _) =>
+            {
+                var executable = input.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(executable)) { hint.Text = "Indica un ejecutable."; return; }
+                input.IsEnabled = test.IsEnabled = save.IsEnabled = false;
+                hint.Text = "Comprobando Python…";
+                try
+                {
+                    var result = await PythonProbe.CheckAsync(executable, dialogLifetime.Token);
+                    if (dialogLifetime.IsCancellationRequested) return;
+                    verified = result.Available ? executable : null;
+                    hint.Text = result.Available ? result.Version + " · " + result.Message : result.Message;
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { if (!dialogLifetime.IsCancellationRequested) hint.Text = ex.Message; }
+                finally
+                {
+                    if (!dialogLifetime.IsCancellationRequested)
+                    { input.IsEnabled = test.IsEnabled = true; save.IsEnabled = verified is not null; }
+                }
+            };
+            save.Click += async (_, _) =>
+            {
+                if (verified is null) return;
+                input.IsEnabled = test.IsEnabled = save.IsEnabled = false;
+                try
+                {
+                    await new PythonSettings(verified).SaveAsync(PythonSettings.DefaultPath, dialogLifetime.Token);
+                    if (!dialogLifetime.IsCancellationRequested) dialog.Close(true);
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { if (!dialogLifetime.IsCancellationRequested) { hint.Text = ex.Message; input.IsEnabled = test.IsEnabled = save.IsEnabled = true; } }
+            };
+            cancel.Click += (_, _) => dialog.Close(false);
+            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
+                Children = { hint, input, new WrapPanel { Orientation = Orientation.Horizontal, Children = { test, save, cancel } } } };
+            if (await dialog.ShowDialog<bool>(this)) StatusText.Text = "Configuración de Python guardada.";
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = ex.Message; }
+        finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
 
     private void InitializeCaption()
