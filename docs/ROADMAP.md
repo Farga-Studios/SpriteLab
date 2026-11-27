@@ -108,3 +108,6 @@ Explicit verified installer handoff, project save/discard/cancel, per-user insta
 
 ## Farga Studios migration
 SpriteLab and DevelopmentSuite moved to Farga-Studios. Future public releases use SpriteLab's own repository, vX.Y.Z tags and signed channels/stable/update.json metadata. The central downloads repository is legacy and must not be removed until compatibility checks are complete. No public release, signing key or CI acceptance is implied by this change.
+
+## Shared package integration candidate
+Replace local updater implementation with pinned FargaStudios.Suite.Updater 0.2.0. Private feed publication and Actions read access are prerequisites. CI and installer acceptance pending. No application release or visibility change.

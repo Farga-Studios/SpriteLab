@@ -10,3 +10,5 @@ Features: PNG import, grid, projects, animation timing, onion skin, nondestructi
 Planned MIT license; public source release pending review.
 
 Shared foundation: [DevelopmentSuite](https://github.com/Farga-Studios/DevelopmentSuite). Official distribution: [SpriteLab Releases](https://github.com/Farga-Studios/SpriteLab/releases) (planned; no public release yet).
+
+Updater integration candidate: consumes `FargaStudios.Suite.Updater` 0.2.0 from the private organization feed. See build instructions. No signed public update has been published.
