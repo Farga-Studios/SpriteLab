@@ -54,7 +54,7 @@ internal static class ProcessingWindow
         var close = new Button { Content = "Cerrar" };
         var before = new SheetPreview { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var after = new SheetPreview { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        before.SetImage(original); before.SetGrid(grid);
+        before.SetImage(original); before.SetGrid(grid); before.SetSelection(selected);
         int zoom = 1;
         void SetZoom(int z)
         {
@@ -69,15 +69,20 @@ internal static class ProcessingWindow
         {
             result = null; add.IsEnabled = false;
             after.SetImage(null); processed?.Dispose(); processed = null;
+            progress.Value = 0;
+            status.Text = "Genera una nueva vista previa.";
         }
         void SetWorking(bool busy)
         {
-            operation.IsEnabled = scope.IsEnabled = range.IsEnabled = threshold.IsEnabled = run.IsEnabled = !busy;
+            operation.IsEnabled = scope.IsEnabled = run.IsEnabled = !busy;
+            range.IsEnabled = !busy && scope.SelectedIndex == 3;
+            threshold.IsEnabled = !busy && operation.SelectedIndex == 1;
             stop.IsEnabled = busy;
             add.IsEnabled = !busy && result is { ChangedPixels: > 0 };
         }
-        operation.SelectionChanged += (_, _) => InvalidateResult();
-        scope.SelectionChanged += (_, _) => InvalidateResult();
+        operation.SelectionChanged += (_, _) => { InvalidateResult(); SetWorking(false); };
+        scope.SelectionChanged += (_, _) => { InvalidateResult(); SetWorking(false); };
+        SetWorking(false);
         range.TextChanged += (_, _) => InvalidateResult();
         threshold.TextChanged += (_, _) => InvalidateResult();
         run.Click += async (_, _) =>
@@ -115,7 +120,7 @@ internal static class ProcessingWindow
                         progress.Value = value;
                 });
                 var completed = await Task.Run(() => SpriteProcessor.Run(grid, source, request, reporter, job.Token), job.Token);
-                if (job.IsCancellationRequested || lifetime.IsCancellationRequested) return;
+                job.Token.ThrowIfCancellationRequested();
                 processed = CreateBitmap(grid, completed.Rgba);
                 after.SetImage(processed); after.SetGrid(grid); after.SetZoom(zoom);
                 result = completed; progress.Value = 100;
@@ -131,16 +136,22 @@ internal static class ProcessingWindow
             }
         };
         stop.Click += (_, _) => running?.Cancel();
-        add.Click += (_, _) =>
+        add.Click += async (_, _) =>
         {
             if (running is not null || processed is null || result is not { ChangedPixels: > 0 }) return;
+            var snapshot = result;
+            using var job = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+            running = job; SetWorking(true);
+            status.Text = "Codificando PNG sin pérdida…"; progress.IsIndeterminate = true;
             try
             {
-                using var stream = new MemoryStream();
-                processed.Save(stream);
-                dialog.Close(new ProcessingImport(stream.ToArray(), result.ChangedPixels));
+                var png = await Task.Run(() => RgbaPng.Encode(grid.Image.Width, grid.Image.Height, snapshot.Rgba, job.Token), job.Token);
+                job.Token.ThrowIfCancellationRequested();
+                dialog.Close(new ProcessingImport(png, snapshot.ChangedPixels));
             }
-            catch (Exception ex) { status.Text = $"No se pudo codificar PNG: {ex.Message}"; }
+            catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = "Codificación cancelada. Original intacto."; }
+            catch (Exception ex) { if (!lifetime.IsCancellationRequested) status.Text = $"No se pudo codificar PNG: {ex.Message}"; }
+            finally { running = null; if (!lifetime.IsCancellationRequested) { progress.IsIndeterminate = false; SetWorking(false); } }
         };
         close.Click += (_, _) => dialog.Close(null);
         dialog.Closed += (_, _) => lifetime.Cancel();

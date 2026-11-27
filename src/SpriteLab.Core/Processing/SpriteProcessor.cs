@@ -26,6 +26,7 @@ public static class SpriteProcessor
         var result = source.ToArray();
         var changed = 0;
         var completed = 0;
+        var lastProgress = 0;
         progress?.Report(0);
         foreach (var index in cells)
         {
@@ -53,7 +54,8 @@ public static class SpriteProcessor
                 }
             }
             completed++;
-            progress?.Report((int)(100L * completed / cells.Length));
+            var percent = (int)(100L * completed / cells.Length);
+            if (percent != lastProgress) { progress?.Report(percent); lastProgress = percent; }
         }
         token.ThrowIfCancellationRequested();
         return new(result, changed, completed);

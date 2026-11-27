@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — SL5 acceptance candidate
+- Preserve exact RGBA on derived PNG encoding, independent of platform bitmap premultiplication.
+- Encode in background with cancellation, bounded progress callbacks, reset stale preview, context-sensitive input controls.
+- Regression tests for PNG bytes, alpha endpoints, progress and mid-job cancellation.
+- Acceptance remains pending CI and manual checks.
+
 ## 0.4.6 — Native processing workflow (0.4.4–0.4.6)
 - Original/result previews with cell, row, whole-sheet and custom range scopes; four native operations.
 - Background processing, progress, cancellation, error reporting, stale-result invalidation.

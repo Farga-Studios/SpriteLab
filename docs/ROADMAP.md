@@ -65,3 +65,6 @@ Antes de SpriteLab 1.0.0, añadir SL7 0.6.8: actualización integrada reutilizab
 
 ## Suite — requisitos de integración futuros
 TileLab: editor de tilesets y salas especiales, compatibilidad TMJ inicial y validación de sockets, colisiones y spawn points. DungeonLab: ejecutar el mismo generador versionado que SEALSWORN, con semilla, zona, reglas y catálogo idénticos; pruebas de equivalencia determinista. Herramientas independientes con adaptadores por juego. Reutilizar actualizador y componentes visuales comunes.
+
+## 0.5.0 — SL5 acceptance candidate
+Delivery 1: review processing lifecycle, preserve RGBA in PNG encoder, bound progress notifications and add regression tests. CI and manual acceptance pending. Do not mark SL5 accepted or start SL6 without acceptance decision. Distribution repository proposal remains separate; no repository visibility changed.

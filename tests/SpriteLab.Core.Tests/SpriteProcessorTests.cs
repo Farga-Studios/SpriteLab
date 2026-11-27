@@ -46,4 +46,41 @@ public sealed class SpriteProcessorTests
         Assert.Throws<ArgumentException>(()=>SpriteProcessor.Run(Grid(),pixels,new(SpriteOperation.MirrorHorizontal,[2])));
         Assert.Throws<OperationCanceledException>(()=>SpriteProcessor.Run(Grid(),pixels,new(SpriteOperation.MirrorHorizontal,[0]),token:new CancellationToken(true)));
     }
+    private sealed class Reporter(Action<int> callback) : IProgress<int>
+    {
+        public void Report(int value) => callback(value);
+    }
+
+    [Fact]
+    public void ProgressIsBoundedAndMonotonic()
+    {
+        var grid = new CellGrid(new PixelSize(200,1),new PixelSize(1,1));
+        var values = new List<int>();
+        var result = SpriteProcessor.Run(grid,new byte[800],new(SpriteOperation.CleanTransparentRgb,Enumerable.Range(0,200).ToArray()),new Reporter(values.Add));
+        Assert.Equal(Enumerable.Range(0,101),values);
+        Assert.Equal(0,result.ChangedPixels);
+    }
+
+    [Fact]
+    public void CancellationDuringProcessingPreservesSource()
+    {
+        using var cts = new CancellationTokenSource();
+        byte[] pixels = [1,2,3,255,4,5,6,255,7,8,9,255,10,11,12,255];
+        var before = pixels.ToArray();
+        Assert.Throws<OperationCanceledException>(()=>SpriteProcessor.Run(Grid(),pixels,new(SpriteOperation.MirrorHorizontal,[0,1]),new Reporter(p=>{if(p>=50)cts.Cancel();}),cts.Token));
+        Assert.Equal(before,pixels);
+    }
+
+    [Theory]
+    [InlineData(0,255)]
+    [InlineData(1,255)]
+    [InlineData(255,0)]
+    public void AlphaThresholdEndpoints(int threshold,int expected)
+    {
+        byte[] pixels=[0,0,0,0,1,2,3,1,4,5,6,255,7,8,9,127];
+        var result=SpriteProcessor.Run(Grid(),pixels,new(SpriteOperation.AlphaThreshold,[0,1],threshold));
+        Assert.Equal(0,result.Rgba[3]);
+        Assert.Equal(expected,result.Rgba[7]);
+        Assert.Equal(255,result.Rgba[11]);
+    }
 }

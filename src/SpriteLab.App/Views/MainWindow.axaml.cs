@@ -75,7 +75,7 @@ public partial class MainWindow : Window
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = "Ajustar";
-        VersionText.Text = $"SpriteLab {GetVersion()} · SL4 editor";
+        VersionText.Text = $"SpriteLab {GetVersion()} · SL5 procesamiento";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
