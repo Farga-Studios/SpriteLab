@@ -15,6 +15,19 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      - uses: actions/checkout@v4
+        with:
+          repository: Farga-Studios/DevelopmentSuite
+          ref: f80f54366c61af2c3caf944ea935d638ae8d406e
+          path: .candidate-suite
+          persist-credentials: false
+      - name: Build pinned updater candidate
+        shell: pwsh
+        run: |
+          dotnet pack .candidate-suite/src/Suite.Updater/Suite.Updater.csproj -c Release -o "$env:RUNNER_TEMP/suite-feed"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet nuget add source "$env:RUNNER_TEMP/suite-feed" --name suite-candidate
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Read candidate version
         shell: pwsh
         run: |
