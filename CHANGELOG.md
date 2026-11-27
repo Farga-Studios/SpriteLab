@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 — SL7 visual foundation (delivery 5, first increment)
+- Shared caption and dialog shell with hover/pressed close states, consistent dark palette and Escape dismissal.
+- Initial Spanish/English resource catalog and persistent language preference, applied on restart.
+- Remaining translation coverage, visual QA, performance and accessibility work follow before 0.6.5. Existing logo retained pending review.
+
 ## 0.6.0 — SL6 acceptance candidate
 - SHA-256 manifest and verification before publication; explicit verification command.
 - Incomplete-export markers and non-destructive recovery of abandoned staging directories.

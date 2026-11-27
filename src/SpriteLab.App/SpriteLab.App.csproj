@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets/SpriteLab.png" />
+    <EmbeddedResource Include="Localization/en.json" LogicalName="SpriteLab.Localization.en.json" />
     <ProjectReference Include="../SpriteLab.Core/SpriteLab.Core.csproj" />
     <ProjectReference Include="../SpriteLab.Infrastructure/SpriteLab.Infrastructure.csproj" />
     <PackageReference Include="Avalonia" Version="11.3.18" />

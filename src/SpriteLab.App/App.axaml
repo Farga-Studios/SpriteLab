@@ -4,6 +4,54 @@
              RequestedThemeVariant="Dark">
   <Application.Styles>
     <FluentTheme />
+    <Style Selector="Button.captionButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.captionButton:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#394352" />
+    </Style>
+    <Style Selector="Button.captionButton:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#29313D" />
+    </Style>
+    <Style Selector="Button.captionClose:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#C42B36" />
+    </Style>
+  
+    <Style Selector="Button.captionClose:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#A91E2C" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="#42678D" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#527DA7" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#345475" />
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#C42B36" />
+    </Style>
+    <Style Selector="Button.danger:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#A91E2C" />
+    </Style>
+    <Style Selector="Window">
+      <Setter Property="Background" Value="#171B22" />
+      <Setter Property="Foreground" Value="#E3E9F0" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
     <Style Selector="TextBlock.panelHeading">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />

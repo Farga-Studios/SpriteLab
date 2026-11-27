@@ -35,7 +35,7 @@ public partial class MainWindow : Window
     private bool _syncingScrubber;
     private bool _playIconActive;
     private Guid _projectId = Guid.NewGuid();
-    private string _projectName = "Proyecto";
+    private string _projectName = UiText.T("Proyecto");
     private string? _folder;
     private string? _manifestHash;
     private bool _dirty;
@@ -52,6 +52,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        UiTranslate.StaticControls(this);
         InitializeToolbarIcons();
         InitializeCaption();
         _editorReady = true;
@@ -74,7 +75,7 @@ public partial class MainWindow : Window
         LoopCheck.PropertyChanged += (_, e) => { if (e.Property == CheckBox.IsCheckedProperty) UpdateOnion(); };
         Preview.PointerWheelChanged += OnPreviewWheel;
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
-        FramePreviewZoom.Text = "Ajustar";
+        FramePreviewZoom.Text = UiText.T("Ajustar");
         VersionText.Text = $"SpriteLab {GetVersion()} · SL6 exportación";
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
@@ -132,9 +133,9 @@ public partial class MainWindow : Window
             if(folder is null||_lifetime.IsCancellationRequested)return;
             using var job=CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             var progress=new ProgressBar{Minimum=0,Maximum=100,IsIndeterminate=!choice.Profile.AllSheets,Height=12};
-            var status=new TextBlock{Text="Exportando…",TextWrapping=TextWrapping.Wrap};
-            var cancel=new Button{Content="Cancelar"};cancel.Click+=(_,_)=>{job.Cancel();cancel.IsEnabled=false;status.Text="Cancelando…";};
-            var dialog=new Window{Title="Exportación",Width=460,Height=180,CanResize=false,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+            var status=new TextBlock{Text=UiText.T("Exportando…"),TextWrapping=TextWrapping.Wrap};
+            var cancel=new Button{Content=UiText.T("Cancelar")};cancel.Click+=(_,_)=>{job.Cancel();cancel.IsEnabled=false;status.Text=UiText.T("Cancelando…");};
+            var dialog=new SuiteDialog {Title=UiText.T("Exportación"),Width=460,Height=180,CanResize=false,WindowStartupLocation=WindowStartupLocation.CenterOwner};
             dialog.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={status,progress,cancel}};
             bool finished=false;dialog.Closing+=(_,args)=>{if(!finished){args.Cancel=true;job.Cancel();}};
             var sheets=_sheets.Where(s=>s.CellWidth.HasValue&&s.CellHeight.HasValue&&
@@ -156,12 +157,12 @@ public partial class MainWindow : Window
                 }catch(Exception ex){error=ex;}finally{finished=true;dialog.Close();}
             };
             await dialog.ShowDialog(this);
-            if(error is OperationCanceledException){StatusText.Text="Exportación cancelada.";return;}
+            if(error is OperationCanceledException){StatusText.Text=UiText.T("Exportación cancelada.");return;}
             if(error is not null)throw error;
             if(outcome is null||_lifetime.IsCancellationRequested)return;
             StatusText.Text=$"Exportados {outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles recortados · {outcome.Folder}";
-            var done=new Window{Title="Exportación completada",Width=570,Height=210,WindowStartupLocation=WindowStartupLocation.CenterOwner};
-            var close=new Button{Content="Aceptar"};close.Click+=(_,_)=>done.Close();
+            var done=new SuiteDialog {Title=UiText.T("Exportación completada"),Width=570,Height=210,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+            var close=new Button{Content=UiText.T("Aceptar")};close.Click+=(_,_)=>done.Close();
             done.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={
                 new TextBlock{Text=$"{outcome.Files} archivos · {outcome.ClippedVisiblePixels} píxeles visibles recortados.",TextWrapping=TextWrapping.Wrap},
                 new TextBlock{Text=outcome.Folder,TextWrapping=TextWrapping.Wrap},close}};
@@ -180,7 +181,7 @@ public partial class MainWindow : Window
             var folder=await PickFolder("Selecciona una exportación con integrity.json");
             if(folder is null)return;
             await Task.Run(()=>ExportIntegrity.VerifyAsync(folder,_lifetime.Token),_lifetime.Token);
-            StatusText.Text="Integridad verificada: todos los archivos coinciden.";
+            StatusText.Text=UiText.T("Integridad verificada: todos los archivos coinciden.");
         }catch(OperationCanceledException){}
         catch(Exception ex){if(!_lifetime.IsCancellationRequested)StatusText.Text="Verificación fallida: "+ex.Message;}
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
@@ -194,9 +195,9 @@ public partial class MainWindow : Window
             var folder=await PickFolder("Carpeta padre de exportaciones");
             if(folder is null)return;
             var candidates=ExportRecovery.Find(folder);
-            if(candidates.Length==0){StatusText.Text="No hay exportaciones incompletas reconocidas.";return;}
-            var dialog=new Window{Title="Recuperación",Width=560,Height=230,WindowStartupLocation=WindowStartupLocation.CenterOwner};
-            var yes=new Button{Content="Apartar incompletas"};var no=new Button{Content="Cancelar"};
+            if(candidates.Length==0){StatusText.Text=UiText.T("No hay exportaciones incompletas reconocidas.");return;}
+            var dialog=new SuiteDialog {Title=UiText.T("Recuperación"),Width=560,Height=230,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+            var yes=new Button{Content=UiText.T("Apartar incompletas")};var no=new Button{Content=UiText.T("Cancelar")};
             yes.Click+=(_,_)=>dialog.Close(true);no.Click+=(_,_)=>dialog.Close(false);
             dialog.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={
                 new TextBlock{Text=$"Se detectaron {candidates.Length} carpetas incompletas. Se renombrarán las inactivas para revisión manual; no se borrará ningún archivo.",TextWrapping=TextWrapping.Wrap},
@@ -209,10 +210,33 @@ public partial class MainWindow : Window
         finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
     }
 
+    private async void OnPreferences(object? sender,RoutedEventArgs e)
+    {
+        if(_importing)return;
+        SetBusy(true);
+        try
+        {
+            var options=new[]{UiText.T("Idioma del sistema"),"Español","English"};
+            var language=new ComboBox{ItemsSource=options,SelectedIndex=UiText.Preference=="es"?1:UiText.Preference=="en"?2:0};
+            var dialog=new SuiteDialog{Title=UiText.T("Preferencias"),Width=480,Height=210,CanResize=false};
+            var save=new Button{Content=UiText.T("Guardar"),Classes={"primary"}};
+            var cancel=new Button{Content=UiText.T("Cancelar")};
+            save.Click+=(_,_)=>dialog.Close(language.SelectedIndex);cancel.Click+=(_,_)=>dialog.Close(-1);
+            dialog.Content=new StackPanel{Margin=new Avalonia.Thickness(20),Spacing=12,Children={
+                new TextBlock{Text=UiText.T("Idioma"),FontWeight=FontWeight.SemiBold},language,
+                new TextBlock{Text=UiText.T("Selecciona el idioma. Se aplicará al reiniciar SpriteLab."),TextWrapping=TextWrapping.Wrap},
+                new WrapPanel{Orientation=Orientation.Horizontal,Children={save,cancel}}}};
+            var selected=await dialog.ShowDialog<int?>(this);
+            if(selected is >=0 and <=2){UiText.Save(new[]{"system","es","en"}[selected.Value]);StatusText.Text=UiText.T("Preferencias guardadas. Reinicia SpriteLab para aplicar el idioma.");}
+        }
+        catch(Exception ex){StatusText.Text=UiText.T("No se pudo guardar la preferencia.")+" "+ex.Message;}
+        finally{if(!_lifetime.IsCancellationRequested)SetBusy(false);}
+    }
+
     private void InitializeCaption()
     {
-        ToolbarIcons.Set(CaptionMinimize, "minus", "Minimizar");
-        ToolbarIcons.Set(CaptionClose, "close", "Cerrar");
+        ToolbarIcons.Set(CaptionMinimize, "minus", UiText.T("Minimizar"));
+        ToolbarIcons.Set(CaptionClose, "close", UiText.T("Cerrar"));
         UpdateCaption();
         PropertyChanged += (_, e) => { if (e.Property == WindowStateProperty) UpdateCaption(); };
     }
@@ -221,7 +245,7 @@ public partial class MainWindow : Window
     {
         var maximized = WindowState == WindowState.Maximized;
         ToolbarIcons.Set(CaptionMaximize, maximized ? "restore-window" : "maximize-window",
-            maximized ? "Restaurar ventana" : "Maximizar");
+            maximized ? UiText.T("Restaurar ventana") : UiText.T("Maximizar"));
     }
 
     private void OnCaptionPressed(object? sender, PointerPressedEventArgs e)
@@ -240,26 +264,26 @@ public partial class MainWindow : Window
 
     private void InitializeToolbarIcons()
     {
-        ToolbarIcons.Set(PreviousButton, "previous", "Fotograma anterior (←)");
-        ToolbarIcons.Set(PlayButton, "play", "Reproducir (Espacio)");
-        ToolbarIcons.Set(StopButton, "stop", "Detener");
-        ToolbarIcons.Set(NextButton, "next", "Fotograma siguiente (→)");
-        ToolbarIcons.Set(UndoButton, "undo", "Deshacer (Ctrl+Z)");
-        ToolbarIcons.Set(RedoButton, "redo", "Rehacer (Ctrl+Y)");
-        ToolbarIcons.Set(ReplaceFrameButton, "replace", "Reemplazar fotograma");
-        ToolbarIcons.Set(AddFrameButton, "plus", "Añadir fotograma");
+        ToolbarIcons.Set(PreviousButton, "previous", UiText.T("Fotograma anterior (←)"));
+        ToolbarIcons.Set(PlayButton, "play", UiText.T("Reproducir (Espacio)"));
+        ToolbarIcons.Set(StopButton, "stop", UiText.T("Detener"));
+        ToolbarIcons.Set(NextButton, "next", UiText.T("Fotograma siguiente (→)"));
+        ToolbarIcons.Set(UndoButton, "undo", UiText.T("Deshacer (Ctrl+Z)"));
+        ToolbarIcons.Set(RedoButton, "redo", UiText.T("Rehacer (Ctrl+Y)"));
+        ToolbarIcons.Set(ReplaceFrameButton, "replace", UiText.T("Reemplazar fotograma"));
+        ToolbarIcons.Set(AddFrameButton, "plus", UiText.T("Añadir fotograma"));
         ToolbarIcons.Set(DuplicateFrameButton, "copy", "Duplicar fotograma");
         ToolbarIcons.Set(RemoveFrameButton, "trash", "Quitar fotograma");
         ToolbarIcons.Set(MoveFrameLeftButton, "left", "Mover fotograma a la izquierda");
         ToolbarIcons.Set(MoveFrameRightButton, "right", "Mover fotograma a la derecha");
-        ToolbarIcons.Set(EditSequenceButton, "edit", "Editar secuencia");
+        ToolbarIcons.Set(EditSequenceButton, "edit", UiText.T("Editar secuencia"));
         ToolbarIcons.Set(AssignTrackButton, "plus", "Asignar fila a dirección");
         ToolbarIcons.Set(RemoveTrackButton, "trash", "Quitar dirección");
         ToolbarIcons.Set(ApplyTimingButton, "check", "Aplicar tiempo");
-        ToolbarIcons.Set(ValidateButton, "check", "Validar hoja");
-        ToolbarIcons.Set(ExportReportButton, "export", "Exportar informe");
-        ToolbarIcons.Set(ZoomOutButton, "zoom-out", "Reducir zoom");
-        ToolbarIcons.Set(ZoomInButton, "zoom-in", "Ampliar zoom");
+        ToolbarIcons.Set(ValidateButton, "check", UiText.T("Validar hoja"));
+        ToolbarIcons.Set(ExportReportButton, "export", UiText.T("Exportar informe"));
+        ToolbarIcons.Set(ZoomOutButton, "zoom-out", UiText.T("Reducir zoom"));
+        ToolbarIcons.Set(ZoomInButton, "zoom-in", UiText.T("Ampliar zoom"));
         ToolbarIcons.Set(ZoomResetButton, "reset", "Zoom 100%");
         ToolbarIcons.Set(FitButton, "fit", "Ajustar vista");
         ToolbarIcons.Set(ToggleGridButton, "grid", "Mostrar u ocultar cuadrícula");
@@ -313,7 +337,7 @@ public partial class MainWindow : Window
                 FileTypeFilter = [new FilePickerFileType("PNG") { Patterns = ["*.png"] }]
             });
             if (files.Count == 0 || token.IsCancellationRequested) return;
-            StatusText.Text = "Importando...";
+            StatusText.Text = UiText.T("Importando...");
             using (var stream = await files[0].OpenReadAsync())
             {
                 var bytes = await PngSource.ReadAsync(stream, token);
@@ -334,7 +358,7 @@ public partial class MainWindow : Window
             RefreshClips();
             MarkDirty();
             InspectorTabs.SelectedIndex = 0;
-            StatusText.Text = "PNG cargado · Configura la cuadrícula en Hoja";
+            StatusText.Text = UiText.T("PNG cargado · Configura la cuadrícula en Hoja");
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex)
@@ -362,7 +386,7 @@ public partial class MainWindow : Window
         BatchCells.Text = "";
         RefreshFrameEdit();
         Preview.SetGrid(null);
-        GridInfo.Text = "Sin cuadrícula";
+        GridInfo.Text = UiText.T("Sin cuadrícula");
         FrameInfo.Text = "Sin selección";
         RectInfo.Text = "Rectángulo: —";
         DurationInfo.Text = "Duración: —";
@@ -391,7 +415,7 @@ public partial class MainWindow : Window
             preview.SetImage(bitmap);
             var scroll = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
                 VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
-            var dialog = new Window { Title = "Asistente de cuadrícula", Width = 940, Height = 620,
+            var dialog = new SuiteDialog { Title = UiText.T("Asistente de cuadrícula"), Width = 940, Height = 620,
                 MinWidth = 700, MinHeight = 440, Background = UiPalette.Window, Foreground = UiPalette.Text,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner };
             var detail = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = UiPalette.Accent };
@@ -412,8 +436,8 @@ public partial class MainWindow : Window
                 }
             }
             list.SelectionChanged += (_, _) => UpdatePreview();
-            var minus = ToolbarIcons.Create("zoom-out", "Reducir zoom");
-            var plus = ToolbarIcons.Create("zoom-in", "Ampliar zoom");
+            var minus = ToolbarIcons.Create("zoom-out", UiText.T("Reducir zoom"));
+            var plus = ToolbarIcons.Create("zoom-in", UiText.T("Ampliar zoom"));
             var reset = ToolbarIcons.Create("reset", "Zoom 100 %");
             minus.Click += (_, _) => SetZoom(zoom - 1);
             plus.Click += (_, _) => SetZoom(zoom + 1);
@@ -424,7 +448,7 @@ public partial class MainWindow : Window
             Grid.SetRow(scroll, 1);
             viewer.Children.Add(toolbar); viewer.Children.Add(scroll);
             var choices = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 8 };
-            var label = new TextBlock { Text = "CUADRÍCULAS SUGERIDAS", FontWeight = FontWeight.SemiBold, Foreground = UiPalette.Muted };
+            var label = new TextBlock { Text = UiText.T("CUADRÍCULAS SUGERIDAS"), FontWeight = FontWeight.SemiBold, Foreground = UiPalette.Muted };
             Grid.SetRow(list, 1); Grid.SetRow(detail, 2);
             choices.Children.Add(label); choices.Children.Add(list); choices.Children.Add(detail);
             var body = new Grid { ColumnDefinitions = new ColumnDefinitions("*,280"), ColumnSpacing = 16 };
@@ -436,8 +460,8 @@ public partial class MainWindow : Window
                 Padding = new Avalonia.Thickness(12), Child = choices };
             list.Background = UiPalette.Panel;
             Grid.SetColumn(choicesPanel, 1); body.Children.Add(viewerPanel); body.Children.Add(choicesPanel);
-            var apply = new Button { Content = "Aplicar cuadrícula" };
-            var cancel = new Button { Content = "Cancelar" };
+            var apply = new Button { Classes = { "primary" }, Content = UiText.T("Aplicar cuadrícula") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             apply.Click += (_, _) => dialog.Close(list.SelectedItem as GridSuggestion);
             cancel.Click += (_, _) => dialog.Close(null);
             var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
@@ -469,7 +493,7 @@ public partial class MainWindow : Window
             !int.TryParse(CellHeight.Text, out var height) || width <= 0 || height <= 0)
         {
             RestoreGridFields();
-            StatusText.Text = "Introduce ancho y alto positivos.";
+            StatusText.Text = UiText.T("Introduce ancho y alto positivos.");
             return;
         }
         try
@@ -483,7 +507,7 @@ public partial class MainWindow : Window
             }
             if (_grid is not null && _grid.Cell.Width == width && _grid.Cell.Height == height)
             {
-                StatusText.Text = "La cuadrícula ya tiene esas dimensiones.";
+                StatusText.Text = UiText.T("La cuadrícula ya tiene esas dimensiones.");
                 return;
             }
             var candidate = new CellGrid(
@@ -503,12 +527,12 @@ public partial class MainWindow : Window
             GridInfo.Text = $"{candidate.Columns} columnas × {candidate.Rows} filas · {candidate.Count} celdas";
             SelectCell(0);
             ValidateMenu.IsEnabled = ValidateButton.IsEnabled = true;
-            StatusText.Text = "Cuadrícula aplicada · Sin modificar el PNG";
+            StatusText.Text = UiText.T("Cuadrícula aplicada · Sin modificar el PNG");
         }
         catch (ArgumentException)
         {
             RestoreGridFields();
-            StatusText.Text = "La imagen debe dividirse exactamente en celdas completas.";
+            StatusText.Text = UiText.T("La imagen debe dividirse exactamente en celdas completas.");
         }
     }
 
@@ -715,13 +739,13 @@ public partial class MainWindow : Window
             StatusText.Text = $"Desplazamientos actualizados en {cells.Length} celdas.";
         }
         catch (ArgumentException ex) { RefreshFrameEdit(); StatusText.Text = ex.Message; }
-        catch (OverflowException) { RefreshFrameEdit(); StatusText.Text = "Desplazamiento fuera de rango."; }
+        catch (OverflowException) { RefreshFrameEdit(); StatusText.Text = UiText.T("Desplazamiento fuera de rango."); }
     }
 
     private void OnBatchDelta(object? sender, RoutedEventArgs e)
     {
         if (!int.TryParse(DeltaX.Text, out var x) || !int.TryParse(DeltaY.Text, out var y))
-        { StatusText.Text = "Introduce incrementos enteros."; return; }
+        { StatusText.Text = UiText.T("Introduce incrementos enteros."); return; }
         EditOffsets((c, old) => new FrameOffset(c, checked(old.X + x), checked(old.Y + y)));
     }
 
@@ -927,14 +951,14 @@ public partial class MainWindow : Window
         try
         {
             var input = new TextBox { Text = _sheets[_active].Name, MaxLength = 200 };
-            var dialog = new Window { Title = "Renombrar recurso", Width = 420, Height = 170,
+            var dialog = new SuiteDialog { Title = UiText.T("Renombrar recurso"), Width = 420, Height = 170,
                 CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var ok = new Button { Content = "Aceptar" };
-            var cancel = new Button { Content = "Cancelar" };
+            var ok = new Button { Classes = { "primary" }, Content = UiText.T("Aceptar") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
             cancel.Click += (_, _) => dialog.Close(null);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
-                Children = { new TextBlock { Text = "Nombre visible del recurso" }, input,
+                Children = { new TextBlock { Text = UiText.T("Nombre visible del recurso") }, input,
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                         Children = { cancel, ok } } } };
             var name = await dialog.ShowDialog<string?>(this);
@@ -952,7 +976,7 @@ public partial class MainWindow : Window
                 _playback?.Step(selectedOccurrence);
                 ShowPlaybackCell();
             }
-            StatusText.Text = "Recurso renombrado · Archivo fuente intacto";
+            StatusText.Text = UiText.T("Recurso renombrado · Archivo fuente intacto");
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
@@ -962,17 +986,17 @@ public partial class MainWindow : Window
         if (_importing || _active < 0) return;
         if (_clips.Any(c => c.SheetId == _sheets[_active].Id))
         {
-            StatusText.Text = "Quita primero los clips asociados al recurso.";
+            StatusText.Text = UiText.T("Quita primero los clips asociados al recurso.");
             return;
         }
         SetBusy(true);
         Bitmap? candidate = null;
         try
         {
-            var dialog = new Window { Title = "Quitar recurso", Width = 440, Height = 180,
+            var dialog = new SuiteDialog { Title = UiText.T("Quitar recurso"), Width = 440, Height = 180,
                 CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var remove = new Button { Content = "Quitar" };
-            var cancel = new Button { Content = "Cancelar" };
+            var remove = new Button { Classes = { "danger" }, Content = UiText.T("Quitar") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             remove.Click += (_, _) => dialog.Close(true);
             cancel.Click += (_, _) => dialog.Close(false);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
@@ -1003,12 +1027,12 @@ public partial class MainWindow : Window
                 EmptyViewer.IsVisible = true;
                 ImageViewer.IsVisible = false;
                 GridMenu.IsEnabled = false;
-                ResolutionText.Text = "Resolución: —";
-                ViewerInfo.Text = "Sin imagen";
+                ResolutionText.Text = UiText.T("Resolución: —");
+                ViewerInfo.Text = UiText.T("Sin imagen");
             }
             RefreshResources();
             MarkDirty();
-            StatusText.Text = "Recurso quitado · Archivos fuente intactos";
+            StatusText.Text = UiText.T("Recurso quitado · Archivos fuente intactos");
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo quitar: {ex.Message}"; }
         finally { candidate?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -1025,12 +1049,12 @@ public partial class MainWindow : Window
     {
         if (_importing || _active < 0 || _grid is null || _selected is not int selected)
         {
-            StatusText.Text = "Selecciona una celda de una cuadrícula.";
+            StatusText.Text = UiText.T("Selecciona una celda de una cuadrícula.");
             return;
         }
         if (_clips.Count >= 256 || _grid.Columns > 4096)
         {
-            StatusText.Text = "Límite de clips o fotogramas alcanzado.";
+            StatusText.Text = UiText.T("Límite de clips o fotogramas alcanzado.");
             return;
         }
         SetBusy(true);
@@ -1038,10 +1062,10 @@ public partial class MainWindow : Window
         {
             var row = selected / _grid.Columns;
             var input = new TextBox { Text = $"Clip {_clips.Count + 1}", MaxLength = 200 };
-            var dialog = new Window { Title = "Crear clip", Width = 440, Height = 190,
+            var dialog = new SuiteDialog { Title = UiText.T("Crear clip"), Width = 440, Height = 190,
                 CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var ok = new Button { Content = "Crear" };
-            var cancel = new Button { Content = "Cancelar" };
+            var ok = new Button { Classes = { "primary" }, Content = UiText.T("Crear") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
             cancel.Click += (_, _) => dialog.Close(null);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
@@ -1050,12 +1074,12 @@ public partial class MainWindow : Window
                         Children = { cancel, ok } } } };
             var name = await dialog.ShowDialog<string?>(this);
             if (string.IsNullOrWhiteSpace(name)) return;
-            RecordEditorChange("Crear clip");
+            RecordEditorChange(UiText.T("Crear clip"));
             _clips.Add(new ViewerClip(Guid.NewGuid(), name, _sheets[_active].Id,
                 Enumerable.Range(row * _grid.Columns, _grid.Columns).ToArray()));
             RefreshClips();
             MarkDirty();
-            StatusText.Text = "Clip creado · Guarda el proyecto para conservarlo";
+            StatusText.Text = UiText.T("Clip creado · Guarda el proyecto para conservarlo");
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
@@ -1063,11 +1087,11 @@ public partial class MainWindow : Window
     private void OnRemoveClip(object? sender, RoutedEventArgs e)
     {
         if (_importing || ClipList.SelectedItem is not ViewerClip clip) return;
-        RecordEditorChange("Quitar clip");
+        RecordEditorChange(UiText.T("Quitar clip"));
         _clips.Remove(clip);
         RefreshClips();
         MarkDirty();
-        StatusText.Text = "Clip quitado · PNG intacto";
+        StatusText.Text = UiText.T("Clip quitado · PNG intacto");
     }
 
     private async void OnClipSelected(object? sender, SelectionChangedEventArgs e)
@@ -1130,20 +1154,20 @@ public partial class MainWindow : Window
             _active < 0 || _sheets[_active].Id != clip.SheetId ||
             _grid is null || _selected is not int selected)
         {
-            StatusText.Text = "Selecciona un clip y una celda de su hoja.";
+            StatusText.Text = UiText.T("Selecciona un clip y una celda de su hoja.");
             return;
         }
-        if (_grid.Columns > 4096) { StatusText.Text = "Demasiados fotogramas."; return; }
+        if (_grid.Columns > 4096) { StatusText.Text = UiText.T("Demasiados fotogramas."); return; }
         var columns = _grid.Columns;
         var row = selected / columns;
         SetBusy(true);
         try
         {
             var input = new TextBox { Text = "front", MaxLength = 80 };
-            var dialog = new Window { Title = "Asignar dirección", Width = 460, Height = 230,
+            var dialog = new SuiteDialog { Title = UiText.T("Asignar dirección"), Width = 460, Height = 230,
                 CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var ok = new Button { Content = "Asignar" };
-            var cancel = new Button { Content = "Cancelar" };
+            var ok = new Button { Classes = { "primary" }, Content = UiText.T("Asignar") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             ok.Click += (_, _) => dialog.Close(input.Text?.Trim());
             cancel.Click += (_, _) => dialog.Close(null);
             dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(18), Spacing = 12,
@@ -1159,7 +1183,7 @@ public partial class MainWindow : Window
             if (index < 0 && clip.Tracks is null) { tracks[0] = track; index = 0; }
             else if (index < 0)
             {
-                if (tracks.Count >= 64) { StatusText.Text = "Límite de direcciones alcanzado."; return; }
+                if (tracks.Count >= 64) { StatusText.Text = UiText.T("Límite de direcciones alcanzado."); return; }
                 index = tracks.Count;
                 tracks.Add(track);
             }
@@ -1177,10 +1201,10 @@ public partial class MainWindow : Window
         var tracks = clip.EffectiveTracks.ToList();
         var index = TrackList.SelectedIndex;
         if (index < 0 || index >= tracks.Count) return;
-        if (tracks.Count == 1) { StatusText.Text = "El clip debe conservar una dirección."; return; }
+        if (tracks.Count == 1) { StatusText.Text = UiText.T("El clip debe conservar una dirección."); return; }
         tracks.RemoveAt(index);
         ReplaceClip(clip, tracks.ToArray(), Math.Min(index, tracks.Count - 1));
-        StatusText.Text = "Dirección quitada · PNG intacto";
+        StatusText.Text = UiText.T("Dirección quitada · PNG intacto");
     }
 
     private void OnTrackSelected(object? sender, SelectionChangedEventArgs e)
@@ -1212,7 +1236,7 @@ public partial class MainWindow : Window
             ReplaceClip(clip, tracks, index);
             _playback?.Step(result.Selected);
             ShowPlaybackCell();
-            StatusText.Text = "Secuencia actualizada · Cambios sin guardar";
+            StatusText.Text = UiText.T("Secuencia actualizada · Cambios sin guardar");
         }
         catch (ArgumentException ex) { StatusText.Text = ex.Message; }
     }
@@ -1247,10 +1271,10 @@ public partial class MainWindow : Window
         var count = _grid.Count;
         var input = new TextBox { Text = (cursor.Cell + 1).ToString() };
         var hint = new TextBlock { Text = $"Sustituir aparición {position + 1} por una celda de la misma hoja (1–{count}). Conserva duración y posición en la secuencia.", TextWrapping = TextWrapping.Wrap };
-        var dialog = new Window { Title = "Reemplazar fotograma", Width = 460, Height = 230,
+        var dialog = new SuiteDialog { Title = UiText.T("Reemplazar fotograma"), Width = 460, Height = 230,
             Background = UiPalette.Window, Foreground = UiPalette.Text, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var ok = new Button { Content = "Reemplazar" };
-        var cancel = new Button { Content = "Cancelar" };
+        var ok = new Button { Classes = { "primary" }, Content = UiText.T("Reemplazar") };
+        var cancel = new Button { Content = UiText.T("Cancelar") };
         ok.Click += (_, _) =>
         {
             if (int.TryParse(input.Text, out var cell) && cell >= 1 && cell <= count) dialog.Close((int?)(cell - 1));
@@ -1274,9 +1298,9 @@ public partial class MainWindow : Window
         var position = cursor.Position;
         var input = new TextBox { Text = (cursor.Cell + 1).ToString() };
         var hint = new TextBlock { Text = $"Celda de la hoja (1–{count}). Se inserta después del fotograma seleccionado.", TextWrapping = TextWrapping.Wrap };
-        var dialog = new Window { Title = "Añadir fotograma", Width = 420, Height = 200, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var ok = new Button { Content = "Añadir" };
-        var cancel = new Button { Content = "Cancelar" };
+        var dialog = new SuiteDialog { Title = UiText.T("Añadir fotograma"), Width = 420, Height = 200, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var ok = new Button { Classes = { "primary" }, Content = UiText.T("Añadir") };
+        var cancel = new Button { Content = UiText.T("Cancelar") };
         ok.Click += (_, _) =>
         {
             if (int.TryParse(input.Text, out var cell) && cell >= 1 && cell <= count) dialog.Close((int?)(cell - 1));
@@ -1326,7 +1350,7 @@ public partial class MainWindow : Window
     {
         if (_importing) return;
         DeselectClip();
-        StatusText.Text = "Modo hoja · Selecciona un clip para reproducir";
+        StatusText.Text = UiText.T("Modo hoja · Selecciona un clip para reproducir");
     }
 
     private void RestoreGridFields()
@@ -1340,7 +1364,7 @@ public partial class MainWindow : Window
     {
         if (_importing) return;
         RestoreGridFields();
-        StatusText.Text = "Dimensiones restablecidas · Cuadrícula sin cambios";
+        StatusText.Text = UiText.T("Dimensiones restablecidas · Cuadrícula sin cambios");
     }
 
     private void OnResetLayout(object? sender, RoutedEventArgs e)
@@ -1351,7 +1375,7 @@ public partial class MainWindow : Window
         WorkspaceGrid.RowDefinitions[0].Height = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star);
         WorkspaceGrid.RowDefinitions[2].Height = new Avalonia.Controls.GridLength(320);
         WorkspaceGrid.RowDefinitions[4].Height = new Avalonia.Controls.GridLength(210);
-        StatusText.Text = "Distribución restablecida";
+        StatusText.Text = UiText.T("Distribución restablecida");
     }
 
     private void SetPlayback(ViewerTrack track)
@@ -1414,10 +1438,10 @@ public partial class MainWindow : Window
         if (_playIconActive != playing)
         {
             _playIconActive = playing;
-            ToolbarIcons.Set(PlayButton, playing ? "pause" : "play", playing ? "Pausa (Espacio)" : "Reproducir (Espacio)");
+            ToolbarIcons.Set(PlayButton, playing ? "pause" : "play", playing ? "Pausa (Espacio)" : UiText.T("Reproducir (Espacio)"));
         }
         UpdateScrubber();
-        PlayMenu.Header = _playback?.IsPlaying == true ? "Pausa" : "Reproducir";
+        PlayMenu.Header = _playback?.IsPlaying == true ? UiText.T("Pausa") : UiText.T("Reproducir");
         if (_playback is { } cursor)
         {
             PreviousButton.IsEnabled = available && cursor.Position > 0;
@@ -1533,10 +1557,10 @@ public partial class MainWindow : Window
         {
             var input = new TextBox { Text = string.Join(", ", current.Cells.Select(c => c + 1)),
                 AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 90 };
-            var dialog = new Window { Title = "Editar secuencia", Width = 500, Height = 300,
+            var dialog = new SuiteDialog { Title = UiText.T("Editar secuencia"), Width = 500, Height = 300,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var ok = new Button { Content = "Aplicar" };
-            var cancel = new Button { Content = "Cancelar" };
+            var ok = new Button { Classes = { "primary" }, Content = UiText.T("Aplicar") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             var hint = new TextBlock { Text = "Números de celda (desde 1), separados por comas. Puedes repetir, quitar o cambiar el orden. Los tiempos siguen a cada aparición conservada.",
                 TextWrapping = TextWrapping.Wrap };
             ok.Click += (_, _) =>
@@ -1556,7 +1580,7 @@ public partial class MainWindow : Window
             var timings = SequenceEdit.Remap(current.Cells, current.DurationsMs, cells);
             tracks[index] = current with { Cells = cells, DurationsMs = timings };
             ReplaceClip(clip, tracks, index);
-            StatusText.Text = "Secuencia actualizada";
+            StatusText.Text = UiText.T("Secuencia actualizada");
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
@@ -1567,7 +1591,7 @@ public partial class MainWindow : Window
             ClipList.SelectedItem is not ViewerClip clip || _playbackTrack is null ||
             _active < 0 || _sheets[_active].Id != clip.SheetId) return;
         if (!int.TryParse(FpsInput.Text, out var fps) || fps is < 1 or > 60)
-        { StatusText.Text = "Introduce FPS entre 1 y 60."; return; }
+        { StatusText.Text = UiText.T("Introduce FPS entre 1 y 60."); return; }
         int? duration = null;
         if (!string.IsNullOrWhiteSpace(DurationInput.Text))
         {
@@ -1585,7 +1609,7 @@ public partial class MainWindow : Window
         ReplaceClip(clip, tracks, index);
         _playback?.Step(position);
         ShowPlaybackCell();
-        StatusText.Text = "Tiempo de previsualización actualizado";
+        StatusText.Text = UiText.T("Tiempo de previsualización actualizado");
     }
 
     private void PlaybackTick()
@@ -1647,7 +1671,7 @@ public partial class MainWindow : Window
                 .Select(c => new ValidationClip(c.Name, c.EffectiveTracks.Select(t =>
                     new ValidationTrack(t.Direction, t.Cells.ToArray(), t.Fps, t.DurationsMs?.ToArray())).ToArray())).ToArray();
             var tracks = clips.SelectMany(c => c.Tracks.Select(t => new AlignmentTrack(c.Name,
-                t.Direction == "none" ? "Sin dirección" : t.Direction, t.Cells))).ToArray();
+                t.Direction == "none" ? UiText.T("Sin dirección") : t.Direction, t.Cells))).ToArray();
             var pixels = ValidationPixels.Read(_bitmap);
             var analysis = await Task.Run(() =>
             {
@@ -1692,11 +1716,11 @@ public partial class MainWindow : Window
         SetBusy(true);
         try
         {
-            var json = new FilePickerFileType("Informe JSON") { Patterns = ["*.json"] };
-            var txt = new FilePickerFileType("Informe de texto") { Patterns = ["*.txt"] };
+            var json = new FilePickerFileType(UiText.T("Informe JSON")) { Patterns = ["*.json"] };
+            var txt = new FilePickerFileType(UiText.T("Informe de texto")) { Patterns = ["*.txt"] };
             var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = "Exportar informe de validación",
+                Title = UiText.T("Exportar informe de validación"),
                 SuggestedFileName = "validacion",
                 DefaultExtension = "json",
                 FileTypeChoices = [json, txt],
@@ -1752,7 +1776,7 @@ public partial class MainWindow : Window
             ShowSheet(index, candidate);
             candidate = null;
             RefreshClips();
-            StatusText.Text = "Recurso seleccionado";
+            StatusText.Text = UiText.T("Recurso seleccionado");
         }
         catch (Exception ex)
         {
@@ -1794,10 +1818,10 @@ public partial class MainWindow : Window
         var name = new TextBox { Text = _projectName, MaxLength = 100 };
         var parent = new TextBox { Text = _folder is null ? "" : Path.GetDirectoryName(_folder), IsReadOnly = true, Watermark = "Selecciona la ubicación" };
         var preview = new TextBlock { TextWrapping = TextWrapping.Wrap };
-        var browse = new Button { Content = "Elegir carpeta…" };
-        var save = new Button { Content = "Guardar" };
-        var cancel = new Button { Content = "Cancelar" };
-        var dialog = new Window { Title = "Guardar proyecto", Width = 520, Height = 320, CanResize = false,
+        var browse = new Button { Content = UiText.T("Elegir carpeta…") };
+        var save = new Button { Classes = { "primary" }, Content = UiText.T("Guardar") };
+        var cancel = new Button { Content = UiText.T("Cancelar") };
+        var dialog = new SuiteDialog { Title = UiText.T("Guardar proyecto"), Width = 520, Height = 320, CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner };
         void Refresh()
         {
@@ -1820,8 +1844,8 @@ public partial class MainWindow : Window
         save.Click += (_, _) => dialog.Close((ProjectDestination.Resolve(parent.Text ?? "", name.Text ?? ""), name.Text!.Trim()));
         cancel.Click += (_, _) => dialog.Close(null);
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 10,
-            Children = { new TextBlock { Text = "Nombre del proyecto" }, name,
-                new TextBlock { Text = "Ubicación (carpeta contenedora)" }, parent, browse, preview,
+            Children = { new TextBlock { Text = UiText.T("Nombre del proyecto") }, name,
+                new TextBlock { Text = UiText.T("Ubicación (carpeta contenedora)") }, parent, browse, preview,
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
                     Spacing = 8, Children = { cancel, save } } } };
         Refresh();
@@ -1830,10 +1854,10 @@ public partial class MainWindow : Window
 
     private async Task<bool> ConfirmOverwrite(string folder)
     {
-        var dialog = new Window { Title = "Confirmar sobrescritura", Width = 520, Height = 230,
+        var dialog = new SuiteDialog { Title = UiText.T("Confirmar sobrescritura"), Width = 520, Height = 230,
             CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var overwrite = new Button { Content = "Sobrescribir proyecto" };
-        var cancel = new Button { Content = "Cancelar" };
+        var overwrite = new Button { Classes = { "danger" }, Content = UiText.T("Sobrescribir proyecto") };
+        var cancel = new Button { Content = UiText.T("Cancelar") };
         overwrite.Click += (_, _) => dialog.Close(true);
         cancel.Click += (_, _) => dialog.Close(false);
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 14,
@@ -1852,10 +1876,10 @@ public partial class MainWindow : Window
         try
         {
             var input = new TextBox { Text = _projectName, MaxLength = 100 };
-            var dialog = new Window { Title = "Renombrar proyecto", Width = 460, Height = 210, CanResize = false,
+            var dialog = new SuiteDialog { Title = UiText.T("Renombrar proyecto"), Width = 460, Height = 210, CanResize = false,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            var ok = new Button { Content = "Renombrar" };
-            var cancel = new Button { Content = "Cancelar" };
+            var ok = new Button { Classes = { "primary" }, Content = UiText.T("Renombrar") };
+            var cancel = new Button { Content = UiText.T("Cancelar") };
             var hint = new TextBlock { Text = "Cambia el nombre visible; la carpeta actual no se mueve.", TextWrapping = TextWrapping.Wrap };
             ok.Click += (_, _) =>
             {
@@ -1869,7 +1893,7 @@ public partial class MainWindow : Window
             if (value is null || value == _projectName) return;
             _projectName = value;
             MarkDirty();
-            StatusText.Text = "Proyecto renombrado · Guarda para confirmar";
+            StatusText.Text = UiText.T("Proyecto renombrado · Guarda para confirmar");
         }
         finally { if (!_lifetime.IsCancellationRequested) SetBusy(false); }
     }
@@ -1984,12 +2008,12 @@ public partial class MainWindow : Window
                 EmptyViewer.IsVisible = true;
                 ImageViewer.IsVisible = false;
                 GridMenu.IsEnabled = false;
-                ResourceText.Text = "Todavía no hay recursos.";
-                ResolutionText.Text = "Resolución: —";
-                ViewerInfo.Text = "Sin imagen";
+                ResourceText.Text = UiText.T("Todavía no hay recursos.");
+                ResolutionText.Text = UiText.T("Resolución: —");
+                ViewerInfo.Text = UiText.T("Sin imagen");
             }
             RefreshResources();
-            StatusText.Text = "Proyecto abierto";
+            StatusText.Text = UiText.T("Proyecto abierto");
         }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) StatusText.Text = $"No se pudo abrir: {ex.Message}"; }
         finally { first?.Dispose(); if (!_lifetime.IsCancellationRequested) SetBusy(false); }
@@ -1997,12 +2021,12 @@ public partial class MainWindow : Window
 
     private async Task<bool> ConfirmDiscard()
     {
-        var dialog = new Window { Title = "Cambios sin guardar", Width = 480, Height = 210,
+        var dialog = new SuiteDialog { Title = UiText.T("Cambios sin guardar"), Width = 480, Height = 210,
             Background = new SolidColorBrush(Color.Parse("#202630")),
             CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var save = new Button { Content = "Guardar" };
-        var discard = new Button { Content = "No guardar" };
-        var cancel = new Button { Content = "Cancelar" };
+        var save = new Button { Classes = { "primary" }, Content = UiText.T("Guardar") };
+        var discard = new Button { Classes = { "danger" }, Content = UiText.T("No guardar") };
+        var cancel = new Button { Content = UiText.T("Cancelar") };
         save.Click += (_, _) => dialog.Close(1);
         discard.Click += (_, _) => dialog.Close(2);
         cancel.Click += (_, _) => dialog.Close(0);
@@ -2010,7 +2034,7 @@ public partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8,
             Children = { cancel, discard, save } };
         dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16,
-            Children = { new TextBlock { Text = "¿Quieres guardar los cambios del proyecto?",
+            Children = { new TextBlock { Text = UiText.T("¿Quieres guardar los cambios del proyecto?"),
                 FontSize = 16, TextWrapping = TextWrapping.Wrap },
                 new TextBlock { Text = "Si continúas sin guardar, perderás los cambios pendientes.",
                     TextWrapping = TextWrapping.Wrap }, buttons } };
@@ -2036,15 +2060,14 @@ public partial class MainWindow : Window
 
     private async void OnAbout(object? sender, RoutedEventArgs e)
     {
-        var dialog = new Window
-        {
-            Title = "Acerca de SpriteLab",
+        var dialog = new SuiteDialog {
+            Title = UiText.T("Acerca de SpriteLab"),
             Width = 420,
             Height = 220,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
-        var close = new Button { Content = "Cerrar", HorizontalAlignment = HorizontalAlignment.Right };
+        var close = new Button { Content = UiText.T("Cerrar"), HorizontalAlignment = HorizontalAlignment.Right };
         close.Click += (_, _) => dialog.Close();
         dialog.Content = new StackPanel
         {

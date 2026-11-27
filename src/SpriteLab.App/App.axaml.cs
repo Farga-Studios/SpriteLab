@@ -7,7 +7,7 @@ namespace SpriteLab.App;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize() { UiText.Initialize(); AvaloniaXamlLoader.Load(this); }
 
     public override void OnFrameworkInitializationCompleted()
     {

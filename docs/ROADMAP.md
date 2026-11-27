@@ -81,3 +81,6 @@ Profiles, preview, batch and native GIF export implemented. CI and manual valida
 
 ## 0.6.0 — Delivery 4
 SL6 acceptance candidate: integrity manifests, prepublication verification, explicit verification and non-destructive abandoned staging recovery. CI 0.5.9 not confirmed in chat; 0.6.0 CI/manual acceptance pending. No public release. SL7 follows after validation.
+
+## SL7 0.6.1 — Delivery 5 first increment
+Shared modal caption, global visual styles, initial ES/EN catalog and persisted language choice. Restart required; dynamic messages and remaining catalog entries still need translation. 0.6.5 is not yet complete. Logo unchanged until original can be reviewed. Windows UI/CI pending; previous SL6 acceptance pending.

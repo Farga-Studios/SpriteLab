@@ -37,21 +37,21 @@ internal static class ProcessingWindow
         WriteableBitmap? processed = null;
         ProcessingResult? result = null;
         CancellationTokenSource? running = null;
-        var dialog = new Window { Title = "Procesamiento de imágenes", Width = 900, Height = 650,
+        var dialog = new SuiteDialog { Title = UiText.T("Procesamiento de imágenes"), Width = 900, Height = 650,
             MinWidth = 700, MinHeight = 540, Background = UiPalette.Window, Foreground = UiPalette.Text,
             WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var operation = new ComboBox { SelectedIndex = 0, ItemsSource = new[]
-            { "Limpiar RGB transparente", "Umbral alfa", "Voltear horizontal", "Voltear vertical" } };
+            { UiText.T("Limpiar RGB transparente"), UiText.T("Umbral alfa"), UiText.T("Voltear horizontal"), UiText.T("Voltear vertical") } };
         var scope = new ComboBox { SelectedIndex = 0, ItemsSource = new[]
-            { "Celda seleccionada", "Fila seleccionada", "Toda la hoja", "Rango personalizado" } };
+            { UiText.T("Celda seleccionada"), UiText.T("Fila seleccionada"), UiText.T("Toda la hoja"), UiText.T("Rango personalizado") } };
         var range = new TextBox { Text = (selected + 1).ToString(), Watermark = "1,3-5,8" };
         var threshold = new TextBox { Text = "128", Watermark = "0–255" };
         var progress = new ProgressBar { Minimum = 0, Maximum = 100, Height = 8 };
-        var status = new TextBlock { Text = "Selecciona una operación y genera una vista previa.", TextWrapping = TextWrapping.Wrap };
-        var run = new Button { Content = "Generar vista previa" };
-        var stop = new Button { Content = "Cancelar proceso", IsEnabled = false };
-        var add = new Button { Content = "Añadir como recurso nuevo", IsEnabled = false };
-        var close = new Button { Content = "Cerrar" };
+        var status = new TextBlock { Text = UiText.T("Selecciona una operación y genera una vista previa."), TextWrapping = TextWrapping.Wrap };
+        var run = new Button { Content = UiText.T("Generar vista previa") };
+        var stop = new Button { Content = UiText.T("Cancelar proceso"), IsEnabled = false };
+        var add = new Button { Content = UiText.T("Añadir como recurso nuevo"), IsEnabled = false };
+        var close = new Button { Content = UiText.T("Cerrar") };
         var before = new SheetPreview { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var after = new SheetPreview { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         before.SetImage(original); before.SetGrid(grid); before.SetSelection(selected);
@@ -61,8 +61,8 @@ internal static class ProcessingWindow
             zoom = Math.Clamp(z, 1, 8);
             before.SetZoom(zoom); after.SetZoom(zoom);
         }
-        var zoomOut = ToolbarIcons.Create("zoom-out", "Reducir zoom");
-        var zoomIn = ToolbarIcons.Create("zoom-in", "Ampliar zoom");
+        var zoomOut = ToolbarIcons.Create("zoom-out", UiText.T("Reducir zoom"));
+        var zoomIn = ToolbarIcons.Create("zoom-in", UiText.T("Ampliar zoom"));
         zoomOut.Click += (_, _) => SetZoom(zoom - 1);
         zoomIn.Click += (_, _) => SetZoom(zoom + 1);
         void InvalidateResult()
@@ -70,7 +70,7 @@ internal static class ProcessingWindow
             result = null; add.IsEnabled = false;
             after.SetImage(null); processed?.Dispose(); processed = null;
             progress.Value = 0;
-            status.Text = "Genera una nueva vista previa.";
+            status.Text = UiText.T("Genera una nueva vista previa.");
         }
         void SetWorking(bool busy)
         {
@@ -111,7 +111,7 @@ internal static class ProcessingWindow
             var request = new ProcessingRequest((SpriteOperation)operation.SelectedIndex, cells, alpha);
             using var job = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
             running = job;
-            SetWorking(true); progress.Value = 0; status.Text = "Procesando…";
+            SetWorking(true); progress.Value = 0; status.Text = UiText.T("Procesando…");
             try
             {
                 var reporter = new Progress<int>(value =>
@@ -127,7 +127,7 @@ internal static class ProcessingWindow
                 status.Text = $"{completed.ProcessedCells} celdas · {completed.ChangedPixels} píxeles modificados." +
                     (completed.ChangedPixels == 0 ? " Sin cambios que incorporar." : " Puedes incorporar una copia nueva.");
             }
-            catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = "Proceso cancelado. Original intacto."; }
+            catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = UiText.T("Proceso cancelado. Original intacto."); }
             catch (Exception ex) { if (!lifetime.IsCancellationRequested) status.Text = $"Error: {ex.Message}"; }
             finally
             {
@@ -142,14 +142,14 @@ internal static class ProcessingWindow
             var snapshot = result;
             using var job = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
             running = job; SetWorking(true);
-            status.Text = "Codificando PNG sin pérdida…"; progress.IsIndeterminate = true;
+            status.Text = UiText.T("Codificando PNG sin pérdida…"); progress.IsIndeterminate = true;
             try
             {
                 var png = await Task.Run(() => RgbaPng.Encode(grid.Image.Width, grid.Image.Height, snapshot.Rgba, job.Token), job.Token);
                 job.Token.ThrowIfCancellationRequested();
                 dialog.Close(new ProcessingImport(png, snapshot.ChangedPixels));
             }
-            catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = "Codificación cancelada. Original intacto."; }
+            catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = UiText.T("Codificación cancelada. Original intacto."); }
             catch (Exception ex) { if (!lifetime.IsCancellationRequested) status.Text = $"No se pudo codificar PNG: {ex.Message}"; }
             finally { running = null; if (!lifetime.IsCancellationRequested) { progress.IsIndeterminate = false; SetWorking(false); } }
         };
@@ -167,7 +167,7 @@ internal static class ProcessingWindow
                 BorderThickness = new Thickness(1), Padding = new Thickness(8), Child = g };
         }
         var comparison = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 12 };
-        var left = Panel("Original", before); var right = Panel("Resultado", after);
+        var left = Panel(UiText.T("Original"), before); var right = Panel(UiText.T("Resultado"), after);
         Grid.SetColumn(right, 1); comparison.Children.Add(left); comparison.Children.Add(right);
         var header = new StackPanel { Spacing = 8, Children =
         {
