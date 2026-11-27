@@ -40,5 +40,22 @@ internal sealed class UpdateRecoveryService : IDisposable
 
     public UpdateTransaction CancelPrepared(Guid id, Version running) => recovery.CancelPrepared(id, running);
 
+    public UpdateTransaction ResolveInterrupted(Guid id, Version running, bool installerExited, bool previousHealthy)
+        => recovery.ResolveInterrupted(id, running, installerExited, previousHealthy, true);
+
+    public UpdateTransaction ConfirmRollbackHealthy(Guid id, Version running)
+        => recovery.ConfirmRollbackHealthy(id, running);
+
+    public UpdateTransaction RequireRecovery(Guid id) => recovery.RequireRecovery(id);
+
+    public async Task RollbackAsync(Guid id, Version running, string stagingRoot, bool dataCompatible, CancellationToken token)
+    {
+        var manager = new RollbackManager(recovery, packages);
+        var update = await manager.PrepareAsync(id, running, true, dataCompatible, stagingRoot, token);
+        token.ThrowIfCancellationRequested();
+        recovery.MarkRollbackStarted(id, running);
+        await InstallerHandoff.LaunchAsync(update, stagingRoot, token);
+    }
+
     public void Dispose() => session.Dispose();
 }
