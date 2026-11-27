@@ -93,3 +93,6 @@ English diagnostic and report output plus remaining reviewed editor strings. Ful
 
 ## 0.6.5 — Delivery 5 acceptance candidate (0.6.4–0.6.5)
 Keyboard shortcuts and help, focus states, dialog default action, persisted language from earlier increments. Source logo preserved; redesign not performed. CI and manual bilingual UI, DPI, accessibility and performance validation remain pending; do not claim complete translation or accepted SL7. See docs/SL7-ACCEPTANCE.md.
+
+## 0.6.7 — Delivery 6 first increment
+User guides ES/EN, installer definition, private Windows x64 packaging. Installer and CI not yet verified. Updater, authenticated release signing, distribution repo and update acceptance remain open.

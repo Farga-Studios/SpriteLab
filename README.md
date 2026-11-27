@@ -1,12 +1,10 @@
 # SpriteLab
+Independent desktop editor for 2D spritesheets and animations. Windows x64, .NET 10 and Avalonia; no Python or game-engine dependency.
 
-Independent desktop tool for previewing, validating and editing 2D spritesheets and animations.
+Current candidate: 0.6.7. Private CI builds portable ZIP and installer; not a public release. Manual and CI acceptance pending.
 
-## Status
-Early development — SL3 (0.6.5). SL2 accepted in 0.2.1.9. Schema 5 persistence, animation editing, onion skin, and local alpha/edge/exact duplicate diagnostics. SL3 0.6.5 acceptance candidate awaits CI and manual validation; no public release.
+Features: PNG import, grid, projects, animation timing, onion skin, nondestructive offsets/anchors, diagnostics, native processing, PNG/JSON/GIF export, profiles, batch and integrity checks, Spanish/English interface.
 
-[Build instructions](docs/BUILD.md) · [Core model](docs/MODEL.md) · [Architecture](docs/adr) · [Roadmap](docs/ROADMAP.md) · [Changelog](CHANGELOG.md)
-
-SpriteLab is engine-agnostic. Python integration is optional. No game assets or engine dependencies are required.
+[Manual ES](docs/USER-GUIDE.md) · [User guide EN](docs/USER-GUIDE.en.md) · [Portable](docs/PORTABLE.md) · [Build](docs/BUILD.md) · [Roadmap](docs/ROADMAP.md) · [Changelog](CHANGELOG.md)
 
 License not yet selected.

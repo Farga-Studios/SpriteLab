@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.7 — User documentation and Windows distribution
+- Spanish and English user guides.
+- Per-user Inno Setup installer with optional desktop shortcut, existing icon and bilingual wizard.
+- Private CI artifact includes installer and portable ZIP with checksums. No public release.
+
 ## 0.6.5 — SL7 polish acceptance candidate
 - Keyboard shortcut reference, import/export/validation shortcuts, visible keyboard focus and dialog default actions.
 - Localized tooltip and automation names, updated About text; preserve original logo.
