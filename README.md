@@ -11,4 +11,4 @@ Original project code is licensed under [MIT](LICENSE). Third-party dependencies
 
 Shared foundation: [DevelopmentSuite](https://github.com/Farga-Studios/DevelopmentSuite). Official distribution: [SpriteLab Releases](https://github.com/Farga-Studios/SpriteLab/releases) (planned; no public release yet).
 
-Updater integration: consumes `FargaStudios.Suite.Updater` 0.2.0 from the organization feed. External clean restore currently requires access to that private package; anonymous NuGet distribution is pending. See build instructions. No signed public update has been published.
+Updater integration: uses `FargaStudios.Suite.Updater` 0.2.1 from NuGet.org. No private package feed is required. No signed public update has been published.

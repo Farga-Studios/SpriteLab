@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  packages: read
 jobs:
   build:
     runs-on: windows-latest
@@ -16,17 +15,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - name: Configure private NuGet authentication
-        shell: pwsh
-        env:
-          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $env:NuGetPackageSourceCredentials_Farga = "Username=$env:GITHUB_ACTOR;Password=$env:NUGET_AUTH_TOKEN;ValidAuthenticationTypes=Basic"
-          "NuGetPackageSourceCredentials_Farga=$env:NuGetPackageSourceCredentials_Farga" >> $env:GITHUB_ENV
       - name: SDK
         run: dotnet --info
       - name: Restore and audit direct and transitive packages
-        run: dotnet restore SpriteLab.slnx -p:NuGetAudit=true -p:NuGetAuditMode=all -p:WarningsAsErrors=NU1903%3BNU1904
+        run: dotnet restore SpriteLab.slnx --no-http-cache -p:NuGetAudit=true -p:NuGetAuditMode=all -p:WarningsAsErrors=NU1903%3BNU1904
       - name: List vulnerable dependencies
         run: dotnet list SpriteLab.slnx package --vulnerable --include-transitive --no-restore
       - name: Build
@@ -56,7 +48,7 @@ jobs:
           Get-ChildItem dist/*.exe | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash + '  ' + $_.Name | Set-Content ($_.FullName + '.sha256') }
           Compress-Archive -Path portable/* -DestinationPath SpriteLab-0.6.8-win-x64.zip
           (Get-FileHash SpriteLab-0.6.8-win-x64.zip -Algorithm SHA256).Hash + '  SpriteLab-0.6.8-win-x64.zip' | Set-Content SpriteLab-0.6.8-win-x64.sha256
-      - name: Upload private build artifact
+      - name: Upload build artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
