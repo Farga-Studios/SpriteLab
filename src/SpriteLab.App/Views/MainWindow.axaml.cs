@@ -2117,20 +2117,22 @@ public partial class MainWindow : Window
             if (UpdateWindow.IsInstalled)
             {
                 var assessment = UpdateWindow.AssessStartup();
-                if (assessment.Status == Suite.Updater.RecoveryStatus.HealthCheckRequired && assessment.Transaction is not null)
+                if (assessment.Status is not (Suite.Updater.RecoveryStatus.NoTransaction or Suite.Updater.RecoveryStatus.Healthy or Suite.Updater.RecoveryStatus.Aborted or Suite.Updater.RecoveryStatus.RolledBack))
                 {
-                    var dialog = new SuiteDialog { Title = UiText.IsEnglish ? "Verify update" : "Verificar actualización", Width = 520, Height = 250, CanResize = false };
-                    var confirm = new Button { Content = UiText.IsEnglish ? "Confirm working version" : "Confirmar funcionamiento", Classes = { "primary" } };
-                    var later = new Button { Content = UiText.IsEnglish ? "Later" : "Más tarde" };
-                    confirm.Click += (_, _) => dialog.Close(true);
-                    later.Click += (_, _) => dialog.Close(false);
-                    dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16, Children = {
-                        new TextBlock { Text = UiText.IsEnglish ? "Confirm only after the installer has finished and you have tested opening, editing and exporting a sample project successfully." : "Confirma solo cuando el instalador haya terminado y hayas probado correctamente la apertura, edición y exportación de un proyecto de prueba.", TextWrapping = TextWrapping.Wrap },
-                        new WrapPanel { Children = { later, confirm } } } };
-                    if (await dialog.ShowDialog<bool>(this))
+                    var action = await RecoveryDialog.ShowAsync(this, assessment);
+                    if (assessment.Transaction is not { } transaction) return;
+                    if (action == RecoveryAction.CancelPrepared)
+                        UpdateWindow.CancelPrepared(transaction.Id);
+                    else if (action == RecoveryAction.ConfirmUpdate)
+                        UpdateWindow.ConfirmStartupHealth(transaction.Id);
+                    else if (action == RecoveryAction.ConfirmRollback)
+                        UpdateWindow.ConfirmRollbackHealth(transaction.Id);
+                    else if (action == RecoveryAction.Rollback)
                     {
-                        UpdateWindow.ConfirmStartupHealth(assessment.Transaction.Id);
-                        StatusText.Text = UiText.IsEnglish ? "Update confirmed." : "Actualización confirmada.";
+                        if (_dirty && !await ConfirmDiscard()) return;
+                        await UpdateWindow.RollbackAsync(transaction.Id, true, _lifetime.Token);
+                        _allowClose = true;
+                        Close();
                     }
                     return;
                 }
