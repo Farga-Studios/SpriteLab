@@ -92,13 +92,13 @@ public partial class MainWindow : Window
         Bitmap? candidate = null;
         try
         {
-            if (_sheets.Count >= 64) throw new InvalidDataException("Límite de recursos alcanzado.");
+            if (_sheets.Count >= 64) throw new InvalidDataException(UiText.T("Límite de recursos alcanzado."));
             var pixels = ValidationPixels.Read(bitmap);
             var result = await ProcessingWindow.RunAsync(this, grid, pixels, selected, sheet.Name, _lifetime.Token);
             if (result is null || _lifetime.IsCancellationRequested) return;
             var bytes = result.Png;
             if (_sheets.Sum(s => (long)s.Png.Length) + bytes.Length > 256L * 1024 * 1024)
-                throw new InvalidDataException("Límite de recursos del proyecto alcanzado.");
+                throw new InvalidDataException(UiText.T("Límite de recursos del proyecto alcanzado."));
             using (var stream = new MemoryStream(bytes, writable: false))
                 bytes = await PngSource.ReadAsync(stream, _lifetime.Token);
             candidate = await Task.Run(() => Decode(bytes), _lifetime.Token);
@@ -200,7 +200,7 @@ public partial class MainWindow : Window
             var yes=new Button{Content=UiText.T("Apartar incompletas")};var no=new Button{Content=UiText.T("Cancelar")};
             yes.Click+=(_,_)=>dialog.Close(true);no.Click+=(_,_)=>dialog.Close(false);
             dialog.Content=new StackPanel{Margin=new Avalonia.Thickness(18),Spacing=12,Children={
-                new TextBlock{Text=$"Se detectaron {candidates.Length} carpetas incompletas. Se renombrarán las inactivas para revisión manual; no se borrará ningún archivo.",TextWrapping=TextWrapping.Wrap},
+                new TextBlock{Text=(UiText.IsEnglish ? $"Found {candidates.Length} incomplete folders. Inactive folders will be renamed for manual review; no files will be deleted." : $"Se detectaron {candidates.Length} carpetas incompletas. Se renombrarán las inactivas para revisión manual; no se borrará ningún archivo."),TextWrapping=TextWrapping.Wrap},
                 new WrapPanel{Orientation=Orientation.Horizontal,Children={yes,no}}}};
             if(!await dialog.ShowDialog<bool>(this))return;
             var count=await Task.Run(()=>candidates.Count(c=>ExportRecovery.TryQuarantine(folder,c)),_lifetime.Token);
@@ -277,7 +277,7 @@ public partial class MainWindow : Window
         ToolbarIcons.Set(MoveFrameLeftButton, "left", UiText.T("Mover fotograma a la izquierda"));
         ToolbarIcons.Set(MoveFrameRightButton, "right", UiText.T("Mover fotograma a la derecha"));
         ToolbarIcons.Set(EditSequenceButton, "edit", UiText.T("Editar secuencia"));
-        ToolbarIcons.Set(AssignTrackButton, "plus", "Asignar fila a dirección");
+        ToolbarIcons.Set(AssignTrackButton, "plus", UiText.T("Asignar fila a dirección"));
         ToolbarIcons.Set(RemoveTrackButton, "trash", UiText.T("Quitar dirección"));
         ToolbarIcons.Set(ApplyTimingButton, "check", UiText.T("Aplicar tiempo"));
         ToolbarIcons.Set(ValidateButton, "check", UiText.T("Validar hoja"));
@@ -286,7 +286,7 @@ public partial class MainWindow : Window
         ToolbarIcons.Set(ZoomInButton, "zoom-in", UiText.T("Ampliar zoom"));
         ToolbarIcons.Set(ZoomResetButton, "reset", "Zoom 100%");
         ToolbarIcons.Set(FitButton, "fit", "Ajustar vista");
-        ToolbarIcons.Set(ToggleGridButton, "grid", "Mostrar u ocultar cuadrícula");
+        ToolbarIcons.Set(ToggleGridButton, "grid", UiText.T("Mostrar u ocultar cuadrícula"));
         ToolbarIcons.Set(FrameZoomOutButton, "zoom-out", "Reducir vista de fotograma");
         ToolbarIcons.Set(FrameZoomInButton, "zoom-in", "Ampliar vista de fotograma");
         ToolbarIcons.Set(FrameZoomResetButton, "fit", "Centrar fotograma");
@@ -342,7 +342,7 @@ public partial class MainWindow : Window
             {
                 var bytes = await PngSource.ReadAsync(stream, token);
                 if (_sheets.Count >= 64 || _sheets.Sum(s => (long)s.Png.Length) + bytes.Length > 256L * 1024 * 1024)
-                    throw new InvalidDataException("Límite de recursos del proyecto alcanzado.");
+                    throw new InvalidDataException(UiText.T("Límite de recursos del proyecto alcanzado."));
                 imported = bytes;
                 candidate = await Task.Run(() =>
                 {
@@ -733,7 +733,7 @@ public partial class MainWindow : Window
             var sheet = _sheets[_active];
             var result = FrameAlignment.EditMany(_grid!, sheet.Offsets ?? [], cells, change);
             if (result.SequenceEqual(sheet.Offsets ?? [])) { RefreshFrameEdit(); return; }
-            RecordEditorChange("Desplazamientos de selección");
+            RecordEditorChange(UiText.T("Desplazamientos de selección"));
             _sheets[_active] = sheet with { Offsets = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
             StatusText.Text = (UiText.IsEnglish ? $"Offsets updated in {cells.Length} cells." : $"Desplazamientos actualizados en {cells.Length} celdas.");
@@ -797,7 +797,7 @@ public partial class MainWindow : Window
         if (result is null || _lifetime.IsCancellationRequested || _active < 0 || _sheets[_active].Id != sheetId) return;
         if (!result.SequenceEqual(sheet.Offsets ?? []))
         {
-            RecordEditorChange("Alineación automática");
+            RecordEditorChange(UiText.T("Alineación automática"));
             _sheets[_active] = sheet with { Offsets = result };
             MarkDirty(); RefreshFrameEdit(); UpdateOnion();
         }
@@ -1138,7 +1138,7 @@ public partial class MainWindow : Window
         var position = _clips.FindIndex(c => c.Id == clip.Id);
         if (position < 0) return;
         var updated = clip with { Cells = tracks[0].Cells, Tracks = tracks };
-        RecordEditorChange("Editar animación");
+        RecordEditorChange(UiText.T("Editar animación"));
         _clips[position] = updated;
         _refreshingClips = true;
         try { ClipList.ItemsSource = _clips.ToArray(); ClipList.SelectedIndex = position; }
@@ -1270,7 +1270,7 @@ public partial class MainWindow : Window
         var position = cursor.Position;
         var count = _grid.Count;
         var input = new TextBox { Text = (cursor.Cell + 1).ToString() };
-        var hint = new TextBlock { Text = $"Sustituir aparición {position + 1} por una celda de la misma hoja (1–{count}). Conserva duración y posición en la secuencia.", TextWrapping = TextWrapping.Wrap };
+        var hint = new TextBlock { Text = (UiText.IsEnglish ? $"Replace occurrence {position + 1} with a cell from the same sheet (1–{count}). Keeps duration and sequence position." : $"Sustituir aparición {position + 1} por una celda de la misma hoja (1–{count}). Conserva duración y posición en la secuencia."), TextWrapping = TextWrapping.Wrap };
         var dialog = new SuiteDialog { Title = UiText.T("Reemplazar fotograma"), Width = 460, Height = 230,
             Background = UiPalette.Window, Foreground = UiPalette.Text, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var ok = new Button { Classes = { "primary" }, Content = UiText.T("Reemplazar") };
@@ -1297,7 +1297,7 @@ public partial class MainWindow : Window
         var count = _grid.Count;
         var position = cursor.Position;
         var input = new TextBox { Text = (cursor.Cell + 1).ToString() };
-        var hint = new TextBlock { Text = $"Celda de la hoja (1–{count}). Se inserta después del fotograma seleccionado.", TextWrapping = TextWrapping.Wrap };
+        var hint = new TextBlock { Text = (UiText.IsEnglish ? $"Sheet cell (1–{count}). Inserted after the selected frame." : $"Celda de la hoja (1–{count}). Se inserta después del fotograma seleccionado."), TextWrapping = TextWrapping.Wrap };
         var dialog = new SuiteDialog { Title = UiText.T("Añadir fotograma"), Width = 420, Height = 200, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var ok = new Button { Classes = { "primary" }, Content = UiText.T("Añadir") };
         var cancel = new Button { Content = UiText.T("Cancelar") };
@@ -1384,7 +1384,7 @@ public partial class MainWindow : Window
         _playback = new PlaybackCursor(track.Cells);
         _playbackTrack = track;
         InspectorTabs.SelectedIndex = 1;
-        AnimationHeading.Text = $"ANIMACIÓN Y LÍNEA DE TIEMPO · {(ClipList.SelectedItem as ViewerClip)?.Name ?? track.ToString()}";
+        AnimationHeading.Text = (UiText.IsEnglish ? $"ANIMATION AND TIMELINE · {(ClipList.SelectedItem as ViewerClip)?.Name ?? track.ToString()}" : $"ANIMACIÓN Y LÍNEA DE TIEMPO · {(ClipList.SelectedItem as ViewerClip)?.Name ?? track.ToString()}");
         _previewClock = new PlaybackClock(_playback, Enumerable.Range(0, track.Cells.Length).Select(track.DurationAt));
         CellStrip.SetSequence(track.Cells, Enumerable.Range(0, track.Cells.Length).Select(track.DurationAt).ToArray());
         FpsInput.Text = (track.Fps ?? PreviewTiming.DefaultFps).ToString();
@@ -1629,7 +1629,7 @@ public partial class MainWindow : Window
         { VisibleBoundsInfo.Text = UiText.T("Área visible: valida la hoja"); return; }
         if (!_validationResult.Bounds.TryGetValue(cell, out var b))
         { VisibleBoundsInfo.Text = UiText.T("Área visible: celda vacía"); return; }
-        VisibleBoundsInfo.Text = $"Área visible: {b.Width} × {b.Height} px · ({b.X}, {b.Y})\nMárgenes I/S/D/B: {b.X}/{b.Y}/{_grid.Cell.Width - b.X - b.Width}/{_grid.Cell.Height - b.Y - b.Height} px";
+        VisibleBoundsInfo.Text = (UiText.IsEnglish ? $"Visible area: {b.Width} × {b.Height} px · ({b.X}, {b.Y})\nMargins L/T/R/B: {b.X}/{b.Y}/{_grid.Cell.Width - b.X - b.Width}/{_grid.Cell.Height - b.Y - b.Height} px" : $"Área visible: {b.Width} × {b.Height} px · ({b.X}, {b.Y})\nMárgenes I/S/D/B: {b.X}/{b.Y}/{_grid.Cell.Width - b.X - b.Width}/{_grid.Cell.Height - b.Y - b.Height} px");
     }
 
     private void ClearDiagnostics()
@@ -1653,7 +1653,7 @@ public partial class MainWindow : Window
         FindingList.ItemsSource = filtered;
         Preview.SetDiagnosticMarkers(DiagnosticOverlay.IsChecked == true ? DiagnosticFilter.Markers(filtered) : null);
         var visibleCount = filtered.Count(f => f.Code != "LIMIT");
-        DiagnosticText.Text = _diagnosticSummary + $" · {visibleCount} avisos visibles";
+        DiagnosticText.Text = _diagnosticSummary + (UiText.IsEnglish ? $" · {visibleCount} visible findings" : $" · {visibleCount} avisos visibles");
     }
 
     private async void OnValidate(object? sender, RoutedEventArgs e)
@@ -1675,16 +1675,16 @@ public partial class MainWindow : Window
             var pixels = ValidationPixels.Read(_bitmap);
             var analysis = await Task.Run(() =>
             {
-                var sheet = SheetValidation.Analyze(grid, pixels, _lifetime.Token);
+                var sheet = SheetValidation.Analyze(grid, pixels, _lifetime.Token, UiText.IsEnglish);
                 var baseFindings = sheet.Findings.Where(f => f.Code != "LIMIT").ToArray();
                 var alignment = AlignmentValidation.Analyze(grid, sheet.Bounds, tracks,
-                    SheetValidation.FindingLimit - baseFindings.Length, _lifetime.Token);
+                    SheetValidation.FindingLimit - baseFindings.Length, _lifetime.Token, UiText.IsEnglish);
                 var list = baseFindings.Concat(alignment.Findings).ToList();
                 var clipResult = ClipValidation.Analyze(grid, sheet.Bounds, clips,
-                    SheetValidation.FindingLimit - list.Count, _lifetime.Token);
+                    SheetValidation.FindingLimit - list.Count, _lifetime.Token, UiText.IsEnglish);
                 list.AddRange(clipResult.Findings);
                 var omitted = sheet.OmittedFindings + alignment.OmittedFindings + clipResult.OmittedFindings;
-                if (omitted > 0) list.Add(new SheetFinding("LIMIT", null, $"Se omiten {omitted} avisos; recuento completo."));
+                if (omitted > 0) list.Add(new SheetFinding("LIMIT", null, (UiText.IsEnglish ? $"{omitted} findings omitted; counts are complete." : $"Se omiten {omitted} avisos; recuento completo.")) { English = UiText.IsEnglish });
                 return (Sheet: sheet, Alignment: alignment, Clips: clipResult, Findings: list, Omitted: omitted);
             }, _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
@@ -1695,8 +1695,8 @@ public partial class MainWindow : Window
                 _sheets[_active].Name, grid, analysis.Sheet, analysis.Alignment.TotalFindings,
                 analysis.Clips.TotalFindings, analysis.Omitted, _allFindings);
             var result = analysis.Sheet;
-            _diagnosticSummary = $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación · {analysis.Clips.TotalFindings} de animaciones" +
-                (analysis.Omitted > 0 ? $" · {analysis.Omitted} avisos no listados" : "");
+            _diagnosticSummary = (UiText.IsEnglish ? $"{result.TotalCells} cells · {result.EmptyCells} empty · {result.EdgeCells} edge · {result.DuplicateCells} duplicates · {analysis.Alignment.TotalFindings} size/alignment findings · {analysis.Clips.TotalFindings} animation findings" : $"{result.TotalCells} celdas · {result.EmptyCells} vacías · {result.EdgeCells} con borde · {result.DuplicateCells} duplicadas · {analysis.Alignment.TotalFindings} avisos de tamaño/alineación · {analysis.Clips.TotalFindings} de animaciones") +
+                (analysis.Omitted > 0 ? (UiText.IsEnglish ? $" · {analysis.Omitted} unlisted findings" : $" · {analysis.Omitted} avisos no listados") : "");
             RefreshDiagnosticFilter();
         }
         catch (Exception ex)
@@ -1730,7 +1730,7 @@ public partial class MainWindow : Window
             var extension = System.IO.Path.GetExtension(file.Name);
             string content;
             if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase)) content = report.ToJson();
-            else if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)) content = report.ToPlainText();
+            else if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)) content = report.ToPlainText(UiText.IsEnglish);
             else { StatusText.Text = UiText.T("Selecciona una extensión .json o .txt."); return; }
             // Never allow a report to overwrite the project's persistence manifest.
             if (string.Equals(file.Name, ProjectStore.ManifestName, StringComparison.OrdinalIgnoreCase))
@@ -1753,7 +1753,7 @@ public partial class MainWindow : Window
     {
         if (_importing || FindingList.SelectedItem is not SheetFinding { Cell: int cell }) return;
         OnManualCell(cell);
-        StatusText.Text = $"Revisando celda {cell + 1} · El aviso requiere revisión manual";
+        StatusText.Text = (UiText.IsEnglish ? $"Reviewing cell {cell + 1} · Finding requires manual review" : $"Revisando celda {cell + 1} · El aviso requiere revisión manual");
     }
 
     private static Bitmap Decode(byte[] bytes)
@@ -1923,7 +1923,7 @@ public partial class MainWindow : Window
                     revision = existing.Revision;
                 }
                 else if (Directory.EnumerateFileSystemEntries(folder).Any())
-                    throw new IOException("La carpeta contiene archivos pero no es un proyecto SpriteLab. Elige otra ubicación o nombre.");
+                    throw new IOException(UiText.T("La carpeta contiene archivos pero no es un proyecto SpriteLab. Elige otra ubicación o nombre."));
             }
             var project = new ViewerProject(id, name, _sheets.ToArray(), _clips.ToArray());
             SaveIndicator.Text = UiText.T("Guardando…");

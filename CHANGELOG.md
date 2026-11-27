@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3 — Localized diagnostics and reports
+- Extend English translations to diagnostic messages, reports and remaining reviewed editor/processing messages.
+- Preserve diagnostic codes, user content and export schema. Add language regression tests.
+
 ## 0.6.2 — Preview and translation refinement
 - Reuse checkerboard drawing and upload preview RGBA directly to bitmap rather than PNG round-trip.
 - Extend English catalog across timeline, validation, grid and dialogs; translate common dynamic status messages.

@@ -87,3 +87,6 @@ Shared modal caption, global visual styles, initial ES/EN catalog and persisted 
 
 ## 0.6.2 — Delivery 5 second increment
 Reduced preview allocations and expanded English UI coverage. No measured benchmark or Windows visual validation yet. Remaining diagnostics and dynamic strings, full accessibility and logo review pending before 0.6.5.
+
+## 0.6.3 — Localization pass
+English diagnostic and report output plus remaining reviewed editor strings. Full runtime language verification, low-level exception messages, accessibility and logo review remain open. CI pending.

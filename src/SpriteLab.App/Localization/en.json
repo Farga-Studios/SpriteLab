@@ -306,5 +306,20 @@
   "Recuperación fallida: ": "Recovery failed: ",
   "Seleccionar carpeta de exportación": "Choose export folder",
   "Selecciona una exportación con integrity.json": "Choose an export containing integrity.json",
-  "Carpeta padre de exportaciones": "Export parent folder"
+  "Carpeta padre de exportaciones": "Export parent folder",
+  "Límite de recursos alcanzado.": "Resource limit reached.",
+  "Límite de recursos del proyecto alcanzado.": "Project resource limit reached.",
+  "Asignar fila a dirección": "Assign row to direction",
+  "Mostrar u ocultar cuadrícula": "Show or hide grid",
+  "Desplazamientos de selección": "Selection offsets",
+  "Alineación automática": "Automatic alignment",
+  "Editar animación": "Edit animation",
+  "La carpeta contiene archivos pero no es un proyecto SpriteLab. Elige otra ubicación o nombre.": "The folder contains files but is not a SpriteLab project. Choose another location or name.",
+  "Umbral alfa entre 0 y 255.": "Alpha threshold between 0 and 255.",
+  "Máximo 65536 celdas por operación.": "Maximum 65536 cells per operation.",
+  "Selecciona un alcance.": "Select a scope.",
+  "Selecciona una operación.": "Select an operation.",
+  " Sin cambios que incorporar.": " No changes to import.",
+  " Puedes incorporar una copia nueva.": " You can import a new copy.",
+  "Rango: 1,3-5,8 · Umbral: 0–255 (solo alfa). Se procesa la imagen fuente sin offsets ni anclajes.": "Range: 1,3-5,8 · Threshold: 0–255 (alpha only). Source image is processed without offsets or anchors."
 }

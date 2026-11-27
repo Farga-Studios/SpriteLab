@@ -95,17 +95,17 @@ internal static class ProcessingWindow
             {
                 if (operation.SelectedIndex == 1 &&
                     (!int.TryParse(threshold.Text, out alpha) || alpha is < 0 or > 255))
-                    throw new ArgumentException("Umbral alfa entre 0 y 255.");
+                    throw new ArgumentException(UiText.T("Umbral alfa entre 0 y 255."));
                 cells = scope.SelectedIndex switch
                 {
                     0 => [selected],
                     1 => Enumerable.Range(selected / grid.Columns * grid.Columns, grid.Columns).ToArray(),
                     2 when grid.Count <= 65536 => Enumerable.Range(0, grid.Count).ToArray(),
-                    2 => throw new ArgumentException("Máximo 65536 celdas por operación."),
+                    2 => throw new ArgumentException(UiText.T("Máximo 65536 celdas por operación.")),
                     3 => FrameAlignment.ParseSelection(range.Text ?? "", grid.Count),
-                    _ => throw new ArgumentException("Selecciona un alcance.")
+                    _ => throw new ArgumentException(UiText.T("Selecciona un alcance."))
                 };
-                if (operation.SelectedIndex < 0) throw new ArgumentException("Selecciona una operación.");
+                if (operation.SelectedIndex < 0) throw new ArgumentException(UiText.T("Selecciona una operación."));
             }
             catch (ArgumentException ex) { status.Text = ex.Message; return; }
             var request = new ProcessingRequest((SpriteOperation)operation.SelectedIndex, cells, alpha);
@@ -124,8 +124,8 @@ internal static class ProcessingWindow
                 processed = CreateBitmap(grid, completed.Rgba);
                 after.SetImage(processed); after.SetGrid(grid); after.SetZoom(zoom);
                 result = completed; progress.Value = 100;
-                status.Text = $"{completed.ProcessedCells} celdas · {completed.ChangedPixels} píxeles modificados." +
-                    (completed.ChangedPixels == 0 ? " Sin cambios que incorporar." : " Puedes incorporar una copia nueva.");
+                status.Text = (UiText.IsEnglish ? $"{completed.ProcessedCells} cells · {completed.ChangedPixels} pixels changed." : $"{completed.ProcessedCells} celdas · {completed.ChangedPixels} píxeles modificados.") +
+                    (completed.ChangedPixels == 0 ? UiText.T(" Sin cambios que incorporar.") : UiText.T(" Puedes incorporar una copia nueva."));
             }
             catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = UiText.T("Proceso cancelado. Original intacto."); }
             catch (Exception ex) { if (!lifetime.IsCancellationRequested) status.Text = $"Error: {ex.Message}"; }
@@ -150,7 +150,7 @@ internal static class ProcessingWindow
                 dialog.Close(new ProcessingImport(png, snapshot.ChangedPixels));
             }
             catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status.Text = UiText.T("Codificación cancelada. Original intacto."); }
-            catch (Exception ex) { if (!lifetime.IsCancellationRequested) status.Text = $"No se pudo codificar PNG: {ex.Message}"; }
+            catch (Exception ex) { if (!lifetime.IsCancellationRequested) status.Text = (UiText.IsEnglish ? $"PNG encoding failed: {ex.Message}" : $"No se pudo codificar PNG: {ex.Message}"); }
             finally { running = null; if (!lifetime.IsCancellationRequested) { progress.IsIndeterminate = false; SetWorking(false); } }
         };
         close.Click += (_, _) => dialog.Close(null);
@@ -173,7 +173,7 @@ internal static class ProcessingWindow
         {
             new TextBlock { Text = name + " · " + grid.Cell.Width + "×" + grid.Cell.Height + " px por celda", TextWrapping = TextWrapping.Wrap },
             new WrapPanel { Orientation = Orientation.Horizontal, Children = { operation, scope, range, threshold, zoomOut, zoomIn } },
-            new TextBlock { Text = "Rango: 1,3-5,8 · Umbral: 0–255 (solo alfa). Se procesa la imagen fuente sin offsets ni anclajes.", TextWrapping = TextWrapping.Wrap, Foreground = UiPalette.Muted }
+            new TextBlock { Text = UiText.T("Rango: 1,3-5,8 · Umbral: 0–255 (solo alfa). Se procesa la imagen fuente sin offsets ni anclajes."), TextWrapping = TextWrapping.Wrap, Foreground = UiPalette.Muted }
         }};
         var footer = new StackPanel { Spacing = 8, Children = { progress, status,
             new WrapPanel { Orientation = Orientation.Horizontal, Children = { run, stop, add, close } } } };

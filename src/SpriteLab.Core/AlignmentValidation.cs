@@ -13,7 +13,7 @@ public static class AlignmentValidation
 {
     // Advisory heuristics only. Compare consecutive nonempty occurrences, not unrelated poses or different directions.
     public static AlignmentResult Analyze(CellGrid grid, IReadOnlyDictionary<int, VisibleBounds> bounds,
-        IEnumerable<AlignmentTrack> tracks, int limit = SheetValidation.FindingLimit, CancellationToken token = default)
+        IEnumerable<AlignmentTrack> tracks, int limit = SheetValidation.FindingLimit, CancellationToken token = default, bool english = false)
     {
         if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit));
         var findings = new List<SheetFinding>();
@@ -36,11 +36,11 @@ public static class AlignmentValidation
                 var dy = Math.Abs(b.Bottom - a.Bottom);
                 var dw = Math.Abs(b.Width - a.Width);
                 var dh = Math.Abs(b.Height - a.Height);
-                var context = $"{track.Clip} / {track.Direction}, fotogramas {i}–{i + 1}";
+                var context = (english?$"{track.Clip} / {track.Direction}, frames {i}–{i + 1}":$"{track.Clip} / {track.Direction}, fotogramas {i}–{i + 1}");
                 if (dx >= thresholdX || dy >= thresholdY)
-                    Add("ALIGNMENT", current, previous, $"{context}: cambio de centro X {dx:0.#} px / base Y {dy} px; revisar alineación.");
+                    Add("ALIGNMENT", current, previous, (english?$"{context}: X center change {dx:0.#} px / Y baseline {dy} px; review alignment.":$"{context}: cambio de centro X {dx:0.#} px / base Y {dy} px; revisar alineación."));
                 if (dw >= sizeX || dh >= sizeY)
-                    Add("SIZE", current, previous, $"{context}: cambio de ancho {dw} px / alto {dh} px; revisar tamaño visible.");
+                    Add("SIZE", current, previous, (english?$"{context}: width change {dw} px / height {dh} px; review visible size.":$"{context}: cambio de ancho {dw} px / alto {dh} px; revisar tamaño visible."));
             }
         }
         return new(findings.AsReadOnly(), total, total - findings.Count);
@@ -49,7 +49,7 @@ public static class AlignmentValidation
         {
             total++;
             if (findings.Count < limit)
-                findings.Add(new(code, cell, message) { ReferenceCell = reference });
+                findings.Add(new(code, cell, message) { ReferenceCell = reference, English = english });
         }
     }
 }

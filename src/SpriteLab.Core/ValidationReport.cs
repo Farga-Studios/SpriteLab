@@ -32,32 +32,32 @@ public sealed record ValidationReport(int FormatVersion, string AppVersion, Date
         Converters = { new JsonStringEnumConverter() }
     });
 
-    public string ToPlainText()
+    public string ToPlainText(bool english = false)
     {
         var text = new StringBuilder();
-        text.AppendLine("SPRITELAB — INFORME DE VALIDACIÓN");
-        text.AppendLine($"Versión: {AppVersion} · Formato de informe: {FormatVersion}");
-        text.AppendLine($"Fecha del análisis (UTC): {AnalyzedAtUtc:O}");
-        text.AppendLine($"Proyecto: {Project}");
-        text.AppendLine($"Recurso: {Resource}");
-        text.AppendLine($"Imagen: {ImageWidth} × {ImageHeight} px");
-        text.AppendLine($"Cuadrícula: {Columns} × {Rows} · Celda: {CellWidth} × {CellHeight} px");
+        text.AppendLine((english?"SPRITELAB — VALIDATION REPORT":"SPRITELAB — INFORME DE VALIDACIÓN"));
+        text.AppendLine((english?$"Version: {AppVersion} · Report format: {FormatVersion}":$"Versión: {AppVersion} · Formato de informe: {FormatVersion}"));
+        text.AppendLine((english?$"Analysis date (UTC): {AnalyzedAtUtc:O}":$"Fecha del análisis (UTC): {AnalyzedAtUtc:O}"));
+        text.AppendLine((english?$"Project: {Project}":$"Proyecto: {Project}"));
+        text.AppendLine((english?$"Resource: {Resource}":$"Recurso: {Resource}"));
+        text.AppendLine((english?$"Image: {ImageWidth} × {ImageHeight} px":$"Imagen: {ImageWidth} × {ImageHeight} px"));
+        text.AppendLine((english?$"Grid: {Columns} × {Rows} · Cell: {CellWidth} × {CellHeight} px":$"Cuadrícula: {Columns} × {Rows} · Celda: {CellWidth} × {CellHeight} px"));
         text.AppendLine();
-        text.AppendLine($"Celdas analizadas: {TotalCells}");
-        text.AppendLine($"Vacías: {EmptyCells} · Con borde: {EdgeCells} · Duplicadas: {DuplicateCells}");
-        text.AppendLine($"Avisos de tamaño/alineación: {AlignmentFindings} · Animaciones: {AnimationFindings}");
-        text.AppendLine($"Avisos totales: {TotalFindings} · Listados: {ListedFindings} · Omitidos: {OmittedFindings}");
-        text.AppendLine("Las categorías pueden solaparse. Los avisos requieren revisión manual.");
-        text.AppendLine("Numeración de celdas desde 1. Informe de la hoja activa, sin aplicar filtros.");
-        if (IsTruncated) text.AppendLine("ATENCIÓN: lista limitada; los recuentos son completos.");
+        text.AppendLine((english?$"Cells analyzed: {TotalCells}":$"Celdas analizadas: {TotalCells}"));
+        text.AppendLine((english?$"Empty: {EmptyCells} · Edge: {EdgeCells} · Duplicates: {DuplicateCells}":$"Vacías: {EmptyCells} · Con borde: {EdgeCells} · Duplicadas: {DuplicateCells}"));
+        text.AppendLine((english?$"Size/alignment findings: {AlignmentFindings} · Animations: {AnimationFindings}":$"Avisos de tamaño/alineación: {AlignmentFindings} · Animaciones: {AnimationFindings}"));
+        text.AppendLine((english?$"Total findings: {TotalFindings} · Listed: {ListedFindings} · Omitted: {OmittedFindings}":$"Avisos totales: {TotalFindings} · Listados: {ListedFindings} · Omitidos: {OmittedFindings}"));
+        text.AppendLine((english?"Categories may overlap. Findings require manual review.":"Las categorías pueden solaparse. Los avisos requieren revisión manual."));
+        text.AppendLine((english?"Cell numbering starts at 1. Active sheet report, without filters.":"Numeración de celdas desde 1. Informe de la hoja activa, sin aplicar filtros."));
+        if (IsTruncated) text.AppendLine((english?"WARNING: list capped; counts are complete.":"ATENCIÓN: lista limitada; los recuentos son completos."));
         text.AppendLine();
         foreach (var finding in Findings)
         {
-            var cell = finding.Cell is int c ? $"Celda {c} · " : "";
-            var reference = finding.ReferenceCell is int r ? $" · Referencia: celda {r}" : "";
+            var cell = finding.Cell is int c ? (english?$"Cell {c} · ":$"Celda {c} · ") : "";
+            var reference = finding.ReferenceCell is int r ? (english?$" · Reference: cell {r}":$" · Referencia: celda {r}") : "";
             text.AppendLine($"[{finding.Code}] {cell}{finding.Message}{reference}");
         }
-        if (TotalFindings == 0) text.AppendLine("No se detectaron avisos en las comprobaciones ejecutadas.");
+        if (TotalFindings == 0) text.AppendLine((english?"No findings were detected in the checks performed.":"No se detectaron avisos en las comprobaciones ejecutadas."));
         return text.ToString();
     }
 }

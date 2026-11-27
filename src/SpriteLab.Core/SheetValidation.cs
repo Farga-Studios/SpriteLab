@@ -7,7 +7,8 @@ public sealed record SheetFinding(string Code, int? Cell, string Message)
 {
     public CellEdges Edges { get; init; }
     public int? ReferenceCell { get; init; }
-    public override string ToString() => Cell is int cell
+    public bool English { get; init; }
+    public override string ToString() => English ? (Cell is int c ? $"Finding · Cell {c + 1}: {Message}" : $"Finding · {Message}") : Cell is int cell
         ? $"Aviso · Celda {cell + 1}: {Message}" : $"Aviso · {Message}";
 }
 
@@ -34,7 +35,7 @@ public static class SheetValidation
         Analyze(grid, rgba, token).Findings;
 
     // Tightly packed straight RGBA. Ignore RGB when alpha is zero.
-    public static SheetValidationResult Analyze(CellGrid grid, byte[] rgba, CancellationToken token = default)
+    public static SheetValidationResult Analyze(CellGrid grid, byte[] rgba, CancellationToken token = default, bool english = false)
     {
         if (rgba.LongLength != (long)grid.Image.Width * grid.Image.Height * 4)
             throw new ArgumentException("Invalid pixel buffer.", nameof(rgba));
@@ -78,13 +79,13 @@ public static class SheetValidation
             {
                 empty++;
                 if (findings.Count < FindingLimit)
-                    findings.Add(new("EMPTY", i, "Fotograma completamente transparente."));
+                    findings.Add(new SheetFinding("EMPTY", i, english ? "Completely transparent frame." : "Fotograma completamente transparente.") { English = english });
             }
             else if (edges != CellEdges.None)
             {
                 edge++;
                 if (findings.Count < FindingLimit)
-                    findings.Add(new("EDGE", i, $"Píxeles visibles en {Describe(edges)}; posible recorte.") { Edges = edges });
+                    findings.Add(new("EDGE", i, english ? $"Visible pixels on {Describe(edges,true)}; possible clipping." : $"Píxeles visibles en {Describe(edges)}; posible recorte.") { Edges = edges, English = english });
             }
             if (!visible) continue;
             bounds.Add(i, new VisibleBounds(minX, minY, maxX - minX + 1, maxY - minY + 1));
@@ -102,7 +103,7 @@ public static class SheetValidation
             {
                 duplicates++;
                 if (findings.Count < FindingLimit)
-                    findings.Add(new("DUPLICATE", i, $"Imagen idéntica a la celda {first + 1}; puede ser intencional.") { ReferenceCell = first });
+                    findings.Add(new("DUPLICATE", i, english ? $"Image identical to cell {first + 1}; may be intentional." : $"Imagen idéntica a la celda {first + 1}; puede ser intencional.") { ReferenceCell = first, English = english });
             }
             else
             {
@@ -112,7 +113,7 @@ public static class SheetValidation
         }
         var omitted = empty + edge + duplicates - findings.Count;
         if (omitted > 0)
-            findings.Add(new("LIMIT", null, $"Se omiten {omitted} avisos de la lista. Recuento completo."));
+            findings.Add(new SheetFinding("LIMIT", null, english ? $"{omitted} findings omitted; counts are complete." : $"Se omiten {omitted} avisos de la lista. Recuento completo.") { English = english });
         return new(grid.Count, empty, edge, findings.AsReadOnly(), omitted, duplicates, clean)
         { Bounds = new System.Collections.ObjectModel.ReadOnlyDictionary<int, VisibleBounds>(bounds) };
     }
@@ -133,13 +134,13 @@ public static class SheetValidation
         return true;
     }
 
-    private static string Describe(CellEdges edges)
+    private static string Describe(CellEdges edges,bool english=false)
     {
         var names = new List<string>(4);
-        if (edges.HasFlag(CellEdges.Top)) names.Add("arriba");
-        if (edges.HasFlag(CellEdges.Right)) names.Add("derecha");
-        if (edges.HasFlag(CellEdges.Bottom)) names.Add("abajo");
-        if (edges.HasFlag(CellEdges.Left)) names.Add("izquierda");
+        if (edges.HasFlag(CellEdges.Top)) names.Add(english?"top":"arriba");
+        if (edges.HasFlag(CellEdges.Right)) names.Add(english?"right":"derecha");
+        if (edges.HasFlag(CellEdges.Bottom)) names.Add(english?"bottom":"abajo");
+        if (edges.HasFlag(CellEdges.Left)) names.Add(english?"left":"izquierda");
         return string.Join(", ", names);
     }
 }
