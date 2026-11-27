@@ -59,3 +59,9 @@ SL3 functional acceptance reported by user for 0.3.0.1. 0.3.0.2 usability pass: 
 
 ## 0.4.6 — Native processing workflow
 0.4.4–0.4.6 implemented together. Tools > Procesamiento de imágenes. Compare source/result, cancel processing, import a separate PNG resource. No Python dependencies. CI/manual acceptance pending; SL5 0.5.0 follows.
+
+## SL7 — Actualizador compartido (requisito aprobado)
+Antes de SpriteLab 1.0.0, añadir SL7 0.6.8: actualización integrada reutilizable por la suite (nombre provisional Suite.Updater). Comprobación automática no bloqueante al inicio y manual desde Ayuda, notas de versión, descarga con progreso y cancelación, instalación tras cerrar, reinicio, validación de firma o manifiesto autenticado y SHA-256, recuperación/rollback, protección de proyectos y preferencias. Separar versión instalada, canal y origen de distribución; no incluir credenciales ni asumir repositorios públicos. Validar actualización desde una versión anterior, interrupciones, paquetes corruptos, permisos y funcionamiento sin conexión antes de RC. Distribución concreta y acceso a releases privados pendientes de decisión. No crear releases públicas sin autorización.
+
+## Suite — requisitos de integración futuros
+TileLab: editor de tilesets y salas especiales, compatibilidad TMJ inicial y validación de sockets, colisiones y spawn points. DungeonLab: ejecutar el mismo generador versionado que SEALSWORN, con semilla, zona, reglas y catálogo idénticos; pruebas de equivalencia determinista. Herramientas independientes con adaptadores por juego. Reutilizar actualizador y componentes visuales comunes.
