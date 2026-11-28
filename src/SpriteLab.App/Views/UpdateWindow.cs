@@ -36,6 +36,13 @@ internal static class UpdateWindow
         service.CancelPrepared(transactionId, Installed);
     }
 
+    public static void ResolveCancelled(Guid transactionId)
+    {
+        if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.ResolveInterrupted(transactionId, Installed, true, true);
+    }
+
     public static void ConfirmRollbackHealth(Guid transactionId)
     {
         using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
