@@ -52,7 +52,18 @@ internal sealed class UpdateRecoveryService : IDisposable
     public UpdateTransaction CancelPrepared(Guid id, Version running) => recovery.CancelPrepared(id, running);
 
     public UpdateTransaction ResolveInterrupted(Guid id, Version running, bool installerExited, bool previousHealthy)
-        => recovery.ResolveInterrupted(id, running, installerExited, previousHealthy, true);
+    {
+        if (evidence.HasCompletion(id)) throw new InvalidOperationException("Completion receipt exists; manual diagnosis required.");
+        var processes = System.Diagnostics.Process.GetProcesses();
+        try
+        {
+            if (processes.Any(p => p.ProcessName.Contains("-win-x64-setup", StringComparison.OrdinalIgnoreCase) ||
+                p.ProcessName.Contains("SpriteLab-Setup", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Close all installers before resolving the interruption.");
+        }
+        finally { foreach (var p in processes) p.Dispose(); }
+        return recovery.ResolveInterrupted(id, running, installerExited, previousHealthy, true);
+    }
 
     public UpdateTransaction ConfirmRollbackHealthy(Guid id, Version running)
     {
