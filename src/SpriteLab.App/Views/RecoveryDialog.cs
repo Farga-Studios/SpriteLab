@@ -5,7 +5,7 @@ using Suite.Updater;
 
 namespace SpriteLab.App.Views;
 
-internal enum RecoveryAction { Later, CancelPrepared, ConfirmUpdate, ConfirmRollback, Rollback }
+internal enum RecoveryAction { Later, CancelPrepared, ConfirmUpdate, ConfirmRollback, Rollback, ResolveCancelled }
 
 internal static class RecoveryDialog
 {
@@ -40,6 +40,12 @@ internal static class RecoveryDialog
             Explain($"Versión anterior: {t.PreviousVersion} · Nueva: {t.TargetVersion}", $"Previous: {t.PreviousVersion} · Target: {t.TargetVersion}");
             if (assessment.Status == RecoveryStatus.Interrupted && t.Phase == UpdatePhase.Prepared)
                 Add("Cancelar actualización preparada", "Cancel prepared update", RecoveryAction.CancelPrepared);
+            else if (assessment.Status == RecoveryStatus.Interrupted && t.Phase is (UpdatePhase.HandoffStarted or UpdatePhase.AwaitingHealthCheck))
+            {
+                Explain("Solo si cancelaste antes de copiar archivos. Si la copia comenzó o tienes dudas, utiliza la recuperación manual.", "Only if you cancelled before files were copied. If copying started or you are unsure, use manual recovery.");
+                var check = Attest("Cancelé antes de copiar archivos, el instalador está cerrado y he probado la versión anterior correctamente.", "I cancelled before file copying, the installer has exited, and I tested the previous version successfully.");
+                Add("Resolver cancelación", "Resolve cancellation", RecoveryAction.ResolveCancelled, check);
+            }
             else if (assessment.Status is RecoveryStatus.HealthCheckRequired or RecoveryStatus.RollbackHealthCheckRequired)
             {
                 Explain("Prueba la apertura, edición y exportación de un proyecto de ejemplo antes de confirmar.", "Test opening, editing and exporting a sample project before confirming.");
