@@ -2123,6 +2123,8 @@ public partial class MainWindow : Window
                     if (assessment.Transaction is not { } transaction) return;
                     if (action == RecoveryAction.CancelPrepared)
                         UpdateWindow.CancelPrepared(transaction.Id);
+                    else if (action == RecoveryAction.ResolveCancelled)
+                        UpdateWindow.ResolveCancelled(transaction.Id);
                     else if (action == RecoveryAction.ConfirmUpdate)
                         UpdateWindow.ConfirmStartupHealth(transaction.Id);
                     else if (action == RecoveryAction.ConfirmRollback)
