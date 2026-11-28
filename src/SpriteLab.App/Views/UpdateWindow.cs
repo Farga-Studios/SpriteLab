@@ -24,6 +24,58 @@ internal static class UpdateWindow
     }
     public static async Task<UpdateManifest?> CheckAsync(CancellationToken token)=>await Client().CheckAsync(Installed,token);
     public static string StagingRoot=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"SpriteLab","Updates");
+    public static RecoveryAssessment AssessStartup()
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        return service.Assess(Installed);
+    }
+
+    public static void CancelPrepared(Guid transactionId)
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.CancelPrepared(transactionId, Installed);
+    }
+
+    public static void ResolveCancelled(Guid transactionId)
+    {
+        if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.ResolveInterrupted(transactionId, Installed, true, true);
+    }
+
+    public static void ConfirmRollbackHealth(Guid transactionId)
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.ConfirmRollbackHealthy(transactionId, Installed);
+    }
+
+    public static async Task RollbackAsync(Guid transactionId, bool dataCompatible, CancellationToken token)
+    {
+        if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        await service.RollbackAsync(transactionId, Installed, StagingRoot, dataCompatible, token);
+    }
+
+    public static void ConfirmStartupHealth(Guid transactionId)
+    {
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        service.ConfirmHealthy(transactionId, Installed);
+    }
+
+    public static async Task LaunchTrackedAsync(PreparedUpdate update, CancellationToken token)
+    {
+        if (!IsInstalled) throw new InvalidOperationException("Portable installation.");
+        using var service = new SpriteLab.App.Updates.UpdateRecoveryService(StagingRoot, PublicKey);
+        var assessment = service.Assess(Installed);
+        if (assessment.Status is not (RecoveryStatus.NoTransaction or RecoveryStatus.Healthy or RecoveryStatus.Aborted or RecoveryStatus.RolledBack))
+            throw new InvalidOperationException("An unresolved update requires recovery.");
+        await service.RetainAsync(Client(), update, token);
+        token.ThrowIfCancellationRequested();
+        var transaction = service.Begin(Installed, update);
+        service.MarkHandoff(transaction.Id);
+        await InstallerHandoff.LaunchAsync(update, StagingRoot, token, transactionId: transaction.Id);
+    }
+
     public static bool IsInstalled=>InstallerHandoff.IsInstalled(AppContext.BaseDirectory,"{B637E3EE-3A57-474F-9F87-C70E3F12AE3B}");
     public static async Task<PreparedUpdate?> ShowAsync(Window owner,CancellationToken token,UpdateManifest? known=null)
     {

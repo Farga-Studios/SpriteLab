@@ -77,7 +77,38 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnAnimationKey, Avalonia.Interactivity.RoutingStrategies.Bubble);
         FramePreviewZoom.Text = UiText.T("Ajustar");
         VersionText.Text = (UiText.IsEnglish ? $"SpriteLab {GetVersion()} · SL7 polish" : $"SpriteLab {GetVersion()} · SL7 acabado");
-        Opened += async (_, _) => { try { var update=await UpdateWindow.CheckAsync(_lifetime.Token); if(update is not null&&!_lifetime.IsCancellationRequested&&!_importing) StatusText.Text=UiText.T("Nueva versión: ")+update.Version+" · "+UiText.T("Actualizaciones"); } catch(Exception) { /* Offline or invalid metadata never blocks startup. */ } };
+        Opened += async (_, _) =>
+        {
+            try
+            {
+                if (UpdateWindow.IsInstalled)
+                {
+                    var assessment = UpdateWindow.AssessStartup();
+                    if (assessment.Status == Suite.Updater.RecoveryStatus.HealthCheckRequired && assessment.Transaction is not null)
+                    {
+                        StatusText.Text = UiText.IsEnglish ? "Test the application, then open Updates to confirm its health." : "Prueba la aplicación y abre Actualizaciones para confirmar su funcionamiento.";
+                        return;
+                    }
+                    if (assessment.Status is not (Suite.Updater.RecoveryStatus.NoTransaction or Suite.Updater.RecoveryStatus.Healthy or Suite.Updater.RecoveryStatus.Aborted or Suite.Updater.RecoveryStatus.RolledBack))
+                    {
+                        StatusText.Text = UiText.IsEnglish ? "An update requires verification or recovery." : "Una actualización requiere verificación o recuperación.";
+                        return;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                StatusText.Text = UiText.IsEnglish ? "Update recovery state unavailable." : "Estado de recuperación no disponible.";
+                return;
+            }
+            try
+            {
+                var update = await UpdateWindow.CheckAsync(_lifetime.Token);
+                if (update is not null && !_lifetime.IsCancellationRequested && !_importing)
+                    StatusText.Text = UiText.T("Nueva versión: ") + update.Version + " · " + UiText.T("Actualizaciones");
+            }
+            catch (Exception) { /* Offline or invalid metadata never blocks startup. */ }
+        };
         Closing += OnClosing;
         Closed += (_, _) => { _playTimer.Stop(); _lifetime.Cancel(); Preview.SetImage(null); FramePreview.SetFrame(null, default); CellStrip.SetSheet(null, null); _bitmap?.Dispose(); _bitmap = null; };
     }
@@ -2083,11 +2114,36 @@ public partial class MainWindow : Window
         SetBusy(true);
         try
         {
+            if (UpdateWindow.IsInstalled)
+            {
+                var assessment = UpdateWindow.AssessStartup();
+                if (assessment.Status is not (Suite.Updater.RecoveryStatus.NoTransaction or Suite.Updater.RecoveryStatus.Healthy or Suite.Updater.RecoveryStatus.Aborted or Suite.Updater.RecoveryStatus.RolledBack))
+                {
+                    var action = await RecoveryDialog.ShowAsync(this, assessment);
+                    if (assessment.Transaction is not { } transaction) return;
+                    if (action == RecoveryAction.CancelPrepared)
+                        UpdateWindow.CancelPrepared(transaction.Id);
+                    else if (action == RecoveryAction.ResolveCancelled)
+                        UpdateWindow.ResolveCancelled(transaction.Id);
+                    else if (action == RecoveryAction.ConfirmUpdate)
+                        UpdateWindow.ConfirmStartupHealth(transaction.Id);
+                    else if (action == RecoveryAction.ConfirmRollback)
+                        UpdateWindow.ConfirmRollbackHealth(transaction.Id);
+                    else if (action == RecoveryAction.Rollback)
+                    {
+                        if (_dirty && !await ConfirmDiscard()) return;
+                        await UpdateWindow.RollbackAsync(transaction.Id, true, _lifetime.Token);
+                        _allowClose = true;
+                        Close();
+                    }
+                    return;
+                }
+            }
             var update=await UpdateWindow.ShowAsync(this,_lifetime.Token);
             if(update is null||_lifetime.IsCancellationRequested)return;
             if(!UpdateWindow.IsInstalled)throw new InvalidOperationException("Portable installation.");
             if(_dirty&&!await ConfirmDiscard())return;
-            await Suite.Updater.InstallerHandoff.LaunchAsync(update,UpdateWindow.StagingRoot,_lifetime.Token);
+            await UpdateWindow.LaunchTrackedAsync(update,_lifetime.Token);
             _allowClose=true;
             Close();
         }
