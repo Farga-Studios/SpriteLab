@@ -42,25 +42,26 @@ internal static class RecoveryDialog
                 Add("Cancelar actualización preparada", "Cancel prepared update", RecoveryAction.CancelPrepared);
             else if (assessment.Status == RecoveryStatus.Interrupted && t.Phase is (UpdatePhase.HandoffStarted or UpdatePhase.AwaitingHealthCheck))
             {
-                Explain("Solo si cancelaste antes de copiar archivos. Si la copia comenzó o tienes dudas, utiliza la recuperación manual.", "Only if you cancelled before files were copied. If copying started or you are unsure, use manual recovery.");
+                dialog.Title = T("Actualización interrumpida", "Update interrupted");
+                Explain("La última actualización no se ha completado. Si cancelaste antes de que se copiaran archivos, puedes seguir utilizando tu versión actual. Si la instalación llegó a copiar archivos o no estás seguro, consulta la ayuda.", "The last update did not finish. If you cancelled before any files were copied, you can keep using your current version. If files were copied or you are unsure, see the help documentation.");
                 var check = Attest("Cancelé antes de copiar archivos, el instalador está cerrado y he probado la versión anterior correctamente.", "I cancelled before file copying, the installer has exited, and I tested the previous version successfully.");
-                Add("Resolver cancelación", "Resolve cancellation", RecoveryAction.ResolveCancelled, check);
+                Add("Continuar con mi versión", "Keep my current version", RecoveryAction.ResolveCancelled, check);
             }
             else if (assessment.Status is RecoveryStatus.HealthCheckRequired or RecoveryStatus.RollbackHealthCheckRequired)
             {
-                Explain("Prueba la apertura, edición y exportación de un proyecto de ejemplo antes de confirmar.", "Test opening, editing and exporting a sample project before confirming.");
+                Explain("Comprueba que puedes abrir, editar y exportar un proyecto. Si todo funciona, confirma para terminar.", "Check that you can open, edit and export a project. If everything works, confirm to finish.");
                 var check = Attest("El instalador ha terminado y las pruebas funcionan.", "The installer has finished and the tests pass.");
                 Add("Confirmar funcionamiento", "Confirm working version",
                     assessment.Status == RecoveryStatus.HealthCheckRequired ? RecoveryAction.ConfirmUpdate : RecoveryAction.ConfirmRollback, check);
             }
             if (assessment.Status is RecoveryStatus.HealthCheckRequired or RecoveryStatus.RecoveryRequired or RecoveryStatus.RollbackInterrupted)
             {
-                Explain("Solo se restaurará un instalador anterior firmado y conservado. Si no existe, será necesaria una recuperación manual.", "Only a retained signed previous installer can be restored. If unavailable, manual recovery is required.");
+                Explain("Si la nueva versión da problemas, puedes volver a la anterior cuando haya una copia disponible.", "If the new version has problems, you can return to the previous one when a copy is available.");
                 var check = Attest("El instalador ha terminado; he respaldado mis proyectos y comprobado su compatibilidad con la versión anterior.", "The installer has finished; I backed up my projects and checked compatibility with the previous version.");
                 Add("Restaurar versión anterior", "Restore previous version", RecoveryAction.Rollback, check);
             }
         }
-        Explain("Si no puedes confirmar el estado o no hay un paquete verificable, cierra el instalador y consulta la documentación de recuperación. No borres el registro.", "If you cannot confirm the state or no verified package exists, close the installer and consult the recovery documentation. Do not delete the journal.");
+        Explain("Si no sabes qué opción elegir, pulsa Más tarde y consulta la ayuda.", "If you are unsure which option to choose, select Later and see the help documentation.");
         panel.Children.Add(buttons);
         dialog.Content = new ScrollViewer { Content = panel };
         return dialog.ShowDialog<RecoveryAction>(owner);
